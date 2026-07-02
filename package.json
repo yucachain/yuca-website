@@ -9,13 +9,9 @@
     "lint": "eslint"
   },
   "dependencies": {
-<<<<<<< HEAD
-    "next": "^16.2.9",
-=======
     "formik": "^2.4.9",
     "lucide-react": "^1.7.0",
     "next": "16.2.2",
->>>>>>> 2db5f3ba18ef5b0b3fbe8277e2f9b7dd05d90b58
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "react-native-otp-entry": "^1.8.5",
