@@ -36,7 +36,7 @@ export default function SignUpPage() {
   return (
     <main  className="min-h-screen flex items-center justify-center p-4 sm:p-6 inset-0 bg-[radial-gradient(circle_at_70%_70%,_#d9ead9_0%,_transparent_60%)]" >
       <div className="w-full max-w-md sm:max-w-lg rounded-3xl shadow-xl px-6 py-10 sm:px-10 sm:py-12 inset-0 bg-[radial-gradient(circle_at_70%_70%,_#d9ead9_0%,_transparent_60%)]"
-       title="SIGN UP" >
+        >
 
         {/* Title */}
         <h1 className="text-2xl sm:text-3xl font-medium text-center text-gray-900 mb-10 sm:mb-14">
@@ -100,19 +100,19 @@ export default function SignUpPage() {
 
               <p className="text-center text-sm text-gray-600">
                 Already have an account?{" "}
-                <Link href="/login" className="font-medium text-emerald-800">
+                <Link href="/login" className="font-bold text-emerald-800">
                   Log In
                 </Link>
               </p>
 
               <div className="pt-2 text-center">
                 <Link
-                  href="/request-access"
-                  className="text-sm font-semibold text-emerald-800"
+                  href="/request-acess"
+                  className="text-sm font-bold text-emerald-800"
                 >
                   Request Access
                 </Link>
-                <p className="mt-0.5 text-xs text-gray-500">
+                <p className="mt-0.5 text-xs text-gray-700">
                   (For industrial buyers and processors)
                 </p>
               </div>

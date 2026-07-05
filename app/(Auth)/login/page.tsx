@@ -135,7 +135,7 @@ export default function LoginPage() {
                 Forgot Password?{" "}
                 <Link
                   href="/forgetPassword"
-                  className="text-emerald-800 font-medium hover:underline"
+                  className="font-bold text-emerald-800"
                 >
                   Click here...
                 </Link>
@@ -143,12 +143,14 @@ export default function LoginPage() {
 
               {/* Request Access */}
 
-              <div className="text-center pt-3">
-                <h3 className="text-emerald-800 font-semibold text-sm sm:text-base hover:underline text-[#226049]">
+               <div className="pt-2 text-center">
+                <Link
+                  href="/request-acess"
+                  className="text-sm font-bold text-emerald-800"
+                >
                   Request Access
-                </h3>
-
-                <p className="text-xs sm:text-sm text-gray-500 mt-1 font-serif">
+                </Link>
+                <p className="mt-0.5 text-xs text-gray-700">
                   (For industrial buyers and processors)
                 </p>
               </div>

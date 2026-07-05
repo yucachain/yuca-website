@@ -97,6 +97,25 @@ export const ForgotPasswordSchema: Yup.ObjectSchema<ForgotPasswordValues> = Yup.
 });
 
 /* ------------------------------------------------------------------ */
+/*  Verify Reset Link                                                  */
+/*  Shown after "Send Reset Link" — lets the user paste the link       */
+/*  manually instead of clicking it from their inbox.                  */
+/* ------------------------------------------------------------------ */
+
+export interface VerifyResetLinkValues {
+  resetLink: string;
+}
+
+export const verifyResetLinkInitialValues: VerifyResetLinkValues = { resetLink: "" };
+
+export const VerifyResetLinkSchema: Yup.ObjectSchema<VerifyResetLinkValues> = Yup.object({
+  resetLink: Yup.string()
+    .trim()
+    .required("Paste your reset link")
+    .url("That doesn't look like a valid link"),
+});
+
+/* ------------------------------------------------------------------ */
 /*  Reset Password (after clicking the email link)                     */
 /* ------------------------------------------------------------------ */
 
@@ -113,12 +132,11 @@ export const resetPasswordInitialValues: ResetPasswordValues = {
 export const ResetPasswordSchema: Yup.ObjectSchema<ResetPasswordValues> = Yup.object({
   password: passwordRule,
   confirmPassword: confirmPasswordRule,
-});
+})
 
-/* ------------------------------------------------------------------ */
 /*  Request Access (for industrial buyers and processors)              */
 /*  Seen as a link on both screens — modeled as its own short form.    */
-/* ------------------------------------------------------------------ */
+
 
 export interface RequestAccessValues {
   companyName: string;
