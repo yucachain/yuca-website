@@ -34,6 +34,7 @@ export default function SignUpPage() {
   };
 
   return (
+     <div className="relative min-h-screen w-full bg-[#f8f9f8] overflow-hidden flex flex-col font-sans text-[#171717]">
     <main  className="min-h-screen flex items-center justify-center p-4 sm:p-6 inset-0 bg-[radial-gradient(circle_at_70%_70%,_#d9ead9_0%,_transparent_60%)]" >
       <div className="w-full max-w-md sm:max-w-lg rounded-3xl shadow-xl px-6 py-10 sm:px-10 sm:py-12 inset-0 bg-[radial-gradient(circle_at_70%_70%,_#d9ead9_0%,_transparent_60%)]"
         >
@@ -59,14 +60,14 @@ export default function SignUpPage() {
               <FormInput
                 name="firstName"
                 label="First Name"
-                placeholder="Muhammad"
+                placeholder="Your First Name"
                 autoComplete="given-name"
               />
 
               <FormInput
                 name="lastName"
                 label="Last Name"
-                placeholder="Muhammad"
+                placeholder="Your Last Name"
                 autoComplete="family-name"
               />
 
@@ -121,5 +122,6 @@ export default function SignUpPage() {
         </Formik>
       </div>
     </main>
+    </div>
   );
 }
