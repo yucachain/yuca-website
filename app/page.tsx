@@ -1,19 +1,8 @@
-<<<<<<< HEAD
-import Navbar from "./components/Navbar"
-import Hero from "./components/Hero"
-=======
 
 import Link from "next/link";
->>>>>>> 2db5f3ba18ef5b0b3fbe8277e2f9b7dd05d90b58
 
 export default function Home() {
   return (
-<<<<<<< HEAD
-    <main>
-      <Navbar />
-      <Hero />
-    </main>
-=======
     <div className="relative min-h-screen w-full bg-[#fcfcfc] flex flex-col font-sans text-[#171717] overflow-y-auto">
       <header className="relative z-10 flex items-center justify-between px-8 md:px-10 py-4 w-full max-w-[90rem] mx-auto">
         <div className="flex items-center">
@@ -87,6 +76,5 @@ export default function Home() {
         </div>
       </main>
     </div>
->>>>>>> 2db5f3ba18ef5b0b3fbe8277e2f9b7dd05d90b58
   )
 }

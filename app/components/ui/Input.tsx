@@ -1,64 +1,35 @@
-"use client";
+import React, { forwardRef } from "react";
 
-import React from "react";
-
-interface InputProps
-    extends React.InputHTMLAttributes<HTMLInputElement>{
-
-    label?:string;
-    error?:string;
+export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+  hasError?: boolean;
 }
 
-const Input = React.forwardRef<HTMLInputElement,InputProps>(
-(
-{
-    label,
-    error,
-    className,
-    id,
-    ...props
-},
-ref
-)=>{
-
-return(
-
-<div className="w-full space-y-1">
-
-    {label && (
-        <label
-            htmlFor={id}
-            className="text-sm font-medium text-gray-700"
-        >
-            {label}
-        </label>
-    )}
-
-    <input
+/**
+ * Base input element. Purely presentational — no Formik knowledge here.
+ * FormInput / PasswordInput compose this with Formik's `useField`.
+ */
+const Input = forwardRef<HTMLInputElement, InputProps>(
+  ({ hasError = false, className = "", ...rest }, ref) => {
+    return (
+      <input
         ref={ref}
-        id={id}
-        className={`w-full rounded border px-3 py-2 outline-none ${
-            error
-            ? "border-red-500"
-            : "border-gray-300"
-        } ${className}`}
-        {...props}
-    />
-
-    {error && (
-        <p className="text-red-500 text-sm">
-            {error}
-        </p>
-    )}
-
-</div>
-
+        className={[
+          "w-full rounded-lg border bg-white px-4 py-3 text-[15px] text-gray-900",
+          "placeholder:text-gray-400",
+          "transition-colors duration-150",
+          "focus:outline-none focus:ring-2 focus:ring-emerald-800/30 focus:border-emerald-800",
+          hasError
+            ? "border-red-400 focus:border-red-500 focus:ring-red-400/30"
+            : "border-gray-300",
+          "disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400",
+          className,
+        ].join(" ")}
+        {...rest}
+      />
+    );
+  }
 );
 
-}
-
-);
-
-Input.displayName="Input";
+Input.displayName = "Input";
 
 export default Input;
