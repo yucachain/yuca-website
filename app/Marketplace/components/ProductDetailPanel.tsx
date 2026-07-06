@@ -1,0 +1,1 @@
+// ProductDetailPanel — right-side slide-in panel showing full product details: image, batch ID, product name, price per tonne, quantity, origin (Offa, Kwara State), seller (Top Farmers Ltd.), storage time, temperature, humidity, "Contact Seller" + "Place order" buttons, Additional Note section

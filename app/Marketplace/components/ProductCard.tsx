@@ -1,0 +1,1 @@
+// ProductCard — single batch card showing: batch ID, product name + grade badge, "Add to Cart" tag, quantity, price per tonne, origin location, seller name, storage time, temperature, humidity, "View Details" + "Place order" buttons

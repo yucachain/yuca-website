@@ -1,0 +1,1 @@
+// OrderConfirmation — Thank you screen: "THANK YOU!!!" heading, order number, confirmation message, delivery address, order summary table (Items/Quantity/Price/Subtotal columns), "View all" button, "New Arrivals" section with product thumbnail cards + pagination
