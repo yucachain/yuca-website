@@ -1,9 +1,11 @@
-import _NotFound_Page from "./_NotFound_Page"
+import Hero from "./components/Hero";
+import Navbar from "./components/Navbar";
 
-export default function LandingPage() {
+export default function Home() {
   return (
-    <div className="">
-      <_NotFound_Page />
+    <div className="min-h-screen w-full font-sans">
+      <Navbar />
+      <Hero />
     </div>
-  )
+  );
 }
