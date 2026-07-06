@@ -13,6 +13,8 @@ import {
   verifyResetLinkInitialValues,
   VerifyResetLinkValues,
 } from "@/app/components/validation/schema";
+import AuthLayout from "@/app/components/ui/AuthLayout";
+import AuthCard from "@/app/components/ui/Authcard";
 
 function EnvelopeIcon() {
   return (
@@ -59,12 +61,9 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <div className="relative min-h-screen w-full bg-[#f8f9f8] overflow-hidden flex flex-col font-sans text-[#171717]">
-      <main className="min-h-screen flex items-center justify-center p-4 sm:p-6 bg-[radial-gradient(circle_at_70%_70%,_#d9ead9_0%,_transparent_60%)]">
-        <div className="w-full max-w-md sm:max-w-lg  rounded-[40px] shadow-xl px-6 py-10 sm:px-10 sm:py-12 inset-0 bg-[radial-gradient(circle_at_70%_70%,_#d9ead9_0%,_transparent_60%)]">
-          <h1 className="text-2xl sm:text-3xl font-medium text-center text-gray-900 mb-10 sm:mb-14">
-            Forgot Password
-          </h1>
+    //<div className="relative min-h-screen w-full bg-[#f8f9f8] overflow-hidden flex flex-col font-sans text-[#171717]">
+      <AuthLayout>
+      <AuthCard title="Forgot Password">
           <p className="-mt-4 pt-0 mb-8 text-center text-base leading-relaxed text-gray-600">
             No worries! Enter your email and we&apos;ll send you a link to reset
             password.
@@ -158,8 +157,8 @@ export default function ForgotPasswordPage() {
               </p>
             </div>
           )}
-        </div>
-      </main>
-    </div>
+          </AuthCard>
+    </AuthLayout>
+    //</div>
   );
 }

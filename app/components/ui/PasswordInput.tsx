@@ -1,4 +1,4 @@
-import  { useState } from "react";
+import React, { useState } from "react";
 import { useField } from "formik";
 import Input, { InputProps } from "./Input";
 
@@ -60,7 +60,7 @@ export default function PasswordInput({
       {label && (
         <label
           htmlFor={inputId}
-          className="mb-2 block text-[15px] font-medium text-gray-800"
+          className="mb-1.5 block text-sm font-medium text-gray-800"
         >
           {label}
         </label>
@@ -72,7 +72,7 @@ export default function PasswordInput({
           type={visible ? "text" : "password"}
           hasError={hasError}
           aria-invalid={hasError}
-          className="pr-11"
+          className="pr-9"
           {...field}
           {...rest}
         />

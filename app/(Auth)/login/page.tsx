@@ -8,6 +8,8 @@ import FormInput from "@/app/components/ui/FormInput";
 import PasswordInput from "@/app/components/ui/PasswordInput";
 import Button from "@/app/components/ui/Button";
 import { LoginSchema } from "@/app/components/validation/schema";
+import AuthCard from "@/app/components/ui/Authcard";
+import AuthLayout from "@/app/components/ui/AuthLayout";
 
 interface LoginValues {
   email: string;
@@ -53,14 +55,10 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="relative min-h-screen w-full bg-[#f8f9f8] overflow-hidden flex flex-col font-sans text-[#171717]">
-      <main className="min-h-screen flex items-center justify-center p-4 sm:p-6 bg-[radial-gradient(circle_at_70%_70%,_#d9ead9_0%,_transparent_60%)]">
-        <div className="w-full max-w-md sm:max-w-lg  rounded-[40px] shadow-xl px-6 py-10 sm:px-10 sm:py-12 inset-0 bg-[radial-gradient(circle_at_70%_70%,_#d9ead9_0%,_transparent_60%)]">
-
+   // <div className="relative min-h-screen w-full bg-[#f8f9f8] overflow-hidden flex flex-col font-sans text-[#171717]">
+      <AuthLayout>
+           <AuthCard title="Log In">
           {/* Title */}
-          <h1 className="text-2xl sm:text-3xl font-medium text-center text-gray-900 mb-10 sm:mb-14">
-            Log In
-          </h1>
 
           <Formik
             initialValues={initialValues}
@@ -119,8 +117,10 @@ export default function LoginPage() {
                 )}
 
                 {/* Login Button */}
-                <div className="pt-10 sm:pt-14 space-y-5">
+                <div className="flex justify-center pt-10 sm:pt-14">
                   <Button
+                    fullWidth={false}
+                    className="w-40 sm:w-48"
                     type="submit"
                     disabled={isSubmitting}
                   >
@@ -159,8 +159,8 @@ export default function LoginPage() {
               </Form>
             )}
           </Formik>
-        </div>
-      </main>
-    </div>
+        </AuthCard>
+      </AuthLayout>
+   // </div>
   );
 }

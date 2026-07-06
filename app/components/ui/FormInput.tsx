@@ -38,7 +38,7 @@ export default function FormInput({
       {label && (
         <label
           htmlFor={inputId}
-          className="mb-2 block text-[15px] font-medium text-gray-800"
+          className="mb-0.6 block text-sm font-medium text-gray-800"
         >
           {label}
         </label>

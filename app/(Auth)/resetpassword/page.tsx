@@ -12,6 +12,8 @@ import {
   resetPasswordInitialValues,
   ResetPasswordValues,
 } from "@/app/components/validation/schema";
+import AuthCard from "@/app/components/ui/Authcard";
+import AuthLayout from "@/app/components/ui/AuthLayout";
 
 function CheckIcon() {
   return (
@@ -54,10 +56,8 @@ export default function ResetPasswordPage() {
 
   if (resetDone) {
     return (
-        <div className="relative min-h-screen w-full bg-[#f8f9f8] overflow-hidden flex flex-col font-sans text-[#171717]">
-       <main  className="min-h-screen flex items-center justify-center p-4 sm:p-6 inset-0 bg-[radial-gradient(circle_at_70%_70%,_#d9ead9_0%,_transparent_60%)]" >
-      <div className="w-full max-w-md sm:max-w-lg rounded-3xl shadow-xl px-6 py-10 sm:px-10 sm:py-12 inset-0 bg-[radial-gradient(circle_at_70%_70%,_#d9ead9_0%,_transparent_60%)]"
-        >
+        <AuthLayout>
+                  <AuthCard>
           <div className="flex flex-col items-center text-center">
             <span className="mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-[#215243]">
               <CheckIcon />
@@ -76,21 +76,16 @@ export default function ResetPasswordPage() {
               <Button type="button">Back to Login</Button>
             </Link>
           </div>
-        </div>
-      </main>
-      </div>
+       </AuthCard>
+    </AuthLayout>
     );
   }
 
   return (
-     <div className="relative min-h-screen w-full bg-[#f8f9f8] overflow-hidden flex flex-col font-sans text-[#171717]">
-     <main className="min-h-screen flex items-center justify-center p-4 sm:p-6 bg-[radial-gradient(circle_at_70%_70%,_#d9ead9_0%,_transparent_60%)]">
-      <div className="w-full max-w-md sm:max-w-lg  rounded-[40px] shadow-xl px-6 py-10 sm:px-10 sm:py-12 inset-0 bg-[radial-gradient(circle_at_70%_70%,_#d9ead9_0%,_transparent_60%)]">
+      <AuthLayout>
+                  <AuthCard title="Reset Password">
         {!token && (
           <div>
-             <h1 className="text-2xl sm:text-3xl font-medium text-center text-gray-900 mb-10 sm:mb-14">
-          Reset Password
-        </h1>
           </div>
         )}
 
@@ -129,8 +124,7 @@ export default function ResetPasswordPage() {
             </Form>
           )}
         </Formik>
-      </div>
-    </main>
-    </div>
+      </AuthCard>
+    </AuthLayout>
   );
 }

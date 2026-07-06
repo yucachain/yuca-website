@@ -12,6 +12,8 @@ import {
   signUpInitialValues,
   SignUpValues,
 } from "@/app/components/validation/schema";
+import AuthCard from "@/app/components/ui/Authcard";
+import AuthLayout from "@/app/components/ui/AuthLayout";
 
 export default function SignUpPage() {
   const router = useRouter();
@@ -34,16 +36,9 @@ export default function SignUpPage() {
   };
 
   return (
-     <div className="relative min-h-screen w-full bg-[#f8f9f8] overflow-hidden flex flex-col font-sans text-[#171717]">
-    <main  className="min-h-screen flex items-center justify-center p-4 sm:p-6 inset-0 bg-[radial-gradient(circle_at_70%_70%,_#d9ead9_0%,_transparent_60%)]" >
-      <div className="w-full max-w-md sm:max-w-lg rounded-3xl shadow-xl px-6 py-10 sm:px-10 sm:py-12 inset-0 bg-[radial-gradient(circle_at_70%_70%,_#d9ead9_0%,_transparent_60%)]"
-        >
-
-        {/* Title */}
-        <h1 className="text-2xl sm:text-3xl font-medium text-center text-gray-900 mb-10 sm:mb-14">
-          Sign Up
-        </h1>
-
+    // <div className="relative min-h-screen w-full bg-[#f8f9f8] overflow-hidden flex flex-col font-sans text-[#171717]">
+    <AuthLayout>
+              <AuthCard title="SIGN UP">
         <Formik
           initialValues={signUpInitialValues}
           validationSchema={SignUpSchema}
@@ -60,15 +55,16 @@ export default function SignUpPage() {
               <FormInput
                 name="firstName"
                 label="First Name"
-                placeholder="Your First Name"
+                placeholder="John"
                 autoComplete="given-name"
               />
 
               <FormInput
                 name="lastName"
                 label="Last Name"
-                placeholder="Your Last Name"
+                placeholder="Doe"
                 autoComplete="family-name"
+                
               />
 
               <FormInput
@@ -77,6 +73,7 @@ export default function SignUpPage() {
                 type="email"
                 placeholder="you@example.com"
                 autoComplete="email"
+                
               />
 
               <PasswordInput
@@ -93,11 +90,15 @@ export default function SignUpPage() {
                 autoComplete="new-password"
               />
 
-              <Button 
-              type="submit"   
-              disabled={isSubmitting}>
-                Sign Up
-              </Button>
+<div className="flex justify-center">
+                <Button
+                  type="submit"
+                  className="w-40 sm:w-48"
+                  disabled={isSubmitting}
+                >
+                  Sign Up
+                </Button>
+              </div>
 
               <p className="text-center text-sm text-gray-600">
                 Already have an account?{" "}
@@ -120,8 +121,8 @@ export default function SignUpPage() {
             </Form>
           )}
         </Formik>
-      </div>
-    </main>
-    </div>
+      </AuthCard>
+    </AuthLayout>
+  //  </div>
   );
 }
