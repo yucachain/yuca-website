@@ -91,7 +91,7 @@ export default function ForgotPasswordPage() {
 
                   <Link
                     href="/login"
-                    className="block text-center text-base font-bold text-gray-900"
+                    className="block text-center text-base font-medium text-gray-900"
                   >
                     Back to Login
                   </Link>
@@ -124,7 +124,7 @@ export default function ForgotPasswordPage() {
 
                     <Link
                       href="/login"
-                      className="block text-center text-base font-bold text-gray-900"
+                      className="block text-center text-base font-medium text-gray-900"
                     >
                       Back to Login
                     </Link>

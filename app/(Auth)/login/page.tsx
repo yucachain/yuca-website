@@ -77,7 +77,7 @@ export default function LoginPage() {
                   name="email"
                   label="Email Address"
                   type="email"
-                  placeholder="Enter your email"
+                  placeholder="you@example.com"
 
                 />
 
@@ -102,7 +102,7 @@ export default function LoginPage() {
 
                   <label
                     htmlFor="rememberMe"
-                    className="text-sm sm:text-base text-gray-800"
+                    className="text-sm  text-gray-800 pt-none"
                   >
                     Remember me
                   </label>
@@ -136,7 +136,7 @@ export default function LoginPage() {
                   Forgot Password?{" "}
                   <Link
                     href="/forgetpassword"
-                    className="font-bold text-emerald-800"
+                    className="font-medium text-emerald-800"
                   >
                     Click here...
                   </Link>

@@ -14,8 +14,8 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
       <input
         ref={ref}
         className={[
-          "w-full rounded-lg border bg-white px-1 py-1 text-sm text-gray-900",
-          "placeholder:text-gray-400 text-sm",
+          "w-full rounded-lg border border-emerald-950/25 bg-white px-1 py-1 text-sm text-gray-900",
+          "placeholder:text-gray-400 text-[0.8rem] px-3",
           "transition-colors duration-150",
           "focus:outline-none focus:ring-2 focus:ring-emerald-800/30 focus:border-emerald-800",
           hasError
