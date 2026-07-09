@@ -8,7 +8,7 @@ export default function AuthCard({
   children: React.ReactNode;
 }) {
   return (
-    <div className="w-full max-w-sm rounded-3xl bg-[#f8f9f8] p-6 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.12)] sm:p-8">
+    <div className="w-full max-w-sm rounded-3xl bg-[linear-gradient(to_bottom,#f8f9f8_50%,#ffffff_50%)] p-6 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.12)] sm:p-8">
       {title && (
         <h1 className="mb-6 text-center text-xl font-medium text-gray-900">{title}</h1>
       )}

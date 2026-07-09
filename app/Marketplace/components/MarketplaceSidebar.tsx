@@ -155,12 +155,12 @@ export default function MarketplaceSidebar({
 
   return (
     <aside className="w-full max-w-[280px] shrink-0 border-r border-gray-300 px-6 py-8">
-      <h1 className="text-3xl font-bold pt-10 text-gray-900">Marketplace</h1>
-      <p className="mt-2 text-sm leading-relaxed text-gray-500">
+      <h1 className="text-3xl font-bold pt-10 text-[#000000]">Marketplace</h1>
+      <p className="mt-1 text-sm leading-relaxed text-[#000000]">
         Browse and search all the list for products available for purchase
       </p>
 
-      <nav className="mt-8 space-y-1 pt-10">
+      <nav className="mt-8 space-y-2  bg-white">
         {categories.map((category) => {
           const isActive = category.id === activeId;
           return (
@@ -169,9 +169,9 @@ export default function MarketplaceSidebar({
               type="button"
               onClick={() => handleCategoryClick(category.id)}
               className={[
-                "flex w-full items-start gap-3 rounded-lg border-l-4 px-3 py-3 text-left transition-colors",
+                "flex w-full items-start gap-3 rounded-lg border-l-4 px-3 py-3 text-left transition-colors ",
                 isActive
-                  ? "border-emerald-800 bg-emerald-50/70"
+                  ? "border-[#226049] bg-emerald-50/70"
                   : "border-transparent hover:bg-gray-50",
               ].join(" ")}
             >
@@ -201,7 +201,7 @@ export default function MarketplaceSidebar({
             type="button"
             onClick={() => toggleGrade("A")}
             className={[
-              "rounded-full border px-3 py-1 text-sm font-medium transition-colors bg-[#ffffff]",
+              "rounded-full border w-169 h-43 px-3 py-1 text-sm font-medium transition-colors bg-[#ffffff]",
               selectedGrades.has("A") ? gradeStyles.A.active : gradeStyles.A.inactive,
             ].join(" ")}
           >
@@ -211,7 +211,7 @@ export default function MarketplaceSidebar({
             type="button"
             onClick={() => toggleGrade("B")}
             className={[
-              "rounded-full border px-3 py-1 text-sm font-medium transition-colors bg-[#ffffff]",
+              "rounded-full border w-169 h-43 px-3 py-1 text-sm font-medium transition-colors bg-[#ffffff]",
               selectedGrades.has("B") ? gradeStyles.B.active : gradeStyles.B.inactive,
             ].join(" ")}
           >
@@ -244,7 +244,7 @@ export default function MarketplaceSidebar({
       <button
         type="button"
         onClick={handleApply}
-        className="mt-8 w-30 sm:w-48 justify-center rounded-xl bg-[#215243] py-3 text-sm font-semibold text-white transition-colors hover:bg-[#1a4336]"
+        className="mt-8 w-233 h-61 sm:w-48 justify-center rounded-xl bg-[#226049] py-3 text-sm font-semibold text-white transition-colors hover:bg-[#1a4336]"
       >
         Apply Filters
       </button>

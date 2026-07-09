@@ -124,25 +124,26 @@ export default function MarketplaceNavbar({
 
           <div className="h-11 border-r border-gray-300"/>
 
-              <button
-            type="button"
+           <div
             onClick={() => setMenuOpen((v) => !v)}
-            className="flex items-center gap-3 rounded-full py-1 pl-1 pr-2 transition-colors hover:bg-gray-50"
+            className="flex cursor-pointer items-center text-green-900 gap-3 rounded-full py-1 pl-1 pr-2 transition-colors hover:bg-gray-50"
             aria-expanded={menuOpen}
           >
-            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#05095E] text-sm font-semibold text-[#05095E]">
+             <span className="flex h-9 w-9 items-center justify-center rounded-full bg-green-600 text-sm font-semibold text-black">
               {user.initials}
-            </span>
+            </span> 
             <span className="hidden text-left leading-tight sm:block">
-              <span className="block text-sm font-semibold text-[#05095E]">
+              <span className="block text-sm font-semibold ">
                 {user.name}
               </span>
               <span className="block text-xs text-gray-500">{user.role}</span>
             </span>
+
             <span className="text-gray-400">
               <ChevronDownIcon />
             </span>
-          </button>
+          </div> 
+          
         </div>
       </div>
     </header>
