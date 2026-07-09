@@ -11,23 +11,21 @@ import { LoginSchema } from "@/app/components/validation/schema";
 import AuthCard from "@/app/components/ui/Authcard";
 import AuthLayout from "@/app/components/ui/AuthLayout";
 
-interface LoginValues {
+interface AggregatorLoginValues {
   email: string;
   password: string;
-  rememberMe: boolean;
 }
 
-export default function LoginPage() {
+export default function AggregatorLoginPage() {
   const router = useRouter();
 
-  const initialValues: LoginValues = {
+  const initialValues: AggregatorLoginValues = {
     email: "",
     password: "",
-    rememberMe: false,
   };
 
   const handleSubmit = async (
-    values: LoginValues,
+    values: AggregatorLoginValues,
     {
       setSubmitting,
       setStatus,
@@ -41,13 +39,14 @@ export default function LoginPage() {
 
       const response = await login(values);
 
-      // Store your access token
+      // Store access token
       localStorage.setItem("accessToken", response.accessToken);
+      localStorage.setItem("userRole", "aggregator");
 
-      router.push("/marketplace");
+      router.push("/aggregator/dashboard");
     } catch (error: any) {
       setStatus(
-        error?.message || "Invalid email or password."
+        error?.message || "Invalid credentials. Please try again."
       );
     } finally {
       setSubmitting(false);
@@ -56,10 +55,10 @@ export default function LoginPage() {
 
   return (
     <AuthLayout>
-      <AuthCard title="Log In">
+      <AuthCard title="Partner Login">
         {/* Role Badge */}
         <p className="text-center text-xs text-[#226049] font-medium bg-[#226049]/10 rounded-full px-3 py-1 mb-6 -mt-2 w-fit mx-auto">
-          For Marketplace Users
+          For Aggregators &amp; Partners
         </p>
 
         <Formik
@@ -67,14 +66,17 @@ export default function LoginPage() {
           validationSchema={LoginSchema}
           onSubmit={handleSubmit}
         >
-          {({ isSubmitting, status, values, handleChange }) => (
+          {({
+            isSubmitting,
+            status,
+          }) => (
             <Form className="space-y-5">
 
               <FormInput
                 name="email"
                 label="Email Address"
                 type="email"
-                placeholder="you@example.com"
+                placeholder="partner@example.com"
               />
 
               <PasswordInput
@@ -82,21 +84,6 @@ export default function LoginPage() {
                 label="Password"
                 placeholder="••••••••"
               />
-
-              {/* Remember Me */}
-              <div className="flex items-center gap-2 pt-1">
-                <input
-                  id="rememberMe"
-                  type="checkbox"
-                  name="rememberMe"
-                  checked={values.rememberMe}
-                  onChange={handleChange}
-                  className="h-4 w-4 rounded border-gray-300 accent-[#226049] focus:ring-[#226049]"
-                />
-                <label htmlFor="rememberMe" className="text-sm text-gray-700">
-                  Remember me
-                </label>
-              </div>
 
               {/* Server Error */}
               {status && (
@@ -111,24 +98,29 @@ export default function LoginPage() {
                   type="submit"
                   disabled={isSubmitting}
                 >
-                  {isSubmitting ? "Logging In..." : "Log In"}
+                  {isSubmitting ? "Signing In..." : "Sign In"}
                 </Button>
               </div>
 
               {/* Forgot Password */}
               <div className="text-center text-sm text-gray-600">
                 Forgot your password?{" "}
-                <Link href="/forgetpassword" className="font-medium text-[#226049]">
+                <Link
+                  href="/forgetpassword"
+                  className="font-medium text-[#226049]"
+                >
                   Reset it here
                 </Link>
               </div>
-              {/* Partner login crosslink */}
+
+              {/* Back to marketplace login */}
               <div className="text-center text-xs text-gray-400 pt-1">
-                Are you a partner?{" "}
-                <Link href="/aggregator-login" className="text-[#226049] font-medium">
-                  Partner Login
+                Not a partner?{" "}
+                <Link href="/login" className="text-[#226049] font-medium">
+                  Marketplace login
                 </Link>
               </div>
+
             </Form>
           )}
         </Formik>

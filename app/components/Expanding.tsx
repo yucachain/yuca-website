@@ -2,15 +2,15 @@ import Image from "next/image";
 
 export default function Expanding() {
   return (
-    <section className="py-24 bg-white">
+    <section className="py-10 bg-white">
       <div className="max-w-7xl mx-auto px-6">
         {/* Heading */}
         <div className="text-center mb-12">
-          <h2 className="text-4xl font-bold text-[#243B6B]">
+          <h2 className="text-4xl font-bold text-black">
             Expanding The YucaChain Ecosystem
           </h2>
 
-          <div className="w-20 h-1 bg-cyan-400 rounded-full mx-auto mt-4"></div>
+          <div className="w-20 h-1 bg-[#226049] rounded-full mx-auto mt-4"></div>
         </div>
 
         {/* Ecosystem Image */}

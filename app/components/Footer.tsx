@@ -1,83 +1,121 @@
 import Image from "next/image";
+import Link from "next/link";
+
+const quickLinks = [
+  { label: "About Us", href: "#" },
+  { label: "Our Story", href: "#" },
+  { label: "Join Us", href: "/register" },
+  { label: "News", href: "#" },
+  { label: "Contact", href: "#" },
+];
+
+const products = [
+  { label: "YucaChain App", href: "#" },
+  { label: "YucaVault", href: "#" },
+  { label: "YucaHub", href: "#" },
+  { label: "Marketplace", href: "/login" },
+  { label: "Supply Chain", href: "#" },
+];
 
 export default function Footer() {
   return (
-    <footer className="bg-[#14B8C4] text-white">
-      <div className="max-w-7xl mx-auto px-6 py-16">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
+    <footer
+      className="text-white"
+      style={{ background: "linear-gradient(to bottom, #226049 0%, #46C697 100%)" }}
+    >
+      <div className="max-w-7xl mx-auto px-6 pt-16 pb-8">
 
-          {/* Left Section */}
-          <div>
-            <h2 className="text-3xl font-bold mb-6">
-              Yuca<span className="font-light">Chain</span>
-            </h2>
+        {/* Top Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-12 pb-12 border-b border-white/20">
 
-            <p className="text-white/90 leading-8 mb-8">
-              We are building an integrated digital ecosystem
-              transforming cassava farming, processing,
-              trade and export through technology.
+          {/* Brand Column */}
+          <div className="flex flex-col gap-5">
+            <Link href="/" className="flex items-center gap-2 w-fit">
+              <Image
+                src="/images/Logo.png"
+                alt="YucaChain Logo"
+                width={40}
+                height={40}
+                className="object-contain"
+              />
+              <span className="text-white font-bold text-xl tracking-tight">
+                YucaChain
+              </span>
+            </Link>
+
+            <p className="text-white/80 leading-7 text-sm max-w-xs">
+              Building an integrated digital ecosystem that transforms cassava farming,
+              processing, trade and export through technology.
             </p>
 
-            {/* Social Icons Image */}
-            <Image
-              src="/images/social-icons.png"
-              alt="Social Media Icons"
-              width={180}
-              height={40}
-              className="h-10 w-auto"
-            />
+            <div className="flex items-center gap-1 mt-1">
+              <Image
+                src="/images/social-icons.png"
+                alt="Social Media Icons"
+                width={160}
+                height={36}
+                className="h-9 w-auto"
+              />
+            </div>
           </div>
 
           {/* Quick Links */}
           <div>
-            <h3 className="text-2xl font-semibold mb-6">
+            <h3 className="text-base font-semibold uppercase tracking-widest text-white/60 mb-5">
               Quick Links
             </h3>
-
-            <ul className="space-y-4 text-white/90">
-              <li>About Us</li>
-              <li>Our Story</li>
-              <li>Join Us</li>
-              <li>News</li>
-              <li>Contact</li>
+            <ul className="space-y-3">
+              {quickLinks.map((link) => (
+                <li key={link.label}>
+                  <Link
+                    href={link.href}
+                    className="group flex items-center gap-2 text-white/85 hover:text-white text-sm cursor-pointer transition-all duration-200"
+                  >
+                    <span className="w-0 group-hover:w-3 h-px bg-white transition-all duration-300 rounded-full" />
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
 
           {/* Products */}
           <div>
-            <h3 className="text-2xl font-semibold mb-6">
+            <h3 className="text-base font-semibold uppercase tracking-widest text-white/60 mb-5">
               Products
             </h3>
-
-            <ul className="space-y-4 text-white/90">
-              <li>YucaChain App</li>
-              <li>YucaVault</li>
-              <li>YucaHub</li>
-              <li>Marketplace</li>
-              <li>Supply Chain</li>
+            <ul className="space-y-3">
+              {products.map((product) => (
+                <li key={product.label}>
+                  <Link
+                    href={product.href}
+                    className="group flex items-center gap-2 text-white/85 hover:text-white text-sm cursor-pointer transition-all duration-200"
+                  >
+                    <span className="w-0 group-hover:w-3 h-px bg-white transition-all duration-300 rounded-full" />
+                    {product.label}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
 
         </div>
 
-        {/* Bottom Section */}
-        <div className="border-t border-white/30 mt-12 pt-6 flex flex-col md:flex-row justify-between items-center">
+        {/* Bottom Bar */}
+        <div className="pt-6 flex flex-col sm:flex-row justify-between items-center gap-4 text-sm text-white/60">
+          <p>© 2026 YucaChain Limited. All rights reserved.</p>
 
-          <p className="text-sm text-white/80">
-            © 2026 YucaChain Limited. All rights reserved.
-          </p>
-
-          <div className="flex gap-6 mt-4 md:mt-0">
-            <a href="#" className="hover:underline">
+          <div className="flex items-center gap-6">
+            <Link href="#" className="hover:text-white transition-colors duration-200">
               Privacy Policy
-            </a>
-
-            <a href="#" className="hover:underline">
+            </Link>
+            <span className="w-px h-4 bg-white/30" />
+            <Link href="#" className="hover:text-white transition-colors duration-200">
               Terms of Use
-            </a>
+            </Link>
           </div>
-
         </div>
+
       </div>
     </footer>
   );

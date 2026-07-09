@@ -2,7 +2,7 @@ import Image from "next/image";
 
 export default function TradeCassava() {
   return (
-    <section className="py-20 bg-white">
+    <section className="py-10 bg-white">
       <div className="max-w-7xl mx-auto px-6">
         <div className="overflow-hidden rounded-3xl shadow-lg">
           <Image

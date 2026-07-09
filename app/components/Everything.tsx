@@ -38,15 +38,15 @@ const features = [
 
 export default function Everything() {
   return (
-    <section className="py-24 bg-white">
+    <section className="py-10 bg-white">
       <div className="max-w-7xl mx-auto px-6">
         {/* Heading */}
         <div className="text-center mb-16">
-          <h2 className="text-4xl font-bold text-[#243B6B]">
+          <h2 className="text-4xl font-bold text-black">
             Everything You Need In One Platform
           </h2>
 
-          <div className="w-20 h-1 bg-cyan-400 mx-auto mt-4 rounded-full"></div>
+          <div className="w-20 h-1 bg-[#226049] mx-auto mt-4 rounded-full"></div>
         </div>
 
         {/* Cards */}
@@ -57,10 +57,12 @@ export default function Everything() {
             return (
               <div
                 key={index}
-                className="bg-white border border-gray-200 rounded-2xl p-8 shadow-sm hover:shadow-md transition duration-300"
+                className="bg-white border border-gray-200 rounded-2xl p-8 shadow-sm flex flex-col items-center text-center
+                  transition-all duration-300 ease-out
+                  hover:-translate-x-1 hover:-translate-y-1 hover:shadow-xl hover:border-[#226049]/30 cursor-pointer"
               >
                 {/* Circle Icon */}
-                <div className="w-16 h-16 rounded-full bg-[#EAF8FB] flex items-center justify-center mb-6">
+                <div className="w-16 h-16 rounded-full bg-[#EAF8FB] flex items-center justify-center mb-6 transition-transform duration-300 group-hover:scale-110">
                   <Icon
                     className={feature.color}
                     size={30}
@@ -69,7 +71,7 @@ export default function Everything() {
                 </div>
 
                 {/* Title */}
-                <h3 className="text-xl font-semibold text-[#243B6B] mb-3">
+                <h3 className="text-xl font-semibold text-black mb-3">
                   {feature.title}
                 </h3>
 
