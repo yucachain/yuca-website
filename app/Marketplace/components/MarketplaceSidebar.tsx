@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { Leaf, Sprout, Tractor, Package } from "lucide-react";
-import Button from "@/app/components/ui/Button";
+import FilterPanel from "./FilterPanel";
 
 export interface MarketplaceCategory {
   id: string;
@@ -147,60 +147,10 @@ export default function MarketplaceSidebar({
         })}
       </nav>
 
-      <div className="mt-10  pt-6">
-        <p className="mb-3 text-sm font-semibold text-gray-800">Quality Grade</p>
-        <div className="flex gap-3">
-          <button
-            type="button"
-            onClick={() => toggleGrade("A")}
-            className={[
-              "rounded-full border px-2 py-2 text-sm font-medium transition-colors",
-              selectedGrades.has("A") ? gradeStyles.A.active : gradeStyles.A.inactive,
-            ].join(" ")}
-          >
-            A (Premium)
-          </button>
-          <button
-            type="button"
-            onClick={() => toggleGrade("B")}
-            className={[
-              "rounded-full border px-2 py-2 text-sm font-medium transition-colors",
-              selectedGrades.has("B") ? gradeStyles.B.active : gradeStyles.B.inactive,
-            ].join(" ")}
-          >
-            B (Standard)
-          </button>
-        </div>
+         <div className="mt-10">
+        <FilterPanel weightRange={weightRange} onApplyFilters={onApplyFilters} />
       </div>
-
-      <div className="mt-8">
-        <p className="mb-3 text-sm font-semibold text-gray-800">Weight</p>
-         <div className="mt-1 flex justify-between text-xs text-gray-500">
-          <span>{weightRange.min} Tonnes</span>
-          <span>{weightRange.max} Tonnes</span>
-        </div>
-        <input
-          type="range"
-          min={weightRange.min}
-          max={weightRange.max}
-          value={weight}
-          onChange={(e) => setWeight(Number(e.target.value))}
-          className="w-full h-px appearance-none green-range"
-          style={{
-            background: `linear-gradient(90deg, #215243 ${weightProgress}%, #d1d5db ${weightProgress}%)`,
-          }}
-          aria-label="Weight in tonnes"
-        />
-      </div>
-
-      <Button
-        type="button"
-        onClick={handleApply}
-        fullWidth={false}
-        className="w-10 mt-5 sm:w-48"
-      >
-        Apply Filters
-      </Button>
     </aside>
   );
 }
+
