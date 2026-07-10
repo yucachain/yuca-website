@@ -1,60 +1,8 @@
-// MarketplaceSidebar — left sidebar containing: "Marketplace" title + subtitle, CategoryList, FilterPanel
 "use client";
 
 import React, { useState } from "react";
-
-function LeafIcon() {
-  return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path
-        d="M4 20c8 0 14-6 14-14 0-1.1-.1-2-.1-2s-.9-.1-2-.1C7.9 3.9 2 9.9 2 17.9V20h2Z"
-        stroke="currentColor"
-        strokeWidth="1.6"
-        strokeLinejoin="round"
-      />
-      <path d="M6 18c3-6 6-9 12-12" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function SeedIcon() {
-  return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.6" />
-      <path d="M12 7v10M7 12h10" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function TractorIcon() {
-  return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <circle cx="7" cy="17" r="3" stroke="currentColor" strokeWidth="1.6" />
-      <circle cx="18" cy="17" r="2.2" stroke="currentColor" strokeWidth="1.6" />
-      <path
-        d="M4 17V9h5l3 4h3.5a2 2 0 0 1 2 2v2M9 9V5h3"
-        stroke="currentColor"
-        strokeWidth="1.6"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-function BoxIcon() {
-  return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path
-        d="M3 8.5 12 4l9 4.5v7L12 20l-9-4.5v-7Z"
-        stroke="currentColor"
-        strokeWidth="1.6"
-        strokeLinejoin="round"
-      />
-      <path d="M3 8.5 12 13l9-4.5M12 13v7" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
-    </svg>
-  );
-}
+import { Leaf, Sprout, Tractor, Package } from "lucide-react";
+import Button from "@/app/components/ui/Button";
 
 export interface MarketplaceCategory {
   id: string;
@@ -68,25 +16,25 @@ export const DEFAULT_CATEGORIES: MarketplaceCategory[] = [
     id: "raw-cassava",
     label: "Raw Cassava Batches",
     description: "Fresh cassava in batches",
-    icon: <LeafIcon />,
+    icon: <Leaf size={22} strokeWidth={1.6} />,
   },
   {
     id: "inputs-seeds",
     label: "Inputs & Seeds",
     description: "Seeds, fertilizers, & chemicals",
-    icon: <SeedIcon />,
+    icon: <Sprout size={22} strokeWidth={1.6} />,
   },
   {
     id: "machinery-lease",
     label: "Machinery Lease",
     description: "Tractor, equipment & tools",
-    icon: <TractorIcon />,
+    icon: <Tractor size={22} strokeWidth={1.6} />,
   },
   {
     id: "process-products",
     label: "Process Products",
     description: "Flour, starch, gari & more...",
-    icon: <BoxIcon />,
+    icon: <Package size={22} strokeWidth={1.6} />,
   },
 ];
 
@@ -112,12 +60,12 @@ export interface MarketplaceSidebarProps {
 
 const gradeStyles: Record<QualityGrade, { active: string; inactive: string }> = {
   A: {
-    active: "border-[1px] border-emerald-600 bg-emerald-50/80 text-emerald-800",
-    inactive: "border-[1px] border-gray-300 text-gray-500 hover:border-emerald-600 hover:text-emerald-800",
+    active: "border-emerald-700 bg-emerald-50 text-emerald-800",
+    inactive: "border-gray-300 text-gray-500 hover:border-emerald-700 hover:text-emerald-800",
   },
   B: {
-    active: "border-[1px] border-amber-500 bg-amber-50/80 text-amber-700",
-    inactive: "border-[1px] border-gray-300 text-gray-500 hover:border-amber-500 hover:text-amber-700",
+    active: "border-amber-500 bg-amber-50 text-amber-700",
+    inactive: "border-gray-300 text-gray-500 hover:border-amber-500 hover:text-amber-700",
   },
 };
 
@@ -153,14 +101,19 @@ export default function MarketplaceSidebar({
     onApplyFilters?.({ grades: Array.from(selectedGrades), weight });
   };
 
+  const weightProgress =
+    weightRange.max > weightRange.min
+      ? ((weight - weightRange.min) / (weightRange.max - weightRange.min)) * 100
+      : 0;
+
   return (
-    <aside className="w-full max-w-[280px] shrink-0 border-r border-gray-300 px-6 py-8">
+    <aside className="w-full max-w-[280px] shrink-0 border-r border-gray-100 bg-white px-6 py-8">
       <h1 className="text-3xl font-bold pt-10 text-[#000000]">Marketplace</h1>
-      <p className="mt-1 text-sm leading-relaxed text-[#000000]">
+      <p className="mt-2 text-sm leading-relaxed text-gray-500">
         Browse and search all the list for products available for purchase
       </p>
 
-      <nav className="mt-8 space-y-2  bg-white">
+      <nav className="mt-20 space-y-1">
         {categories.map((category) => {
           const isActive = category.id === activeId;
           return (
@@ -169,9 +122,9 @@ export default function MarketplaceSidebar({
               type="button"
               onClick={() => handleCategoryClick(category.id)}
               className={[
-                "flex w-full items-start gap-3 rounded-lg border-l-4 px-3 py-3 text-left transition-colors ",
+                "flex w-full items-start gap-3 rounded-lg border-l-4 px-3 py-3 text-left transition-colors",
                 isActive
-                  ? "border-[#226049] bg-emerald-50/70"
+                  ? "border-emerald-800 bg-emerald-50/70"
                   : "border-transparent hover:bg-gray-50",
               ].join(" ")}
             >
@@ -196,12 +149,12 @@ export default function MarketplaceSidebar({
 
       <div className="mt-10  pt-6">
         <p className="mb-3 text-sm font-semibold text-gray-800">Quality Grade</p>
-        <div className="flex justify-center gap-3">
+        <div className="flex gap-3">
           <button
             type="button"
             onClick={() => toggleGrade("A")}
             className={[
-              "rounded-full border w-169 h-43 px-3 py-1 text-sm font-medium transition-colors bg-[#ffffff]",
+              "rounded-full border px-2 py-2 text-sm font-medium transition-colors",
               selectedGrades.has("A") ? gradeStyles.A.active : gradeStyles.A.inactive,
             ].join(" ")}
           >
@@ -211,7 +164,7 @@ export default function MarketplaceSidebar({
             type="button"
             onClick={() => toggleGrade("B")}
             className={[
-              "rounded-full border w-169 h-43 px-3 py-1 text-sm font-medium transition-colors bg-[#ffffff]",
+              "rounded-full border px-2 py-2 text-sm font-medium transition-colors",
               selectedGrades.has("B") ? gradeStyles.B.active : gradeStyles.B.inactive,
             ].join(" ")}
           >
@@ -222,32 +175,32 @@ export default function MarketplaceSidebar({
 
       <div className="mt-8">
         <p className="mb-3 text-sm font-semibold text-gray-800">Weight</p>
-
-          <div className="mt-1 flex justify-between text-xs text-gray-500">
+         <div className="mt-1 flex justify-between text-xs text-gray-500">
           <span>{weightRange.min} Tonnes</span>
           <span>{weightRange.max} Tonnes</span>
         </div>
-        
         <input
           type="range"
           min={weightRange.min}
           max={weightRange.max}
           value={weight}
           onChange={(e) => setWeight(Number(e.target.value))}
-          className="w-full cursor-pointer appearance-none"
-          style={{ height: "2px", accentColor: "#215243" }}
+          className="w-full h-px appearance-none green-range"
+          style={{
+            background: `linear-gradient(90deg, #215243 ${weightProgress}%, #d1d5db ${weightProgress}%)`,
+          }}
           aria-label="Weight in tonnes"
         />
-      
       </div>
 
-      <button
+      <Button
         type="button"
         onClick={handleApply}
-        className="mt-8 w-233 h-61 sm:w-48 justify-center rounded-xl bg-[#226049] py-3 text-sm font-semibold text-white transition-colors hover:bg-[#1a4336]"
+        fullWidth={false}
+        className="w-10 mt-5 sm:w-48"
       >
         Apply Filters
-      </button>
+      </Button>
     </aside>
   );
 }

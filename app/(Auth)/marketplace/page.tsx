@@ -5,7 +5,7 @@ import MarketplaceSidebar from "@/app/Marketplace/components/MarketplaceSidebar"
 
 export default function MarketplacePage() {
   return (
-    <div className="flex min-h-screen flex-col font-sans bg-[linear-gradient(to_bottom,#f8f9f8_50%,#ffffff_50%)]">
+    <div className="flex min-h-screen flex-col font-sans">
       <MarketplaceNavbar
         user={{ initials: "DF", name: "Drevo Foods Ltd.", role: "Buyer" }}
         cartCount={5}

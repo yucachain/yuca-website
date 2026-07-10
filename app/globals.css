@@ -126,3 +126,29 @@ body {
   border-color: #2f5d3f;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
 }
+
+input.green-range {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+input.green-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 9999px;
+  background: #215243;
+  border: none;
+  cursor: pointer;
+}
+
+input.green-range::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 9999px;
+  background: #215243;
+  border: none;
+  cursor: pointer;
+}
+
