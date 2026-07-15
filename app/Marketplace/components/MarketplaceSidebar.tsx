@@ -33,7 +33,7 @@ export const DEFAULT_CATEGORIES: MarketplaceCategory[] = [
   {
     id: "process-products",
     label: "Process Products",
-    description: "Flour, starch, gari & more...",
+    description: "Flour, starch, garri & more...",
     icon: <Package size={22} strokeWidth={1.6} />,
   },
 ];
@@ -107,7 +107,7 @@ export default function MarketplaceSidebar({
       : 0;
 
   return (
-    <aside className="w-full max-w-[280px] shrink-0 border-r border-gray-100 bg-white px-6 py-8">
+    <aside className="w-full max-w-[280px] shrink-0 border-r border-gray-100 px-6 py-8">
       <h1 className="text-3xl font-bold pt-10 text-[#000000]">Marketplace</h1>
       <p className="mt-2 text-sm leading-relaxed text-gray-500">
         Browse and search all the list for products available for purchase
