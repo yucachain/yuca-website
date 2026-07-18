@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import { Leaf, Sprout, Tractor, Package } from "lucide-react";
-import FilterPanel from "./FilterPanel";
+import FilterPanel, { WeightRange, MarketplaceFilters, QualityGrade } from "./FilterPanel";
 
 export interface MarketplaceCategory {
   id: string;
@@ -33,94 +33,41 @@ export const DEFAULT_CATEGORIES: MarketplaceCategory[] = [
   {
     id: "process-products",
     label: "Process Products",
-    description: "Flour, starch, garri & more...",
+    description: "Flour, starch, gari & more...",
     icon: <Package size={22} strokeWidth={1.6} />,
   },
 ];
 
-export type QualityGrade = "A" | "B";
-
-export interface WeightRange {
-  min: number;
-  max: number;
-}
-
-export interface MarketplaceFilters {
-  grades: QualityGrade[];
-  weight: number;
-}
-
 export interface MarketplaceSidebarProps {
   categories?: MarketplaceCategory[];
-  activeCategoryId?: string;
-  onCategoryChange?: (id: string) => void;
+  activeCategoryId: string;
+  onCategoryChange: (id: string) => void;
   weightRange?: WeightRange;
   onApplyFilters?: (filters: MarketplaceFilters) => void;
 }
 
-const gradeStyles: Record<QualityGrade, { active: string; inactive: string }> = {
-  A: {
-    active: "border-emerald-700 bg-emerald-50 text-emerald-800",
-    inactive: "border-gray-300 text-gray-500 hover:border-emerald-700 hover:text-emerald-800",
-  },
-  B: {
-    active: "border-amber-500 bg-amber-50 text-amber-700",
-    inactive: "border-gray-300 text-gray-500 hover:border-amber-500 hover:text-amber-700",
-  },
-};
-
 export default function MarketplaceSidebar({
   categories = DEFAULT_CATEGORIES,
-  activeCategoryId = DEFAULT_CATEGORIES[0].id,
+  activeCategoryId,
   onCategoryChange,
-  weightRange = { min: 1, max: 500 },
+  weightRange,
   onApplyFilters,
 }: MarketplaceSidebarProps) {
-  const [activeId, setActiveId] = useState(activeCategoryId);
-  const [selectedGrades, setSelectedGrades] = useState<Set<QualityGrade>>(new Set(["A", "B"]));
-  const [weight, setWeight] = useState(weightRange.min);
-
-  const handleCategoryClick = (id: string) => {
-    setActiveId(id);
-    onCategoryChange?.(id);
-  };
-
-  const toggleGrade = (grade: QualityGrade) => {
-    setSelectedGrades((prev) => {
-      const next = new Set(prev);
-      if (next.has(grade)) {
-        next.delete(grade);
-      } else {
-        next.add(grade);
-      }
-      return next;
-    });
-  };
-
-  const handleApply = () => {
-    onApplyFilters?.({ grades: Array.from(selectedGrades), weight });
-  };
-
-  const weightProgress =
-    weightRange.max > weightRange.min
-      ? ((weight - weightRange.min) / (weightRange.max - weightRange.min)) * 100
-      : 0;
-
   return (
-    <aside className="w-full max-w-[280px] shrink-0 border-r border-gray-100 px-6 py-8">
+      <aside className="w-full max-w-[280px] shrink-0 border-r border-gray-200 px-6 py-8">
       <h1 className="text-3xl font-bold pt-10 text-[#000000]">Marketplace</h1>
       <p className="mt-2 text-sm leading-relaxed text-gray-500">
         Browse and search all the list for products available for purchase
       </p>
 
-      <nav className="mt-20 space-y-1">
+      <nav className="mt-8 space-y-1">
         {categories.map((category) => {
-          const isActive = category.id === activeId;
+          const isActive = category.id === activeCategoryId;
           return (
             <button
               key={category.id}
               type="button"
-              onClick={() => handleCategoryClick(category.id)}
+              onClick={() => onCategoryChange(category.id)}
               className={[
                 "flex w-full items-start gap-3 rounded-lg border-l-4 px-3 py-3 text-left transition-colors",
                 isActive
@@ -147,10 +94,11 @@ export default function MarketplaceSidebar({
         })}
       </nav>
 
-         <div className="mt-10">
+      <div className="mt-10">
         <FilterPanel weightRange={weightRange} onApplyFilters={onApplyFilters} />
       </div>
     </aside>
   );
 }
 
+export type { QualityGrade, WeightRange, MarketplaceFilters };

@@ -66,7 +66,7 @@ export default function FilterPanel({
 
   return (
     <div>
-      <div className="border-t border-gray-100 pt-6">
+      <div className="  pt-6">
         <p className="mb-3 text-sm font-semibold text-gray-800">Quality Grade</p>
         <div className="flex gap-3">
           <button

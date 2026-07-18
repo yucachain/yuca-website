@@ -46,14 +46,14 @@ export default function ProductDetailPanel({
             )}
 
             {batch.images && batch.images.length > 1 && (
-              <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 gap-1.5 rounded-md bg-white/90 p-1.5 shadow-sm">
+              <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 gap-2 rounded-md bg-white/90 p-2 shadow-sm">
                 {batch.images.slice(1, 4).map((src, i) => (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
                     key={i}
                     src={src}
                     alt={`${batch.title} thumbnail ${i + 1}`}
-                    className="h-8 w-8 rounded-sm border border-gray-100 object-cover"
+                    className="h-10 w-10 rounded-sm border border-gray-100 object-cover"
                   />
                 ))}
               </div>

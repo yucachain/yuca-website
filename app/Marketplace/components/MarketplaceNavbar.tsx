@@ -34,7 +34,7 @@ export default function MarketplaceNavbar({
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
-    <header className="w-full border-b border-gray-100 bg-white">
+    <header className="w-full border-b border-gray-200 bg-white">
       <div className="flex items-center justify-between px-6 py-4 lg:px-8">
           <Image
                      src="/images/Yucachain_Logo.png"
