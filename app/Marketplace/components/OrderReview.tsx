@@ -1,1 +1,0 @@
-// OrderReview — shows full order review: items list with Remove buttons, shipping address block with Edit link, payment method block with Manage link, order summary (Items, VAT, Total), Confirm Order button

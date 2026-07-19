@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Formik, Form } from "formik";
-import { login } from "@/app/Services/Axios";
 import FormInput from "@/app/components/ui/FormInput";
 import PasswordInput from "@/app/components/ui/PasswordInput";
 import Button from "@/app/components/ui/Button";
@@ -28,29 +27,15 @@ export default function AggregatorLoginPage() {
     values: AggregatorLoginValues,
     {
       setSubmitting,
-      setStatus,
     }: {
       setSubmitting: (value: boolean) => void;
       setStatus: (status?: string) => void;
     }
   ) => {
-    try {
-      setStatus(undefined);
-
-      const response = await login(values);
-
-      // Store access token
-      localStorage.setItem("accessToken", response.accessToken);
-      localStorage.setItem("userRole", "aggregator");
-
-      router.push("/aggregator/dashboard");
-    } catch (error: any) {
-      setStatus(
-        error?.message || "Invalid credentials. Please try again."
-      );
-    } finally {
-      setSubmitting(false);
-    }
+    // TODO: wire up real API when ready
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    setSubmitting(false);
+    router.push("/aggregator/dashboard");
   };
 
   return (

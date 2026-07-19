@@ -12,11 +12,10 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* Enforce light background globally */
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
 }
 
 body {
@@ -150,5 +149,14 @@ input.green-range::-moz-range-thumb {
   background: #215243;
   border: none;
   cursor: pointer;
+}
+
+/* Hide scrollbar utility class */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
 }
 

@@ -1,1 +1,0 @@
-// ShippingForm — form fields: First Name, Last Name, Phone Number, Email, Delivery Address, State (dropdown), Country (dropdown), Postal Code, "Billing and delivery address are the same" checkbox, "Save details" checkbox, Confirm button

@@ -16,25 +16,25 @@ export const DEFAULT_CATEGORIES: MarketplaceCategory[] = [
     id: "raw-cassava",
     label: "Raw Cassava Batches",
     description: "Fresh cassava in batches",
-    icon: <Leaf size={22} strokeWidth={1.6} />,
+    icon: <Leaf size={18} strokeWidth={1.6} />,
   },
   {
     id: "inputs-seeds",
     label: "Inputs & Seeds",
     description: "Seeds, fertilizers, & chemicals",
-    icon: <Sprout size={22} strokeWidth={1.6} />,
+    icon: <Sprout size={18} strokeWidth={1.6} />,
   },
   {
     id: "machinery-lease",
     label: "Machinery Lease",
     description: "Tractor, equipment & tools",
-    icon: <Tractor size={22} strokeWidth={1.6} />,
+    icon: <Tractor size={18} strokeWidth={1.6} />,
   },
   {
     id: "process-products",
     label: "Process Products",
     description: "Flour, starch, garri & more...",
-    icon: <Package size={22} strokeWidth={1.6} />,
+    icon: <Package size={18} strokeWidth={1.6} />,
   },
 ];
 
@@ -107,13 +107,13 @@ export default function MarketplaceSidebar({
       : 0;
 
   return (
-    <aside className="w-full max-w-[280px] shrink-0 border-r border-gray-100 px-6 py-8">
-      <h1 className="text-3xl font-bold pt-10 text-[#000000]">Marketplace</h1>
-      <p className="mt-2 text-sm leading-relaxed text-gray-500">
+    <aside className="w-full max-w-[260px] shrink-0 border-r border-gray-100 bg-white px-5 py-5 overflow-y-auto no-scrollbar sticky top-0 h-screen">
+      <h1 className="text-xl font-bold pt-2 text-[#000000]">Marketplace</h1>
+      <p className="mt-1 text-xs leading-relaxed text-gray-500">
         Browse and search all the list for products available for purchase
       </p>
 
-      <nav className="mt-20 space-y-1">
+      <nav className="mt-6 space-y-1">
         {categories.map((category) => {
           const isActive = category.id === activeId;
           return (
@@ -122,13 +122,13 @@ export default function MarketplaceSidebar({
               type="button"
               onClick={() => handleCategoryClick(category.id)}
               className={[
-                "flex w-full items-start gap-3 rounded-lg border-l-4 px-3 py-3 text-left transition-colors",
+                "flex w-full items-start gap-2.5 rounded-lg border-l-4 px-3 py-2 text-left transition-colors",
                 isActive
                   ? "border-emerald-800 bg-emerald-50/70"
                   : "border-transparent hover:bg-gray-50",
               ].join(" ")}
             >
-              <span className={isActive ? "text-emerald-800" : "text-gray-500"}>
+              <span className={isActive ? "text-emerald-800 shrink-0 mt-0.5" : "text-gray-500 shrink-0 mt-0.5"}>
                 {category.icon}
               </span>
               <span>
@@ -140,14 +140,14 @@ export default function MarketplaceSidebar({
                 >
                   {category.label}
                 </span>
-                <span className="block text-xs text-gray-500">{category.description}</span>
+                <span className="block text-[11px] text-gray-500 leading-tight mt-0.5">{category.description}</span>
               </span>
             </button>
           );
         })}
       </nav>
 
-         <div className="mt-10">
+         <div className="mt-6">
         <FilterPanel weightRange={weightRange} onApplyFilters={onApplyFilters} />
       </div>
     </aside>
