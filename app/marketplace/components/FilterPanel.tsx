@@ -1,4 +1,4 @@
-// FilterPanel — Quality Grade toggle (A Premium / B Standard), Weight range slider (1 tonne – 500 Tonnes), Apply Filters button
+
 "use client";
 
 import Button from "@/app/components/ui/Button";
@@ -118,7 +118,7 @@ export default function FilterPanel({
         type="button"
         fullWidth={false}
         className="w-40 sm:w-48 mt-3"
-        onClick={handleApply}    
+        onClick={handleApply}
       >
         Apply Filters
       </Button>

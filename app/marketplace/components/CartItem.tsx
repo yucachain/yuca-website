@@ -1,5 +1,4 @@
-// CartItem — single row in the cart table. Matches the reference image:
-// [Image + Name/Seller + Remove] | [Qty stepper] | [Price] | [Subtotal]
+
 "use client";
 
 import React from "react";
@@ -19,12 +18,9 @@ export default function CartItem({ item, onIncrease, onDecrease, onRemove }: Car
   return (
     <div className="grid grid-cols-[2.5fr_1fr_1fr_1fr] items-center gap-4 border-b border-gray-100 px-6 py-5 last:border-0 hover:bg-gray-50/50 transition-colors">
 
-      {/* Column 1: Product info */}
       <div className="flex items-center gap-4 min-w-0">
-        {/* Image or placeholder */}
         <div className="flex-shrink-0 w-[72px] h-[72px] rounded-xl overflow-hidden bg-gradient-to-br from-emerald-50 to-emerald-100 flex items-center justify-center">
           {item.image ? (
-            // eslint-disable-next-line @next/next/no-img-element
             <img
               src={item.image}
               alt={item.title}
@@ -52,7 +48,7 @@ export default function CartItem({ item, onIncrease, onDecrease, onRemove }: Car
         </div>
       </div>
 
-      {/* Column 2: Quantity stepper */}
+
       <div className="flex items-center justify-center gap-3">
         <button
           type="button"
@@ -76,7 +72,7 @@ export default function CartItem({ item, onIncrease, onDecrease, onRemove }: Car
         </button>
       </div>
 
-      {/* Column 3: Unit price */}
+
       <div className="text-center">
         <span className="text-sm font-semibold text-gray-700">
           {item.currency}{item.pricePerTonne.toLocaleString()}

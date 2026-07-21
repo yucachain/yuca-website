@@ -1,5 +1,4 @@
-// Marketplace listing page — Raw Cassava Batches (default category)
-// Layout: Sidebar (fixed) | Product Grid (4-col → 2-col) | Detail Panel (inline, slide-in)
+
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -14,7 +13,6 @@ import type { MarketplaceFilters } from "./components/FilterPanel";
 import { useCart } from "./context/CartContext";
 import { useRouter } from "next/navigation";
 
-// ─── Mock Data ────────────────────────────────────────────────────────────────
 const ALL_BATCHES: (CassavaBatch & { category: string })[] = [
   // Raw Cassava Batches
   {
@@ -303,17 +301,15 @@ export default function MarketplacePage() {
   const [page, setPage] = useState(1);
   const panelRef = useRef<HTMLDivElement>(null);
 
-  // Animate panel in/out
   useEffect(() => {
     if (selectedBatch) {
-      // Give React a tick to mount, then trigger the slide-in
+
       requestAnimationFrame(() => setPanelVisible(true));
     } else {
       setPanelVisible(false);
     }
   }, [selectedBatch]);
 
-  // Filtered + sorted batches
   const visibleBatches = useMemo(() => {
     let list = ALL_BATCHES.filter((b) => {
       const catMatch = b.category === activeCategoryId;
@@ -351,7 +347,6 @@ export default function MarketplacePage() {
 
   const handleClosePanel = () => {
     setPanelVisible(false);
-    // Wait for animation before removing from DOM
     setTimeout(() => setSelectedBatch(null), 300);
   };
 
@@ -359,7 +354,6 @@ export default function MarketplacePage() {
     addToCart(batch);
   };
 
-  // When panel is open, show 2-col grid; otherwise 4-col
   const panelOpen = selectedBatch !== null;
 
   return (
@@ -371,17 +365,14 @@ export default function MarketplacePage() {
 
       <div className="flex flex-1 overflow-hidden">
 
-        {/* ── Sidebar ── */}
         <MarketplaceSidebar
           activeCategoryId={activeCategoryId}
           onCategoryChange={handleCategoryChange}
           onApplyFilters={(f) => { setFilters(f); setPage(1); }}
         />
 
-        {/* ── Center: product grid ── */}
         <main className="flex-1 overflow-y-auto px-6 py-6 min-w-0 bg-[#F9FAFB]">
 
-          {/* Page header */}
           <h2 className="text-xl font-bold text-gray-900">
             {CATEGORY_LABELS[activeCategoryId]}
           </h2>
@@ -389,13 +380,11 @@ export default function MarketplacePage() {
             Browse and search through all categories
           </p>
 
-          {/* Toolbar: count + search + sort */}
           <div className="mt-4 flex flex-wrap items-center gap-3">
             <span className="text-xs font-medium text-gray-500 whitespace-nowrap bg-gray-100 rounded-full px-3 py-1">
               {visibleBatches.length} Batches found
             </span>
 
-            {/* Search */}
             <div className="relative flex-1 min-w-[140px] max-w-xs">
               <Search
                 size={13}
@@ -410,8 +399,6 @@ export default function MarketplacePage() {
                 className="w-full rounded-lg border border-gray-200 bg-white py-2 pl-9 pr-3 text-xs text-gray-700 placeholder-gray-400 outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600"
               />
             </div>
-
-            {/* Sort */}
             <div className="relative ml-auto">
               <label className="text-xs text-gray-500 mr-1">Sort By</label>
               <div className="relative inline-block">
@@ -428,8 +415,6 @@ export default function MarketplacePage() {
               </div>
             </div>
           </div>
-
-          {/* ── Product grid — extracted to component ── */}
           <ProductGrid
             batches={paginated}
             selectedBatchId={selectedBatch?.id || null}
@@ -439,7 +424,6 @@ export default function MarketplacePage() {
             panelOpen={panelOpen}
           />
 
-          {/* Pagination — extracted to component */}
           <Pagination
             currentPage={page}
             totalPages={totalPages}
@@ -448,8 +432,6 @@ export default function MarketplacePage() {
             itemsPerPage={ITEMS_PER_PAGE}
           />
         </main>
-
-        {/* ── Product Detail Panel — inline right column (slides in/out, width increased to 400px) ── */}
         {selectedBatch && (
           <div
             ref={panelRef}

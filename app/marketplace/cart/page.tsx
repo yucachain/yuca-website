@@ -1,5 +1,4 @@
-// Cart page — live data driven by CartContext. No hardcoded items.
-// Layout: Navbar | Sidebar | [Cart table + Summary side panel]
+
 "use client";
 
 import React from "react";
@@ -34,15 +33,11 @@ export default function CartPage() {
 
       <div className="flex flex-1 overflow-hidden">
 
-        {/* Sidebar */}
         <MarketplaceSidebar
           onCategoryChange={(id) => router.push(`/marketplace?category=${id}`)}
         />
-
-        {/* Main content */}
         <main className="flex-1 overflow-y-auto px-6 py-6 min-w-0">
 
-          {/* Page heading */}
           <h2 className="text-xl font-bold text-gray-900">Shopping Cart</h2>
           <p className="mt-0.5 text-xs text-gray-500">
             {totalItems} {totalItems === 1 ? "item" : "items"} in your cart
@@ -50,9 +45,7 @@ export default function CartPage() {
 
           <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_280px] xl:grid-cols-[1fr_300px]">
 
-            {/* ── Left: Cart Table ── */}
             <div>
-              {/* Table header */}
               <div className="grid grid-cols-[2.5fr_1fr_1fr_1fr] gap-4 rounded-t-xl bg-[#0B6B46] px-6 py-4 text-white">
                 <span className="text-xs font-semibold">Items ({totalItems})</span>
                 <span className="text-center text-xs font-semibold">Quantity</span>
@@ -60,7 +53,6 @@ export default function CartPage() {
                 <span className="text-right text-xs font-semibold">Subtotal</span>
               </div>
 
-              {/* Cart rows */}
               <div className="rounded-b-xl border border-t-0 border-gray-100 bg-white shadow-sm">
                 {cartItems.length === 0 ? (
                   <div className="flex flex-col items-center justify-center gap-4 py-20 text-gray-400">
@@ -92,7 +84,6 @@ export default function CartPage() {
                 )}
               </div>
 
-              {/* Continue shopping link */}
               {cartItems.length > 0 && (
                 <button
                   type="button"
@@ -103,8 +94,6 @@ export default function CartPage() {
                 </button>
               )}
             </div>
-
-            {/* ── Right: Summary ── */}
             <div>
               <CartSummary
                 totalItems={totalItems}

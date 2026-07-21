@@ -1,7 +1,4 @@
-// ProductCard — matches the reference image exactly:
-// thin grade-colored top bar · batch code · title + grade pill · qty/price row ·
-// info rows with icons · "View Details" outline + "Place order" filled buttons ·
-// "Add to Cart" pill in the top-right corner
+
 "use client";
 
 import React from "react";
@@ -45,12 +42,9 @@ export default function ProductCard({
           : "border-gray-100 shadow-sm hover:shadow-md hover:border-gray-200",
       ].join(" ")}
     >
-      {/* Grade colour bar */}
       <div className={["h-[3px] w-full shrink-0", GRADE_BAR[batch.grade] ?? "bg-gray-300"].join(" ")} />
 
       <div className="flex flex-col flex-1 p-3 gap-2">
-
-        {/* Row 1: New badge + Add to Cart button */}
         <div className="flex items-center justify-between gap-2">
           {batch.isNew ? (
             <span className="inline-flex items-center rounded-md bg-indigo-50 border border-indigo-200 px-2 py-0.5 text-[10px] font-semibold text-indigo-700 leading-none">
@@ -71,11 +65,8 @@ export default function ProductCard({
             <ShoppingCart size={9} strokeWidth={2.2} />
           </button>
         </div>
-
-        {/* Batch code */}
         <p className="text-[9px] font-mono text-gray-400 -mt-0.5 truncate">{batch.batchCode}</p>
 
-        {/* Title + grade badge */}
         <div className="flex items-center gap-1.5 -mt-0.5">
           <h3 className="text-[13px] font-bold text-gray-900 leading-tight truncate">{batch.title}</h3>
           <span
@@ -87,8 +78,6 @@ export default function ProductCard({
             {batch.grade}
           </span>
         </div>
-
-        {/* Quantity + price */}
         <div className="grid grid-cols-2 gap-x-2 gap-y-0.5 rounded-lg bg-gray-50 px-2 py-1.5">
           <div>
             <p className="text-[9px] text-gray-400 uppercase tracking-wide">Quantity</p>
@@ -103,8 +92,6 @@ export default function ProductCard({
             </p>
           </div>
         </div>
-
-        {/* Info rows */}
         <div className="space-y-1 text-[10px] text-gray-500">
           <div className="flex items-center gap-1.5">
             <MapPin size={9} strokeWidth={1.8} className="text-gray-400 shrink-0" />
@@ -134,10 +121,8 @@ export default function ProductCard({
           </div>
         </div>
 
-        {/* Spacer */}
         <div className="flex-1" />
 
-        {/* Action buttons */}
         <div className="flex gap-2 pt-1">
           <button
             type="button"

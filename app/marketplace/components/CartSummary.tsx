@@ -1,5 +1,4 @@
-// CartSummary — sticky right panel that auto-updates from CartContext.
-// Shows: Items (count), VAT, Total, and Checkout button.
+
 "use client";
 
 import React from "react";
@@ -18,10 +17,10 @@ export default function CartSummary({ totalItems, subtotal, vat, total }: CartSu
   return (
     <div className="sticky top-6 w-full rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
 
-      {/* Heading */}
+
       <h2 className="text-base font-bold text-gray-900 mb-5">Summary</h2>
 
-      {/* Items row */}
+
       <div className="flex items-center justify-between mb-3">
         <span className="text-sm text-gray-500">Items ({totalItems})</span>
         <span className="text-sm font-semibold text-gray-900">
@@ -29,7 +28,6 @@ export default function CartSummary({ totalItems, subtotal, vat, total }: CartSu
         </span>
       </div>
 
-      {/* VAT row */}
       <div className="flex items-center justify-between mb-5">
         <span className="text-sm text-gray-500">VAT</span>
         <span className="text-sm font-semibold text-gray-900">
@@ -39,7 +37,6 @@ export default function CartSummary({ totalItems, subtotal, vat, total }: CartSu
 
       <hr className="border-gray-100 mb-5" />
 
-      {/* Total row */}
       <div className="flex items-center justify-between mb-6">
         <span className="text-sm font-bold text-gray-900">Total</span>
         <span className="text-base font-extrabold text-gray-900">
@@ -47,7 +44,6 @@ export default function CartSummary({ totalItems, subtotal, vat, total }: CartSu
         </span>
       </div>
 
-      {/* Checkout button */}
       <button
         type="button"
         onClick={() => router.push("/marketplace/checkout")}
