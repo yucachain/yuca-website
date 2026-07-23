@@ -46,7 +46,7 @@ export default function CartSummary({ totalItems, subtotal, vat, total }: CartSu
 
       <button
         type="button"
-        onClick={() => router.push("/marketplace/checkout/shipping")}
+        onClick={() => router.push("/marketplace/shipping")}
         disabled={totalItems === 0}
         className="w-full rounded-xl bg-[#0B6B46] py-3.5 text-sm font-semibold text-white transition hover:bg-[#09573A] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
       >
