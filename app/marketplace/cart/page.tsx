@@ -3,12 +3,12 @@
 
 import React from "react";
 import MarketplaceNavbar from "../components/MarketplaceNavbar";
-import MarketplaceSidebar from "../components/MarketplaceSidebar";
 import CartItem from "../components/CartItem";
 import CartSummary from "../components/CartSummary";
 import { useCart } from "../context/CartContext";
 import { useRouter } from "next/navigation";
 import { ShoppingCart } from "lucide-react";
+import Footer from "@/app/components/Footer";
 
 export default function CartPage() {
   const {
@@ -31,11 +31,7 @@ export default function CartPage() {
         onCartClick={() => router.push("/marketplace/cart")}
       />
 
-      <div className="flex flex-1 overflow-hidden">
-
-        <MarketplaceSidebar
-          onCategoryChange={(id) => router.push(`/marketplace?category=${id}`)}
-        />
+      <div className="flex flex-1 flex-col overflow-hidden">
         <main className="flex-1 overflow-y-auto px-6 py-6 min-w-0">
 
           <h2 className="text-xl font-bold text-gray-900">Shopping Cart</h2>
@@ -105,6 +101,8 @@ export default function CartPage() {
 
           </div>
         </main>
+
+        <Footer />
       </div>
     </div>
   );

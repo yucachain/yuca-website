@@ -12,6 +12,7 @@ import type { CassavaBatch } from "./components/types";
 import type { MarketplaceFilters } from "./components/FilterPanel";
 import { useCart } from "./context/CartContext";
 import { useRouter } from "next/navigation";
+import Footer from "@/app/components/Footer";
 
 const ALL_BATCHES: (CassavaBatch & { category: string })[] = [
   // Raw Cassava Batches
@@ -357,7 +358,7 @@ export default function MarketplacePage() {
   const panelOpen = selectedBatch !== null;
 
   return (
-    <div className="flex flex-col min-h-screen bg-[#F9FAFB]">
+    <div className="flex flex-col min-h-screen font-sans bg-[#F9FAFB]">
       <MarketplaceNavbar
         cartCount={totalItems}
         onCartClick={() => router.push("/marketplace/cart")}
@@ -451,8 +452,10 @@ export default function MarketplacePage() {
             </div>
           </div>
         )}
-
+ 
+   
       </div>
+       <Footer/>
     </div>
   );
 }

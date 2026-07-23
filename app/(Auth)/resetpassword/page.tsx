@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { Formik, Form } from "formik";
 import PasswordInput from "@/app/components/ui/FormInput";
 import Button from "@/app/components/ui/Button";
+import { Check } from "lucide-react";
 
 import {
   ResetPasswordSchema,
@@ -15,19 +16,7 @@ import {
 import AuthCard from "@/app/components/ui/Authcard";
 import AuthLayout from "@/app/components/ui/AuthLayout";
 
-function CheckIcon() {
-  return (
-    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path
-        d="M5 12.5 9.5 17 19 7"
-        stroke="white"
-        strokeWidth="2.4"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
+
 
 export default function ResetPasswordPage() {
   const searchParams = useSearchParams();
@@ -60,7 +49,9 @@ export default function ResetPasswordPage() {
                   <AuthCard>
           <div className="flex flex-col items-center text-center">
             <span className="mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-[#215243]">
-              <CheckIcon />
+          <span className="flex h-24 w-24 items-center justify-center rounded-full bg-[#215243]">
+            <Check size={40} strokeWidth={3} className="text-white" />
+          </span>
             </span>
 
             <h1 className="text-xl font-semibold text-gray-900">
