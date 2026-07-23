@@ -14,7 +14,6 @@ import { useCart } from "./context/CartContext";
 import { useRouter } from "next/navigation";
 
 const ALL_BATCHES: (CassavaBatch & { category: string })[] = [
-  // Raw Cassava Batches
   {
     id: "1", category: "raw-cassava", batchCode: "BCH-26-06-234560",
     title: "TME 419 Stems", grade: "A", quantity: 12000, pricePerTonne: 95,

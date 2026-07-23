@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Formik, Form } from "formik";
@@ -29,7 +29,7 @@ function CheckIcon() {
   );
 }
 
-export default function ResetPasswordPage() {
+function ResetPasswordContent() {
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
   const [resetDone, setResetDone] = useState(false);
@@ -40,11 +40,6 @@ export default function ResetPasswordPage() {
   ) => {
     setStatus(null);
     try {
-      // Replace with your real reset call, e.g.:
-      // await fetch("/api/auth/reset-password", {
-      //   method: "POST",
-      //   body: JSON.stringify({ ...values, token }),
-      // });
       await new Promise((resolve) => setTimeout(resolve, 800));
       setResetDone(true);
     } catch (err) {
@@ -56,8 +51,8 @@ export default function ResetPasswordPage() {
 
   if (resetDone) {
     return (
-        <AuthLayout>
-                  <AuthCard>
+      <AuthLayout>
+        <AuthCard>
           <div className="flex flex-col items-center text-center">
             <span className="mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-[#215243]">
               <CheckIcon />
@@ -76,14 +71,14 @@ export default function ResetPasswordPage() {
               <Button type="button">Back to Login</Button>
             </Link>
           </div>
-       </AuthCard>
-    </AuthLayout>
+        </AuthCard>
+      </AuthLayout>
     );
   }
 
   return (
-      <AuthLayout>
-                  <AuthCard title="Reset Password">
+    <AuthLayout>
+      <AuthCard title="Reset Password">
         {!token && (
           <div>
           </div>
@@ -116,8 +111,8 @@ export default function ResetPasswordPage() {
                 autoComplete="new-password"
               />
 
-              <Button type="submit" 
-              disabled={isSubmitting}
+              <Button type="submit"
+                disabled={isSubmitting}
               >
                 Reset Password
               </Button>
@@ -126,5 +121,21 @@ export default function ResetPasswordPage() {
         </Formik>
       </AuthCard>
     </AuthLayout>
+  );
+}
+
+export default function ResetPasswordPage() {
+  return (
+    <Suspense fallback={
+      <AuthLayout>
+        <AuthCard title="Reset Password">
+          <div className="flex justify-center items-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#226049]"></div>
+          </div>
+        </AuthCard>
+      </AuthLayout>
+    }>
+      <ResetPasswordContent />
+    </Suspense>
   );
 }
