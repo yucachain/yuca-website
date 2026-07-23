@@ -1,14 +1,21 @@
+import AggregatorSidebar from "../components/AggregatorSidebar";
+
 export default function AggregatorDashboard() {
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-      <div className="text-center">
-        <h1 className="text-3xl font-bold text-[#226049] mb-3">
+    <div className="flex min-h-screen bg-gray-50">
+      
+      <AggregatorSidebar />
+
+      
+      <main className="flex-1 p-8">
+        <h1 className="text-4xl font-bold text-[#226049]">
           Aggregator Dashboard
         </h1>
-        <p className="text-gray-500 text-sm">
-          Welcome, Partner. Your dashboard is coming soon.
+
+        <p className="mt-2 text-gray-500">
+          Overview of the aggregation activities and batch flow.
         </p>
-      </div>
+      </main>
     </div>
   );
 }
