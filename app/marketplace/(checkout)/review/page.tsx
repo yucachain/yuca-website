@@ -42,7 +42,7 @@ export default function ReviewOrderPage() {
   const handleConfirmOrder = async () => {
     // Replace with your real "place order" call, e.g.:
     // await fetch("/api/checkout/confirm", { method: "POST", body: JSON.stringify({ items }) });
-    router.push("/marketplace/checkout/confirmation");
+    router.push("/marketplace/payment");
   };
 
   return (
@@ -78,16 +78,16 @@ export default function ReviewOrderPage() {
           </div>
         </ReviewSection>
 
-        <ReviewSection title="Shipping Address" actionLabel="Edit" onAction={() => router.push("/checkout/shipping")}>
+    {/*     <ReviewSection title="Shipping Address" actionLabel="Edit" onAction={() => router.push("/checkout/shipping")}>
           <div className="space-y-1 text-sm text-gray-700">
             <p className="font-medium text-gray-900">Damilare Muhammed</p>
             <p>+2347065876121</p>
             <p>muhammmeddamilare99@gmail.com</p>
             <p className="pt-2">42, Igbasan avenue, akowonjo area, Ilorin, Kwara State, Nigeria.</p>
           </div>
-        </ReviewSection>
+        </ReviewSection> */}
 
-        <ReviewSection title="Payment Method" actionLabel="Change" onAction={() => router.push("/checkout/payment")}>
+       {/*  <ReviewSection title="Payment Method" actionLabel="Change" onAction={() => router.push("/checkout/payment")}>
           <p className="mb-3 text-sm font-medium text-gray-900">Card Payment</p>
           <div className="grid grid-cols-3 gap-4 text-sm">
             <div>
@@ -103,7 +103,7 @@ export default function ReviewOrderPage() {
               <p className="mt-0.5 text-gray-900">xxxx xxxx xxxx 5432</p>
             </div>
           </div>
-        </ReviewSection>
+        </ReviewSection> */}
 
         <ReviewSection title="Order Summary">
           <div className="space-y-2 text-sm">

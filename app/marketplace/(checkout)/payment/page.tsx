@@ -18,7 +18,7 @@ export default function PaymentPage() {
     // Replace with your real "save payment method" call, e.g.:
     // await fetch("/api/checkout/payment", { method: "POST", body: JSON.stringify({ method, ...values }) });
     await new Promise((resolve) => setTimeout(resolve, 600));
-    router.push("/marketplace/checkout/review");
+    router.push("/marketplace/confirmation");
   };
 
   return (

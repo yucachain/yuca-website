@@ -26,7 +26,7 @@ export default function ShippingInfoPage() {
     // await fetch("/api/checkout/shipping", { method: "POST", body: JSON.stringify(values) });
     await new Promise((resolve) => setTimeout(resolve, 600));
     setSubmitting(false);
-    router.push("/marketplace/checkout/payment");
+    router.push("/marketplace/review");
   };
 
   return (

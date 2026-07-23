@@ -2,15 +2,18 @@ import React from "react";
 import { Check } from "lucide-react";
 
 export interface CheckoutStepsProps {
-  /** 1 = Shipping active, 2 = Payment active, 3 = Review active, 4 = all complete */
+  /** 1 = Shipping active, 2 = Review active, 3 = Payment active, 4 = all complete */
   currentStep: 1 | 2 | 3 | 4;
 }
 
 const STEPS = [
   { n: 1, title: "Shipping", subtitle: "Delivery Details" },
-  { n: 2, title: "Payment", subtitle: "Select Payment Method" },
-  { n: 3, title: "Review", subtitle: "Review & Place Order" },
+  { n: 2, title: "Review", subtitle: "Review & Place Order" },
+  { n: 3, title: "Payment", subtitle: "Select Payment Method" },
 ] as const;
+
+
+
 
 export default function CheckoutSteps({ currentStep }: CheckoutStepsProps) {
   return (
