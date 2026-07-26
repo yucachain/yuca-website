@@ -1,8 +1,10 @@
 import * as Yup from "yup";
 
+/* ------------------------------------------------------------------ */
 /*  Reusable field-level rules                                         */
 /*  Compose these into form-level schemas below, or import them        */
 /*  individually if you need the same rule in a different form.        */
+/* ------------------------------------------------------------------ */
 
 export const emailRule = Yup.string()
   .trim()
@@ -132,11 +134,12 @@ export const resetPasswordInitialValues: ResetPasswordValues = {
 export const ResetPasswordSchema: Yup.ObjectSchema<ResetPasswordValues> = Yup.object({
   password: passwordRule,
   confirmPassword: confirmPasswordRule,
-})
+});
 
+/* ------------------------------------------------------------------ */
 /*  Request Access (for industrial buyers and processors)              */
 /*  Seen as a link on both screens — modeled as its own short form.    */
-
+/* ------------------------------------------------------------------ */
 
 export interface RequestAccessValues {
   companyName: string;
@@ -170,4 +173,90 @@ export const RequestAccessSchema: Yup.ObjectSchema<RequestAccessValues> = Yup.ob
     .required("Tell us a bit about your business")
     .min(20, "Please provide at least 20 characters")
     .max(1000, "Message must be under 1000 characters"),
+});
+
+/* ------------------------------------------------------------------ */
+/*  Checkout — Shipping Information                                    */
+/* ------------------------------------------------------------------ */
+
+export interface ShippingInfoValues {
+  firstName: string;
+  lastName: string;
+  phone: string;
+  email: string;
+  address: string;
+  state: string;
+  country: string;
+  postalCode: string;
+  sameBillingAddress: boolean;
+  saveDetails: boolean;
+}
+
+export const shippingInfoInitialValues: ShippingInfoValues = {
+  firstName: "",
+  lastName: "",
+  phone: "",
+  email: "",
+  address: "",
+  state: "",
+  country: "",
+  postalCode: "",
+  sameBillingAddress: true,
+  saveDetails: true,
+};
+
+export const ShippingInfoSchema: Yup.ObjectSchema<ShippingInfoValues> = Yup.object({
+  firstName: nameRule("First name"),
+  lastName: nameRule("Last name"),
+  phone: Yup.string()
+    .trim()
+    .required("Phone number is required")
+    .matches(/^\+?[0-9\s\-()]{7,20}$/, "Enter a valid phone number"),
+  email: emailRule,
+  address: Yup.string().trim().required("Delivery address is required"),
+  state: Yup.string().trim().required("Please select a state"),
+  country: Yup.string().trim().required("Please select a country"),
+  postalCode: Yup.string()
+    .trim()
+    .required("Postal code is required")
+    .matches(/^[0-9A-Za-z\s-]{3,10}$/, "Enter a valid postal code"),
+  sameBillingAddress: Yup.boolean().default(true),
+  saveDetails: Yup.boolean().default(true),
+});
+
+/* ------------------------------------------------------------------ */
+/*  Checkout — Card Payment                                            */
+/* ------------------------------------------------------------------ */
+
+export interface CardPaymentValues {
+  cardNumber: string;
+  cardHolderName: string;
+  expDate: string;
+  cvv: string;
+  saveCard: boolean;
+}
+
+export const cardPaymentInitialValues: CardPaymentValues = {
+  cardNumber: "",
+  cardHolderName: "",
+  expDate: "",
+  cvv: "",
+  saveCard: true,
+};
+
+export const CardPaymentSchema: Yup.ObjectSchema<CardPaymentValues> = Yup.object({
+  cardNumber: Yup.string()
+    .trim()
+    .required("Card number is required")
+    .matches(/^[0-9\s]{13,19}$/, "Enter a valid card number"),
+  cardHolderName: Yup.string().trim().required("Card holder name is required"),
+  expDate: Yup.string()
+    .trim()
+    .required("Expiry date is required")
+    .matches(/^(0[1-9]|1[0-2])\/([0-9]{2})$/, "Use MM/YY format"),
+  cvv: Yup.string()
+    .trim()
+    .required("CVV is required")
+    .matches(/^[0-9]{3,4}$/, "Enter a valid CVV"),
+  saveCard: Yup.boolean().default(true),
 });
