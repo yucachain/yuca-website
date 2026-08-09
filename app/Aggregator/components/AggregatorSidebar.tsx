@@ -1,132 +1,115 @@
 "use client";
 
-import Link from "next/link";
 import {
-  LayoutDashboard,
-  Package,
-  Warehouse,
+  LayoutGrid,
+  FileInput,
+  Database,
   Truck,
   ShoppingCart,
-  Users,
-  BarChart3,
-  PlusSquare,
-  FolderPlus,
-  Eye,
+  HandCoins,
+  PackageCheck,
+  ShieldCheck,
 } from "lucide-react";
+import type { SidebarNavItem } from "./types";
 
-const menuItems = [
+export const DEFAULT_NAV_ITEMS: SidebarNavItem[] = [
   {
-    name: "Overview",
-    href: "/aggregator",
-    icon: LayoutDashboard,
-    active: true,
+    id: "overview",
+    label: "Overview",
+    icon: <LayoutGrid size={18} strokeWidth={1.8} />,
   },
   {
-    name: "Batches",
-    href: "/aggregator/batches",
-    icon: Package,
+    id: "receive-batch",
+    label: "Receive Batches",
+    icon: <FileInput size={18} strokeWidth={1.8} />,
   },
   {
-    name: "Storage",
-    href: "/aggregator/storage",
-    icon: Warehouse,
+    id: "assign-storage",
+    label: "Assign Storage",
+    icon: <Database size={18} strokeWidth={1.8} />,
   },
   {
-    name: "Transfers & Dispatch",
-    href: "/aggregator/transfers",
-    icon: Truck,
+    id: "dispatch-order",
+    label: "Dispatch Order",
+    icon: <Truck size={18} strokeWidth={1.8} />,
   },
   {
-    name: "Orders",
-    href: "/aggregator/orders",
-    icon: ShoppingCart,
+    id: "market-orders",
+    label: "Market Orders",
+    icon: <ShoppingCart size={18} strokeWidth={1.8} />,
   },
   {
-    name: "Buyers & Sellers",
-    href: "/aggregator/buyers",
-    icon: Users,
+    id: "sellers-payouts",
+    label: "Sellers & Payouts",
+    icon: <HandCoins size={18} strokeWidth={1.8} />,
   },
   {
-    name: "Reports & Analytics",
-    href: "/aggregator/reports",
-    icon: BarChart3,
+    id: "consolidate-vault",
+    label: "Consolidate to Vault",
+    icon: <PackageCheck size={18} strokeWidth={1.8} />,
   },
 ];
 
-const quickActions = [
-  {
-    name: "Create Aggregation",
-    href: "/aggregator/create",
-    icon: PlusSquare,
-  },
-  {
-    name: "Assign Storage",
-    href: "/aggregator/storage/assign",
-    icon: FolderPlus,
-  },
-  {
-    name: "View all Batches",
-    href: "/aggregator/batches",
-    icon: Eye,
-  },
-];
+export interface AggregatorSidebarProps {
+  items?: SidebarNavItem[];
+  activeItemId: string;
+  onItemChange: (id: string) => void;
+}
 
-export default function AggregatorSidebar() {
+export default function AggregatorSidebar({
+  items = DEFAULT_NAV_ITEMS,
+  activeItemId,
+  onItemChange,
+}: AggregatorSidebarProps) {
   return (
-    <aside className="w-72 min-h-screen bg-white border-r border-gray-200 flex flex-col">
-      <div className="px-8 py-8">
-        <h1 className="text-2xl font-bold text-[#0F6B4F]">
-          YucaChain
-        </h1>
-      </div>
+    <aside className="flex w-full max-w-[200px] shrink-0 flex-col justify-between border-r border-gray-100 bg-white px-4 py-6">
+      <div>
+        <p className="mb-3 px-3 text-xs font-semibold tracking-wide text-gray-400">
+          AGGREGATOR ADMIN
+        </p>
 
-      
-      <nav className="px-4 flex-1">
-        <div className="space-y-2">
-          {menuItems.map((item) => {
-            const Icon = item.icon;
-
+        <nav className="space-y-1">
+          {items.map((item) => {
+            const isActive = item.id === activeItemId;
             return (
-              <Link
-                key={item.name}
-                href={item.href}
-                className={`flex items-center gap-3 px-4 py-3 rounded-xl transition ${
-                  item.active
-                    ? "bg-gray-100 text-[#0F6B4F] font-semibold"
-                    : "text-gray-600 hover:bg-gray-50"
-                }`}
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => onItemChange(item.id)}
+                className={[
+                  "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm transition-colors",
+                  isActive
+                    ? "bg-emerald-50 font-semibold text-emerald-800"
+                    : "text-gray-600 hover:bg-gray-50",
+                ].join(" ")}
               >
-                <Icon size={18} />
-                <span>{item.name}</span>
-              </Link>
+                <span
+                  className={isActive ? "text-emerald-800" : "text-gray-400"}
+                >
+                  {item.icon}
+                </span>
+                {item.label}
+              </button>
             );
           })}
+        </nav>
+      </div>
+
+      <div className="flex items-start gap-2 border-t border-gray-100 px-3 pt-5">
+        <ShieldCheck
+          size={18}
+          strokeWidth={1.8}
+          className="mt-0.5 shrink-0 text-emerald-700"
+        />
+        <div>
+          <p className="text-sm font-semibold text-gray-900">
+            Aggregator Workspace
+          </p>
+          <p className="mt-0.5 text-xs leading-relaxed text-gray-500">
+            You are operating as a verified Yucachain Aggregator
+          </p>
         </div>
-
-        
-        <div className="mt-12">
-          <h2 className="text-sm font-semibold text-[#226049]">
-            Quick Actions
-          </h2>
-
-          <div className="space-y-2">
-            {quickActions.map((action) => {
-              const Icon = action.icon;
-
-              return (
-                <Link
-                  key={action.name}
-                  href={action.href}
-                  className="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-600 hover:bg-gray-50"
-                >
-                  <Icon size={18} />
-                  <span>{action.name}</span>
-                </Link>
-              );
-            })}
-          </div>
-        </div>
-      </nav>
+      </div>
     </aside>
   );
 }

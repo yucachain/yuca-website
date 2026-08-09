@@ -260,3 +260,68 @@ export const CardPaymentSchema: Yup.ObjectSchema<CardPaymentValues> = Yup.object
     .matches(/^[0-9]{3,4}$/, "Enter a valid CVV"),
   saveCard: Yup.boolean().default(true),
 });
+
+/* ------------------------------------------------------------------ */
+/*  Aggregator — Receive Batch inspection form                         */
+/* ------------------------------------------------------------------ */
+
+export type QualityGradeOption = "A" | "B" | "C" | "reject";
+
+export interface ReceiveBatchValues {
+  confirmedWeight: string;
+  qualityGrade: QualityGradeOption | "";
+  qualityNotes: string;
+  collectionPoint: string;
+  signedOff: boolean;
+}
+
+export const receiveBatchInitialValues: ReceiveBatchValues = {
+  confirmedWeight: "",
+  qualityGrade: "",
+  qualityNotes: "",
+  collectionPoint: "",
+  signedOff: false,
+};
+
+export const ReceiveBatchSchema: Yup.ObjectSchema<ReceiveBatchValues> = Yup.object({
+  confirmedWeight: Yup.string()
+    .trim()
+    .required("Confirmed weight is required")
+    .matches(/^[0-9]+(\.[0-9]+)?$/, "Enter a valid weight in kg"),
+  qualityGrade: Yup.mixed<QualityGradeOption>()
+    .oneOf(["A", "B", "C", "reject"], "Select a quality grade")
+    .required("Select a quality grade") as Yup.StringSchema<QualityGradeOption>,
+  qualityNotes: Yup.string().trim().required("Quality notes are required"),
+  collectionPoint: Yup.string().trim().required("Select a collection point location"),
+  signedOff: Yup.boolean()
+    .oneOf([true], "Farmer confirmation sign-off is required")
+    .required(),
+});
+
+/* ------------------------------------------------------------------ */
+/*  Aggregator — Dispatch Order logistics form                         */
+/* ------------------------------------------------------------------ */
+ 
+export interface DispatchLogisticsValues {
+  transportCompany: string;
+  vehiclePlateNumber: string;
+  deliveryDate: string;
+  deliveryTime: string;
+  additionalNotes: string;
+}
+ 
+export const dispatchLogisticsInitialValues: DispatchLogisticsValues = {
+  transportCompany: "",
+  vehiclePlateNumber: "",
+  deliveryDate: "",
+  deliveryTime: "",
+  additionalNotes: "",
+};
+ 
+export const DispatchLogisticsSchema: Yup.ObjectSchema<DispatchLogisticsValues> = Yup.object({
+  transportCompany: Yup.string().trim().required("Transport company is required"),
+  vehiclePlateNumber: Yup.string().trim().required("Vehicle plate number is required"),
+  deliveryDate: Yup.string().trim().required("Delivery date is required"),
+  deliveryTime: Yup.string().trim().required("Delivery time is required"),
+  additionalNotes: Yup.string().trim().default(""),
+});

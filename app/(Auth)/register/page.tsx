@@ -20,7 +20,13 @@ export default function SignUpPage() {
 
   const handleSubmit = async (
     values: SignUpValues,
-    { setSubmitting, setStatus }: { setSubmitting: (v: boolean) => void; setStatus: (v: string | null) => void }
+    {
+      setSubmitting,
+      setStatus,
+    }: {
+      setSubmitting: (v: boolean) => void;
+      setStatus: (v: string | null) => void;
+    },
   ) => {
     setStatus(null);
     try {
@@ -38,7 +44,7 @@ export default function SignUpPage() {
   return (
     // <div className="relative min-h-screen w-full bg-[#f8f9f8] overflow-hidden flex flex-col font-sans text-[#171717]">
     <AuthLayout>
-              <AuthCard title="SIGN UP">
+      <AuthCard title="SIGN UP">
         <Formik
           initialValues={signUpInitialValues}
           validationSchema={SignUpSchema}
@@ -64,7 +70,6 @@ export default function SignUpPage() {
                 label="Last Name"
                 placeholder="Doe"
                 autoComplete="family-name"
-                
               />
 
               <FormInput
@@ -73,7 +78,6 @@ export default function SignUpPage() {
                 type="email"
                 placeholder="you@example.com"
                 autoComplete="email"
-                
               />
 
               <PasswordInput
@@ -90,7 +94,7 @@ export default function SignUpPage() {
                 autoComplete="new-password"
               />
 
-<div className="flex justify-center">
+              <div className="flex justify-center">
                 <Button
                   type="submit"
                   className="w-40 sm:w-48"
@@ -123,6 +127,6 @@ export default function SignUpPage() {
         </Formik>
       </AuthCard>
     </AuthLayout>
-  //  </div>
+    //  </div>
   );
 }

@@ -46,14 +46,19 @@ export default function ReviewOrderPage() {
   };
 
   return (
-    <CheckoutShell currentStep={3} >
-      <h2 className="mb-8 text-2xl font-sans font-bold text-gray-900">Review Your Order</h2>
+    <CheckoutShell currentStep={3}>
+      <h2 className="mb-8 text-2xl font-sans font-bold text-gray-900">
+        Review Your Order
+      </h2>
 
       <div className="space-y-6 font-sans">
         <ReviewSection title="Items">
           <div className="space-y-3">
             {items.map((item) => (
-              <div key={item.id} className="flex items-center justify-between text-sm">
+              <div
+                key={item.id}
+                className="flex items-center justify-between text-sm"
+              >
                 <span className="text-gray-800">
                   {item.name} ({item.quantity})
                 </span>
@@ -73,12 +78,14 @@ export default function ReviewOrderPage() {
               </div>
             ))}
             {items.length === 0 && (
-              <p className="text-sm text-gray-500">No items left in this order.</p>
+              <p className="text-sm text-gray-500">
+                No items left in this order.
+              </p>
             )}
           </div>
         </ReviewSection>
 
-    {/*     <ReviewSection title="Shipping Address" actionLabel="Edit" onAction={() => router.push("/checkout/shipping")}>
+        {/*     <ReviewSection title="Shipping Address" actionLabel="Edit" onAction={() => router.push("/checkout/shipping")}>
           <div className="space-y-1 text-sm text-gray-700">
             <p className="font-medium text-gray-900">Damilare Muhammed</p>
             <p>+2347065876121</p>
@@ -87,7 +94,7 @@ export default function ReviewOrderPage() {
           </div>
         </ReviewSection> */}
 
-       {/*  <ReviewSection title="Payment Method" actionLabel="Change" onAction={() => router.push("/checkout/payment")}>
+        {/*  <ReviewSection title="Payment Method" actionLabel="Change" onAction={() => router.push("/checkout/payment")}>
           <p className="mb-3 text-sm font-medium text-gray-900">Card Payment</p>
           <div className="grid grid-cols-3 gap-4 text-sm">
             <div>
@@ -124,15 +131,15 @@ export default function ReviewOrderPage() {
       </div>
 
       <div className="mt-8 font-sans">
-        <Button 
-        fullWidth={false}
-        className="mx-auto w-full max-w-[220px] pt-3"
-        type="button" 
-        onClick={handleConfirmOrder}>
+        <Button
+          fullWidth={false}
+          className="mx-auto w-full max-w-[220px] pt-3"
+          type="button"
+          onClick={handleConfirmOrder}
+        >
           Confirm Order
         </Button>
       </div>
     </CheckoutShell>
   );
 }
-

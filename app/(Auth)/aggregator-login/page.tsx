@@ -30,7 +30,7 @@ export default function AggregatorLoginPage() {
     }: {
       setSubmitting: (value: boolean) => void;
       setStatus: (status?: string) => void;
-    }
+    },
   ) => {
     // TODO: wire up real API when ready
     await new Promise((resolve) => setTimeout(resolve, 500));
@@ -51,12 +51,8 @@ export default function AggregatorLoginPage() {
           validationSchema={LoginSchema}
           onSubmit={handleSubmit}
         >
-          {({
-            isSubmitting,
-            status,
-          }) => (
+          {({ isSubmitting, status }) => (
             <Form className="space-y-5">
-
               <FormInput
                 name="email"
                 label="Email Address"
@@ -71,9 +67,7 @@ export default function AggregatorLoginPage() {
               />
 
               {/* Server Error */}
-              {status && (
-                <p className="text-sm text-red-500">{status}</p>
-              )}
+              {status && <p className="text-sm text-red-500">{status}</p>}
 
               {/* Login Button */}
               <div className="flex justify-center pt-6">
@@ -105,7 +99,6 @@ export default function AggregatorLoginPage() {
                   Marketplace login
                 </Link>
               </div>
-
             </Form>
           )}
         </Formik>
