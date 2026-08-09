@@ -32,7 +32,7 @@ export default function LoginPage() {
     }: {
       setSubmitting: (value: boolean) => void;
       setStatus: (status?: string) => void;
-    }
+    },
   ) => {
     // TODO: wire up real API when ready
     await new Promise((resolve) => setTimeout(resolve, 500));
@@ -55,7 +55,6 @@ export default function LoginPage() {
         >
           {({ isSubmitting, status, values, handleChange }) => (
             <Form className="space-y-5">
-
               <FormInput
                 name="email"
                 label="Email Address"
@@ -85,9 +84,7 @@ export default function LoginPage() {
               </div>
 
               {/* Server Error */}
-              {status && (
-                <p className="text-sm text-red-500">{status}</p>
-              )}
+              {status && <p className="text-sm text-red-500">{status}</p>}
 
               {/* Login Button */}
               <div className="flex justify-center pt-6">
@@ -104,14 +101,20 @@ export default function LoginPage() {
               {/* Forgot Password */}
               <div className="text-center text-sm text-gray-600">
                 Forgot your password?{" "}
-                <Link href="/forgetpassword" className="font-medium text-[#226049]">
+                <Link
+                  href="/forgetpassword"
+                  className="font-medium text-[#226049]"
+                >
                   Reset it here
                 </Link>
               </div>
               {/* Partner login crosslink */}
               <div className="text-center text-xs text-gray-400 pt-1">
                 Are you a partner?{" "}
-                <Link href="/aggregator-login" className="text-[#226049] font-medium">
+                <Link
+                  href="/aggregator-login"
+                  className="text-[#226049] font-medium"
+                >
                   Partner Login
                 </Link>
               </div>

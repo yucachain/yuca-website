@@ -36,7 +36,10 @@ export default function FormSelect({
   return (
     <div className="w-full">
       {label && (
-        <label htmlFor={inputId} className="mb-1.5 block text-sm font-medium text-gray-800">
+        <label
+          htmlFor={inputId}
+          className="mb-1.5 block text-sm font-medium text-gray-800"
+        >
           {label}
         </label>
       )}

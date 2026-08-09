@@ -1,7 +1,6 @@
 // Checkout — Step 4: Order Confirmation (Thank You screen, order number, delivery address, order summary table, New Arrivals section)
 "use client";
 
-
 import Link from "next/link";
 import { Check } from "lucide-react";
 import Button from "@/app/components/ui/Button";
@@ -23,10 +22,13 @@ export default function OrderConfirmationPage({
           </span>
         </span>
 
-        <h1 className="mt-10 text-5xl font-bold text-gray-900">Order Successful!</h1>
+        <h1 className="mt-10 text-5xl font-bold text-gray-900">
+          Order Successful!
+        </h1>
 
         <p className="mt-4 max-w-md text-base leading-relaxed text-gray-500">
-          You will receive a confirmation email once we have processed your order.
+          You will receive a confirmation email once we have processed your
+          order.
         </p>
 
         <p className="mt-2 text-base font-semibold text-gray-900">
@@ -40,8 +42,5 @@ export default function OrderConfirmationPage({
         </div>
       </div>
     </CheckoutShell>
-
-    
-
   );
 }

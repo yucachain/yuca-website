@@ -16,8 +16,6 @@ import {
 import AuthCard from "@/app/components/ui/Authcard";
 import AuthLayout from "@/app/components/ui/AuthLayout";
 
-
-
 function ResetPasswordContent() {
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
@@ -25,7 +23,13 @@ function ResetPasswordContent() {
 
   const handleSubmit = async (
     values: ResetPasswordValues,
-    { setSubmitting, setStatus }: { setSubmitting: (v: boolean) => void; setStatus: (v: string | null) => void }
+    {
+      setSubmitting,
+      setStatus,
+    }: {
+      setSubmitting: (v: boolean) => void;
+      setStatus: (v: string | null) => void;
+    },
   ) => {
     setStatus(null);
     try {
@@ -44,9 +48,9 @@ function ResetPasswordContent() {
         <AuthCard>
           <div className="flex flex-col items-center text-center">
             <span className="mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-[#215243]">
-          <span className="flex h-24 w-24 items-center justify-center rounded-full bg-[#215243]">
-            <Check size={40} strokeWidth={3} className="text-white" />
-          </span>
+              <span className="flex h-24 w-24 items-center justify-center rounded-full bg-[#215243]">
+                <Check size={40} strokeWidth={3} className="text-white" />
+              </span>
             </span>
 
             <h1 className="text-xl font-semibold text-gray-900">
@@ -70,10 +74,7 @@ function ResetPasswordContent() {
   return (
     <AuthLayout>
       <AuthCard title="Reset Password">
-        {!token && (
-          <div>
-          </div>
-        )}
+        {!token && <div></div>}
 
         <Formik
           initialValues={resetPasswordInitialValues}
@@ -102,9 +103,7 @@ function ResetPasswordContent() {
                 autoComplete="new-password"
               />
 
-              <Button type="submit"
-                disabled={isSubmitting}
-              >
+              <Button type="submit" disabled={isSubmitting}>
                 Reset Password
               </Button>
             </Form>
@@ -117,15 +116,17 @@ function ResetPasswordContent() {
 
 export default function ResetPasswordPage() {
   return (
-    <Suspense fallback={
-      <AuthLayout>
-        <AuthCard title="Reset Password">
-          <div className="flex justify-center items-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#226049]"></div>
-          </div>
-        </AuthCard>
-      </AuthLayout>
-    }>
+    <Suspense
+      fallback={
+        <AuthLayout>
+          <AuthCard title="Reset Password">
+            <div className="flex justify-center items-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#226049]"></div>
+            </div>
+          </AuthCard>
+        </AuthLayout>
+      }
+    >
       <ResetPasswordContent />
     </Suspense>
   );

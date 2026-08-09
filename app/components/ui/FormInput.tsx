@@ -2,8 +2,10 @@ import React from "react";
 import { useField } from "formik";
 import Input, { InputProps } from "./Input";
 
-export interface FormInputProps
-  extends Omit<InputProps, "name" | "value" | "onChange" | "onBlur"> {
+export interface FormInputProps extends Omit<
+  InputProps,
+  "name" | "value" | "onChange" | "onBlur"
+> {
   /** Formik field name — must match a key in your Formik `initialValues` */
   name: string;
   /** Visible label rendered above the input */
@@ -30,8 +32,8 @@ export default function FormInput({
   const describedBy = hasError
     ? `${inputId}-error`
     : helperText
-    ? `${inputId}-helper`
-    : undefined;
+      ? `${inputId}-helper`
+      : undefined;
 
   return (
     <div className="w-full">

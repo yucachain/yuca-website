@@ -8,7 +8,10 @@ import FormInput from "@/app/components/ui/FormInput";
 import FormSelect from "@/app/components/ui/FormSelect";
 import Button from "@/app/components/ui/Button";
 import CheckoutShell from "@/app/marketplace/components/CheckoutShell";
-import { NIGERIAN_STATES, COUNTRIES } from "@/app/marketplace/components/locationOptions";
+import {
+  NIGERIAN_STATES,
+  COUNTRIES,
+} from "@/app/marketplace/components/locationOptions";
 import {
   ShippingInfoSchema,
   shippingInfoInitialValues,
@@ -20,7 +23,7 @@ export default function ShippingInfoPage() {
 
   const handleSubmit = async (
     values: ShippingInfoValues,
-    { setSubmitting }: { setSubmitting: (v: boolean) => void }
+    { setSubmitting }: { setSubmitting: (v: boolean) => void },
   ) => {
     // Replace with your real "save shipping info" call, e.g.:
     // await fetch("/api/checkout/shipping", { method: "POST", body: JSON.stringify(values) });
@@ -42,8 +45,16 @@ export default function ShippingInfoPage() {
       >
         {({ isSubmitting }) => (
           <Form className="space-y-5" noValidate>
-            <FormInput name="firstName" label="First Name" placeholder="First Name" />
-            <FormInput name="lastName" label="Last Name" placeholder="Last Name" />
+            <FormInput
+              name="firstName"
+              label="First Name"
+              placeholder="First Name"
+            />
+            <FormInput
+              name="lastName"
+              label="Last Name"
+              placeholder="Last Name"
+            />
             <FormInput
               name="phone"
               label="Phone Number"
@@ -58,7 +69,11 @@ export default function ShippingInfoPage() {
               placeholder="Email"
               autoComplete="email"
             />
-            <FormInput name="address" label="Delivery Address" placeholder="Street Address" />
+            <FormInput
+              name="address"
+              label="Delivery Address"
+              placeholder="Street Address"
+            />
             <FormSelect
               name="state"
               label="State"
@@ -71,7 +86,11 @@ export default function ShippingInfoPage() {
               placeholder="Select Country"
               options={COUNTRIES}
             />
-            <FormInput name="postalCode" label="Postal Code" placeholder="Zip Code" />
+            <FormInput
+              name="postalCode"
+              label="Postal Code"
+              placeholder="Zip Code"
+            />
 
             <div className="space-y-2 pt-1">
               <label className="flex items-center gap-2 text-sm text-gray-700">
@@ -101,6 +120,5 @@ export default function ShippingInfoPage() {
         )}
       </Formik>
     </CheckoutShell>
-    
   );
 }
