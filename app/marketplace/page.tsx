@@ -330,14 +330,7 @@ export default function MarketplacePage() {
 
   const handleCategoryChange = (id: string) => {
     setActiveCategoryId(id);
-    const categoryBatches = ALL_BATCHES.filter(
-      (b) => b.category === id && (filters.grades.length === 0 || filters.grades.includes(b.grade as "A" | "B"))
-    );
-    if (categoryBatches.length > 0) {
-      setSelectedBatch(categoryBatches[0]);
-    } else {
-      setSelectedBatch(null);
-    }
+    setSelectedBatch(null);
     setPage(1);
   };
 

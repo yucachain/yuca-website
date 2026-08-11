@@ -95,7 +95,7 @@ export default function BatchScannerPanel({
           <span>{batch.farmer}</span>
           <span>{batch.estWeightKg} kg</span>
           <span>
-            <span className="inline-block rounded-full bg-orange-50 px-3 py-1 text-xs font-medium text-orange-600">
+            <span className="inline-flex rounded-full bg-orange-50  text-xs font-medium text-orange-600 whitespace-nowrap">
               {batch.status}
             </span>
           </span>

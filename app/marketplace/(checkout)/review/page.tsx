@@ -1,42 +1,24 @@
 ﻿// Stub placeholder
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import { useRouter } from "next/navigation";
 import { Trash2 } from "lucide-react";
 import Button from "@/app/components/ui/Button";
 import CheckoutShell from "@/app/marketplace/components/CheckoutShell";
 import ReviewSection from "@/app/marketplace/components/ReviewSection";
-
-interface ReviewItem {
-  id: string;
-  name: string;
-  quantity: number;
-  price: number;
-}
-
-// Sample data standing in for the cart/shipping/payment state that would
-// normally come from a cart store and the previous two checkout steps.
-const INITIAL_ITEMS: ReviewItem[] = [
-  { id: "1", name: "TME 419 Stems", quantity: 4, price: 420 },
-  { id: "2", name: "Fresh Cassava", quantity: 2, price: 400 },
-  { id: "3", name: "Cassava Roots", quantity: 5, price: 500 },
-  { id: "4", name: "Quality Cassava", quantity: 1, price: 500 },
-  { id: "5", name: "TME 419 Stems", quantity: 2, price: 1000 },
-  { id: "6", name: "TME 419 Stems", quantity: 2, price: 500 },
-];
+import { useCart } from "@/app/marketplace/context/CartContext";
 
 const VAT = 50;
 
 export default function ReviewOrderPage() {
   const router = useRouter();
-  const [items, setItems] = useState(INITIAL_ITEMS);
+  const { cartItems, subtotal, total, removeFromCart } = useCart();
 
-  const subtotal = items.reduce((sum, item) => sum + item.price, 0);
-  const total = subtotal + VAT;
+  const reviewTotal = subtotal + VAT;
 
   const handleRemove = (id: string) => {
-    setItems((prev) => prev.filter((item) => item.id !== id));
+    removeFromCart(id);
   };
 
   const handleConfirmOrder = async () => {
@@ -54,17 +36,17 @@ export default function ReviewOrderPage() {
       <div className="space-y-6 font-sans">
         <ReviewSection title="Items">
           <div className="space-y-3">
-            {items.map((item) => (
+            {cartItems.map((item) => (
               <div
                 key={item.id}
                 className="flex items-center justify-between text-sm"
               >
                 <span className="text-gray-800">
-                  {item.name} ({item.quantity})
+                  {item.title} ({item.quantity})
                 </span>
                 <div className="flex items-center gap-6">
                   <span className="font-medium text-gray-900">
-                    #{item.price.toLocaleString()}
+                    #{(item.pricePerTonne * item.quantity).toLocaleString()}
                   </span>
                   <button
                     type="button"
@@ -77,7 +59,7 @@ export default function ReviewOrderPage() {
                 </div>
               </div>
             ))}
-            {items.length === 0 && (
+            {cartItems.length === 0 && (
               <p className="text-sm text-gray-500">
                 No items left in this order.
               </p>
@@ -115,7 +97,7 @@ export default function ReviewOrderPage() {
         <ReviewSection title="Order Summary">
           <div className="space-y-2 text-sm">
             <div className="flex justify-between text-gray-700">
-              <span>Item ({items.length})</span>
+              <span>Item ({cartItems.length})</span>
               <span>#{subtotal.toLocaleString()}</span>
             </div>
             <div className="flex justify-between text-gray-700">
@@ -124,7 +106,7 @@ export default function ReviewOrderPage() {
             </div>
             <div className="flex justify-between border-t border-gray-200 pt-2 font-bold text-gray-900">
               <span>Total</span>
-              <span>#{total.toLocaleString()}</span>
+              <span>#{reviewTotal.toLocaleString()}</span>
             </div>
           </div>
         </ReviewSection>
