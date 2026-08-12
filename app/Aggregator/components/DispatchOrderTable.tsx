@@ -1,4 +1,5 @@
 import React from "react";
+import DispatchOrderRowMenu from "./DispatchOrderRowMenu";
 import type { DispatchOrderRecord, DispatchOrderStatus } from "./types";
 
 const statusBadgeStyles: Record<DispatchOrderStatus, string> = {
@@ -16,6 +17,7 @@ const statusLabels: Record<DispatchOrderStatus, string> = {
 export interface DispatchOrderTableProps {
   orders: DispatchOrderRecord[];
   onAssignStorage: (order: DispatchOrderRecord) => void;
+  onAssignVault: (order: DispatchOrderRecord) => void;
   onViewDetails: (order: DispatchOrderRecord) => void;
   onViewReceipt: (order: DispatchOrderRecord) => void;
 }
@@ -23,6 +25,7 @@ export interface DispatchOrderTableProps {
 export default function DispatchOrderTable({
   orders,
   onAssignStorage,
+  onAssignVault,
   onViewDetails,
   onViewReceipt,
 }: DispatchOrderTableProps) {
@@ -70,33 +73,13 @@ export default function DispatchOrderTable({
                 {order.storageLabel ?? "Not Assigned"}
               </td>
               <td className="px-6 py-5 align-top">
-                {order.status === "pending" && (
-                  <button
-                    type="button"
-                    onClick={() => onAssignStorage(order)}
-                    className="rounded-lg border border-gray-300 px-4 py-2 text-xs font-semibold text-gray-800 transition-colors hover:bg-gray-50"
-                  >
-                    Assign Storage
-                  </button>
-                )}
-                {order.status === "in-transit" && (
-                  <button
-                    type="button"
-                    onClick={() => onViewDetails(order)}
-                    className="rounded-lg border border-gray-300 px-4 py-2 text-xs font-semibold text-gray-800 transition-colors hover:bg-gray-50"
-                  >
-                    View Details
-                  </button>
-                )}
-                {order.status === "dispatched" && (
-                  <button
-                    type="button"
-                    onClick={() => onViewReceipt(order)}
-                    className="rounded-lg border border-gray-300 px-4 py-2 text-xs font-semibold text-gray-800 transition-colors hover:bg-gray-50"
-                  >
-                    View Receipt
-                  </button>
-                )}
+                <DispatchOrderRowMenu
+                  order={order}
+                  onAssignStorage={onAssignStorage}
+                  onAssignVault={onAssignVault}
+                  onViewDetails={onViewDetails}
+                  onViewReceipt={onViewReceipt}
+                />
               </td>
             </tr>
           ))}
