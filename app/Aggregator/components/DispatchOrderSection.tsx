@@ -1,14 +1,14 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
-import { ArrowLeft } from "lucide-react";
 import DispatchOrderFilterTabs, { DispatchOrderTab } from "./DispatchOrderFilter";
 import DispatchOrderTable from "./DispatchOrderTable";
 import Pagination from "./Pagination";
-import OrderSummaryCard from "./OrderSummaryCard";
-import LogisticInfoForm from "./LogisticInfoForm";
-import DispatchSuccessModal from "./DispatchSuccessModal";
-import type { DispatchOrderRecord, DispatchOrderSummary } from "./types";
+import DispatchOrderDetailModal from "./DispatchOrderDetailModel";
+import DispatchReceiptModal from "./DispatchReceiptModal";
+import AssignToStorageModal from "./AssignStorageModal";
+import AssignToVaultModal from "./AssignToVaultModal";
+import type { DispatchOrderRecord } from "./types";
 import type { DispatchLogisticsValues } from "@/app/components/validation/schema";
 
 const PER_PAGE = 5;
@@ -28,7 +28,7 @@ const ORDERS: DispatchOrderRecord[] = [
     paymentMade: true,
     agreedPriceTotal: 3955000,
     pricePerKg: 350,
-    buyerDeliveryAddress: "12 Agbetoba Estate, Ilorin, Kwara State",
+    pickupHub: "YucaVault #1, Ilorin",
   },
   {
     id: "2",
@@ -42,7 +42,7 @@ const ORDERS: DispatchOrderRecord[] = [
     paymentMade: false,
     agreedPriceTotal: 4550000,
     pricePerKg: 350,
-    buyerDeliveryAddress: "Plot 7, Trans-Ekiti Road, Ado-Ekiti, Ekiti State",
+    pickupHub: "YucaVault #3, Ibadan",
   },
   {
     id: "3",
@@ -57,7 +57,7 @@ const ORDERS: DispatchOrderRecord[] = [
     paymentMade: true,
     agreedPriceTotal: 1750000,
     pricePerKg: 350,
-    buyerDeliveryAddress: "3 Warehouse Lane, Ibadan, Oyo State",
+    pickupHub: "YucaVault #1, Ilorin",
   },
   {
     id: "4",
@@ -71,7 +71,7 @@ const ORDERS: DispatchOrderRecord[] = [
     paymentMade: false,
     agreedPriceTotal: 3955000,
     pricePerKg: 350,
-    buyerDeliveryAddress: "Km 4, Offa–Ilorin Expressway, Offa, Kwara State",
+    pickupHub: "YucaVault #1, Ilorin",
   },
   {
     id: "5",
@@ -86,7 +86,7 @@ const ORDERS: DispatchOrderRecord[] = [
     paymentMade: true,
     agreedPriceTotal: 700000,
     pricePerKg: 350,
-    buyerDeliveryAddress: "12 Agbetoba Estate, Ilorin, Kwara State",
+    pickupHub: "YucaVault #1, Ilorin",
   },
   {
     id: "6",
@@ -101,7 +101,7 @@ const ORDERS: DispatchOrderRecord[] = [
     paymentMade: true,
     agreedPriceTotal: 1470000,
     pricePerKg: 350,
-    buyerDeliveryAddress: "15 Ring Road, Ibadan, Oyo State",
+    pickupHub: "YucaVault #3, Ibadan",
   },
   {
     id: "7",
@@ -116,7 +116,7 @@ const ORDERS: DispatchOrderRecord[] = [
     paymentMade: true,
     agreedPriceTotal: 2100000,
     pricePerKg: 350,
-    buyerDeliveryAddress: "22 GoldenPearl Industrial Area, Lagos, Lagos State",
+    pickupHub: "YucaVault #1, Ilorin",
   },
   {
     id: "8",
@@ -131,7 +131,7 @@ const ORDERS: DispatchOrderRecord[] = [
     paymentMade: true,
     agreedPriceTotal: 1155000,
     pricePerKg: 350,
-    buyerDeliveryAddress: "Block B, Offa Market Complex, Offa, Kwara State",
+    pickupHub: "YucaVault #1, Ilorin",
   },
   {
     id: "9",
@@ -146,7 +146,7 @@ const ORDERS: DispatchOrderRecord[] = [
     paymentMade: true,
     agreedPriceTotal: 2450000,
     pricePerKg: 350,
-    buyerDeliveryAddress: "3 Warehouse Lane, Ibadan, Oyo State",
+    pickupHub: "YucaVault #3, Ibadan",
   },
   {
     id: "10",
@@ -161,7 +161,7 @@ const ORDERS: DispatchOrderRecord[] = [
     paymentMade: true,
     agreedPriceTotal: 3150000,
     pricePerKg: 350,
-    buyerDeliveryAddress: "Plot 11, Green Valley Processing Complex, Abuja, FCT",
+    pickupHub: "YucaVault #1, Ilorin",
   },
   {
     id: "11",
@@ -176,7 +176,7 @@ const ORDERS: DispatchOrderRecord[] = [
     paymentMade: true,
     agreedPriceTotal: 1925000,
     pricePerKg: 350,
-    buyerDeliveryAddress: "15 Ring Road, Ibadan, Oyo State",
+    pickupHub: "YucaVault #3, Ibadan",
   },
   {
     id: "12",
@@ -190,22 +190,17 @@ const ORDERS: DispatchOrderRecord[] = [
     paymentMade: false,
     agreedPriceTotal: 1680000,
     pricePerKg: 350,
-    buyerDeliveryAddress: "Plot 7, Trans-Ekiti Road, Ado-Ekiti, Ekiti State",
+    pickupHub: "YucaVault #1, Ilorin",
   },
 ];
 
-export interface DispatchOrderSectionProps {
-  onAssignStorage?: (order: DispatchOrderRecord) => void;
-}
-
-export default function DispatchOrderSection({ onAssignStorage }: DispatchOrderSectionProps) {
+export default function DispatchOrderSection() {
   const [activeTab, setActiveTab] = useState<DispatchOrderTab>("all");
   const [page, setPage] = useState(1);
-  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
-  const [successModalData, setSuccessModalData] = useState<{
-    order: DispatchOrderSummary;
-    logistics: DispatchLogisticsValues;
-  } | null>(null);
+
+  type ModalKind = "details" | "receipt" | "assign-storage" | "assign-vault" | null;
+  const [activeModal, setActiveModal] = useState<ModalKind>(null);
+  const [modalOrderId, setModalOrderId] = useState<string | null>(null);
 
   const counts = useMemo(
     () => ({
@@ -227,87 +222,74 @@ export default function DispatchOrderSection({ onAssignStorage }: DispatchOrderS
   const pageItems = filtered.slice(startIndex, startIndex + PER_PAGE);
   const rangeEnd = Math.min(startIndex + PER_PAGE, filtered.length);
 
-  const selectedOrder = ORDERS.find((o) => o.id === selectedOrderId) ?? null;
+  const modalOrder = ORDERS.find((o) => o.id === modalOrderId) ?? null;
 
   const handleTabChange = (tab: DispatchOrderTab) => {
     setActiveTab(tab);
     setPage(1);
   };
 
-  const handleConfirmDispatch = async (values: DispatchLogisticsValues) => {
-    if (!selectedOrder) return;
-    const summary: DispatchOrderSummary = {
-      orderNumber: selectedOrder.orderNumber,
-      lotCode: selectedOrder.lotCode,
-      buyer: selectedOrder.buyer,
-      paymentMade: selectedOrder.paymentMade,
-      agreedPriceTotal: selectedOrder.agreedPriceTotal,
-      pricePerKg: selectedOrder.pricePerKg,
-      lotWeightKg: selectedOrder.weightKg,
-      buyerDeliveryAddress: selectedOrder.buyerDeliveryAddress,
-    };
-    setSuccessModalData({ order: summary, logistics: values });
+  const openModal = (kind: Exclude<ModalKind, null>, order: DispatchOrderRecord) => {
+    setModalOrderId(order.id);
+    setActiveModal(kind);
   };
 
-  const handleIssueReceipt = async (values: DispatchLogisticsValues) => {
-    console.log("Issue receipt", selectedOrder?.orderNumber, values);
+  const closeModal = () => {
+    setActiveModal(null);
+    setModalOrderId(null);
   };
 
-  // --- Detail view -------------------------------------------------
-  if (selectedOrder) {
-    const summary: DispatchOrderSummary = {
-      orderNumber: selectedOrder.orderNumber,
-      lotCode: selectedOrder.lotCode,
-      buyer: selectedOrder.buyer,
-      paymentMade: selectedOrder.paymentMade,
-      agreedPriceTotal: selectedOrder.agreedPriceTotal,
-      pricePerKg: selectedOrder.pricePerKg,
-      lotWeightKg: selectedOrder.weightKg,
-      buyerDeliveryAddress: selectedOrder.buyerDeliveryAddress,
-    };
+  const handleConfirmDispatch = async (
+    order: DispatchOrderRecord,
+    values: DispatchLogisticsValues
+  ) => {
+    // Replace with your real "confirm dispatch" call, e.g.:
+    // await fetch(`/api/aggregator/orders/${order.orderNumber}/dispatch`, {
+    //   method: "POST",
+    //   body: JSON.stringify(values),
+    // });
+    console.log("Confirm dispatch", order.orderNumber, values);
+    // Swap straight to the receipt modal for the same order, mirroring the
+    // "Order dispatched successfully!" flow in the mock.
+    setActiveModal("receipt");
+  };
 
-    return (
-      <>
-        <button
-          type="button"
-          onClick={() => setSelectedOrderId(null)}
-          className="mb-4 flex items-center gap-2 text-sm text-gray-600 transition-colors hover:text-gray-900"
-        >
-          <ArrowLeft size={16} strokeWidth={1.8} />
-          Back to Dispatch Orders
-        </button>
+  const handleIssueReceipt = async (
+    order: DispatchOrderRecord,
+    values: DispatchLogisticsValues
+  ) => {
+    // Replace with your real "issue receipt" call.
+    console.log("Issue receipt", order.orderNumber, values);
+  };
 
-        <h1 className="text-lg font-bold text-gray-900">Dispatch Order</h1>
-        <div className="mt-1 flex items-center gap-3">
-          <p className="text-sm text-gray-500">Order {summary.orderNumber}</p>
-          <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-800">
-            Lot {summary.lotCode}
-          </span>
-        </div>
+  const handleDownloadReceipt = (order: DispatchOrderRecord) => {
+    // Replace with your real "download receipt PDF" call.
+    console.log("Download receipt for", order.orderNumber);
+  };
 
-        <div className="mt-6 space-y-6">
-          <OrderSummaryCard order={summary} />
-          <LogisticInfoForm
-            onConfirmDispatch={handleConfirmDispatch}
-            onIssueReceipt={handleIssueReceipt}
-          />
-        </div>
+  const handleAssignStorage = (
+    order: DispatchOrderRecord,
+    batchIds: string[],
+    unitId: string
+  ) => {
+    // Replace with your real "assign batches to storage unit" call.
+    console.log("Assign storage for order", order.orderNumber, batchIds, unitId);
+    closeModal();
+  };
 
-        {successModalData && (
-          <DispatchSuccessModal
-            order={successModalData.order}
-            logistics={successModalData.logistics}
-            onClose={() => setSuccessModalData(null)}
-          />
-        )}
-      </>
-    );
-  }
+  const handleAssignVault = (
+    order: DispatchOrderRecord,
+    batchIds: string[],
+    vaultId: string
+  ) => {
+    // Replace with your real "confirm consolidation and dispatch" call.
+    console.log("Assign vault for order", order.orderNumber, batchIds, vaultId);
+    closeModal();
+  };
 
-  // --- List view -----------------------------------------------------
   return (
     <>
-      <h1 className="text-lg font-bold text-gray-900">Dispatch Order</h1>
+      <h1 className="text-3xl font-bold text-gray-900">Dispatch Order</h1>
       <p className="mt-1 text-sm text-gray-500">
         Manage orders, storage assignments, and deliveries
       </p>
@@ -319,9 +301,10 @@ export default function DispatchOrderSection({ onAssignStorage }: DispatchOrderS
       <div className="mt-6">
         <DispatchOrderTable
           orders={pageItems}
-          onAssignStorage={(order) => onAssignStorage?.(order)}
-          onViewDetails={(order) => setSelectedOrderId(order.id)}
-          onViewReceipt={(order) => setSelectedOrderId(order.id)}
+          onAssignStorage={(order) => openModal("assign-storage", order)}
+          onAssignVault={(order) => openModal("assign-vault", order)}
+          onViewDetails={(order) => openModal("details", order)}
+          onViewReceipt={(order) => openModal("receipt", order)}
         />
       </div>
 
@@ -335,6 +318,35 @@ export default function DispatchOrderSection({ onAssignStorage }: DispatchOrderS
           />
         </div>
       )}
+
+      <DispatchOrderDetailModal
+        order={modalOrder}
+        open={activeModal === "details"}
+        onClose={closeModal}
+        onConfirmDispatch={handleConfirmDispatch}
+        onIssueReceipt={handleIssueReceipt}
+      />
+
+      <DispatchReceiptModal
+        order={modalOrder}
+        open={activeModal === "receipt"}
+        onClose={closeModal}
+        onDownloadReceipt={handleDownloadReceipt}
+      />
+
+      <AssignToStorageModal
+        order={modalOrder}
+        open={activeModal === "assign-storage"}
+        onClose={closeModal}
+        onAssign={handleAssignStorage}
+      />
+
+      <AssignToVaultModal
+        order={modalOrder}
+        open={activeModal === "assign-vault"}
+        onClose={closeModal}
+        onConfirm={handleAssignVault}
+      />
     </>
   );
 }
