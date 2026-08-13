@@ -132,8 +132,10 @@ export interface DispatchOrderRecord {
   paymentMade: boolean;
   agreedPriceTotal: number;
   pricePerKg: number;
+  /** The YucaVault or hub that is dispatching / releasing the product */
+  pickupHub?: string;
   /** Buyer's company/delivery address */
-  buyerDeliveryAddress: string;
+  buyerDeliveryAddress?: string;
 }
 
 /* ------------------------------------------------------------------ */
