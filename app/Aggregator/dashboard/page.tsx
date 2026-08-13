@@ -16,11 +16,10 @@ import QuickActions from "@/app/Aggregator/components/Quickactions";
 import RecentActivity from "@/app/Aggregator/components/Recentactivity";
 import ActiveBatchesTable from "@/app/Aggregator/components/Activebatchestable";
 import ReceiveBatchSection from "@/app/Aggregator/components/ReceiveBatchSection";
-import AssignStorageSection from "@/app/Aggregator/components/AssignStorageSection";
 import DispatchOrderSection from "@/app/Aggregator/components/DispatchOrderSection";
 import MarketOrdersSection from "@/app/Aggregator/components/MarketOrdersSection";
 import SellersPayoutsSection from "@/app/Aggregator/components/Sellerspayoutssection";
-import ConsolidateToVaultSection from "@/app/Aggregator/components/ConsolidateToVaultSection";
+
 import Footer from "@/app/components/Footer";
 import type {
   StatCardData,
@@ -195,17 +194,8 @@ export default function AggregatorOverviewPage() {
           )}
 
           {activeSection === "receive-batch" && <ReceiveBatchSection />}
- 
-          {activeSection === "assign-storage" && <AssignStorageSection />}
- 
-          {activeSection === "dispatch-order" && (
-            <DispatchOrderSection onAssignStorage={() => setActiveSection("assign-storage")} />
-          )}
- 
+          {activeSection === "dispatch-order" && <DispatchOrderSection />}
           {activeSection === "market-orders" && <MarketOrdersSection />}
- 
-          {activeSection === "consolidate-vault" && <ConsolidateToVaultSection />}
- 
           {activeSection === "sellers-payouts" && <SellersPayoutsSection />}
           
 
