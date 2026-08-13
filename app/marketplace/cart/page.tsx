@@ -42,7 +42,7 @@ export default function CartPage() {
           <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_280px] xl:grid-cols-[1fr_300px]">
 
             <div>
-              <div className="grid grid-cols-[2.5fr_1fr_1fr_1fr] gap-4 rounded-t-xl bg-[#0B6B46] px-6 py-4 text-white">
+              <div className="hidden sm:grid grid-cols-[2.5fr_1fr_1fr_1fr] gap-4 rounded-t-xl bg-[#0B6B46] px-6 py-4 text-white">
                 <span className="text-xs font-semibold">Items ({totalItems})</span>
                 <span className="text-center text-xs font-semibold">Quantity</span>
                 <span className="text-center text-xs font-semibold">Price</span>

@@ -54,7 +54,7 @@ export default function DispatchOrderTable({
   };
 
   return (
-    <div className="overflow-x-auto rounded-2xl border border-gray-100 bg-white">
+    <div className="overflow-x-auto touch-scroll rounded-2xl border border-gray-100 bg-white">
       <table className="w-full min-w-[960px] text-left text-sm">
         <thead>
           <tr className="border-b border-gray-100 text-gray-500">

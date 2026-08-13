@@ -16,7 +16,7 @@ export default function AuthLayout({
       }}
     >
       <Navbar />
-      <main className="flex flex-1 items-center justify-center px-4 py-16 lg:py-24">
+      <main className="flex flex-1 items-center justify-center px-4 py-8 sm:py-16 lg:py-24">
         {children}
       </main>
       <Footer />

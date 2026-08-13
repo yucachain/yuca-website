@@ -68,6 +68,9 @@ interface CartContextValue {
   cartItems: CartEntry[];
   totalItems: number;
   subtotal: number;
+  logisticsFee: number;
+  hasLogistics: boolean;
+  setHasLogistics: (enabled: boolean) => void;
   vat: number;
   total: number;
   addToCart: (batch: CassavaBatch) => void;
@@ -83,6 +86,7 @@ const STORAGE_KEY = "yuca_cart_v1";
 // ─── Provider ─────────────────────────────────────────────────────────────────
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [cartItems, dispatch] = useReducer(cartReducer, []);
+  const [hasLogistics, setHasLogistics] = React.useState<boolean>(true);
 
   // Hydrate from localStorage on mount (client only)
   useEffect(() => {
@@ -143,13 +147,20 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     () => cartItems.reduce((acc, i) => acc + i.pricePerTonne * i.quantity, 0),
     [cartItems]
   );
+  const logisticsFee = useMemo(
+    () => Math.round(subtotal * 0.05),
+    [subtotal]
+  );
   const vat = 0;
-  const total = subtotal + vat;
+  const total = subtotal + (hasLogistics ? logisticsFee : 0) + vat;
 
   const value: CartContextValue = {
     cartItems,
     totalItems,
     subtotal,
+    logisticsFee,
+    hasLogistics,
+    setHasLogistics,
     vat,
     total,
     addToCart,

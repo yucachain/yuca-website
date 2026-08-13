@@ -1,8 +1,7 @@
-
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Search, ChevronDown } from "lucide-react";
+import { Search, ChevronDown, Filter, SlidersHorizontal, X } from "lucide-react";
 import MarketplaceNavbar from "./components/MarketplaceNavbar";
 import MarketplaceSidebar from "./components/MarketplaceSidebar";
 import ProductGrid from "./components/ProductGrid";
@@ -299,11 +298,11 @@ export default function MarketplacePage() {
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState("Newest");
   const [page, setPage] = useState(1);
+  const [showMobileSidebar, setShowMobileSidebar] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (selectedBatch) {
-
       requestAnimationFrame(() => setPanelVisible(true));
     } else {
       setPanelVisible(false);
@@ -332,6 +331,7 @@ export default function MarketplacePage() {
     setActiveCategoryId(id);
     setSelectedBatch(null);
     setPage(1);
+    setShowMobileSidebar(false);
   };
 
   const handleViewDetails = (batch: CassavaBatch) => {
@@ -356,22 +356,54 @@ export default function MarketplacePage() {
         onCartClick={() => router.push("/marketplace/cart")}
       />
 
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-hidden relative">
 
-        <MarketplaceSidebar
-          activeCategoryId={activeCategoryId}
-          onCategoryChange={handleCategoryChange}
-          onApplyFilters={(f) => { setFilters(f); setPage(1); }}
-        />
+        <div className="hidden lg:block">
+          <MarketplaceSidebar
+            activeCategoryId={activeCategoryId}
+            onCategoryChange={handleCategoryChange}
+            onApplyFilters={(f) => { setFilters(f); setPage(1); }}
+          />
+        </div>
 
-        <main className="flex-1 overflow-y-auto px-6 py-6 min-w-0 bg-[#F9FAFB]">
+        {showMobileSidebar && (
+          <div className="fixed inset-0 z-50 flex lg:hidden">
+            <div
+              className="fixed inset-0 bg-black/40 backdrop-blur-xs"
+              onClick={() => setShowMobileSidebar(false)}
+            />
+            <div className="relative z-10 w-full max-w-[300px] bg-white h-full shadow-2xl">
+              <MarketplaceSidebar
+                activeCategoryId={activeCategoryId}
+                onCategoryChange={handleCategoryChange}
+                onApplyFilters={(f) => { setFilters(f); setPage(1); }}
+                onCloseMobileDrawer={() => setShowMobileSidebar(false)}
+              />
+            </div>
+          </div>
+        )}
 
-          <h2 className="text-xl font-bold text-gray-900">
-            {CATEGORY_LABELS[activeCategoryId]}
-          </h2>
-          <p className="mt-0.5 text-xs text-gray-500">
-            Browse and search through all categories
-          </p>
+        <main className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 min-w-0 bg-[#F9FAFB]">
+
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <h2 className="text-lg sm:text-xl font-bold text-gray-900">
+                {CATEGORY_LABELS[activeCategoryId]}
+              </h2>
+              <p className="mt-0.5 text-xs text-gray-500">
+                Browse and search through all categories
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setShowMobileSidebar(true)}
+              className="lg:hidden inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-lg bg-[#226049] text-white hover:bg-[#1a4b39] transition-colors shadow-xs"
+            >
+              <SlidersHorizontal size={14} />
+              Filter &amp; Categories
+            </button>
+          </div>
 
           <div className="mt-4 flex flex-wrap items-center gap-3">
             <span className="text-xs font-medium text-gray-500 whitespace-nowrap bg-gray-100 rounded-full px-3 py-1">
@@ -386,14 +418,15 @@ export default function MarketplacePage() {
               />
               <input
                 type="text"
-                placeholder="Search"
+                placeholder="Search batches..."
                 value={search}
                 onChange={(e) => { setSearch(e.target.value); setPage(1); }}
                 className="w-full rounded-lg border border-gray-200 bg-white py-2 pl-9 pr-3 text-xs text-gray-700 placeholder-gray-400 outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600"
               />
             </div>
-            <div className="relative ml-auto">
-              <label className="text-xs text-gray-500 mr-1">Sort By</label>
+
+            <div className="relative ml-auto flex items-center">
+              <label className="text-xs text-gray-500 mr-1.5 whitespace-nowrap">Sort By</label>
               <div className="relative inline-block">
                 <select
                   value={sortBy}
@@ -425,10 +458,11 @@ export default function MarketplacePage() {
             itemsPerPage={ITEMS_PER_PAGE}
           />
         </main>
+        
         {selectedBatch && (
           <div
             ref={panelRef}
-            className="shrink-0 overflow-hidden border-l border-gray-100 transition-all duration-300 ease-in-out"
+            className="hidden lg:block shrink-0 overflow-hidden border-l border-gray-100 transition-all duration-300 ease-in-out"
             style={{
               width: panelVisible ? "400px" : "0px",
               opacity: panelVisible ? 1 : 0,
@@ -444,8 +478,20 @@ export default function MarketplacePage() {
             </div>
           </div>
         )}
+
+        {selectedBatch && (
+          <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center lg:hidden bg-black/50 p-0 sm:p-4">
+            <div className="relative w-full max-w-lg bg-white rounded-t-3xl sm:rounded-3xl max-h-[90vh] overflow-y-auto shadow-2xl p-4 sm:p-6 animate-in slide-in-from-bottom-4">
+              <ProductDetailPanel
+                batch={selectedBatch}
+                onClose={handleClosePanel}
+                onContactSeller={(b) => console.log("Contact seller", b.id)}
+                onPlaceOrder={(b) => console.log("Place order", b.id)}
+              />
+            </div>
+          </div>
+        )}
  
-   
       </div>
        <Footer/>
     </div>

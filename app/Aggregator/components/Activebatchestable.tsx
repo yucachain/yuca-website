@@ -17,19 +17,19 @@ export default function ActiveBatchesTable({
   onStatusClick?: (batch: BatchRow) => void;
 }) {
   return (
-    <div className="rounded-2xl border border-gray-100 bg-white p-6">
+    <div className="rounded-2xl border border-gray-100 bg-white p-4 sm:p-6">
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-bold text-gray-900">Active Batches</h3>
         <button
           type="button"
           onClick={onViewAll}
-          className="text-sm font-medium text-emerald-800 hover:underline"
+          className="text-xs sm:text-sm font-medium text-emerald-800 hover:underline"
         >
           View all Batches
         </button>
       </div>
 
-      <div className="mt-4 overflow-x-auto">
+      <div className="mt-4 overflow-x-auto touch-scroll">
         <table className="w-full min-w-[560px] text-left text-sm">
           <thead>
             <tr className="text-gray-500">

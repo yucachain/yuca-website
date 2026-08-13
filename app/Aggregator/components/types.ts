@@ -76,6 +76,10 @@ export type IntakeBatchStatus = "Aggregated" | "Harvested";
 export interface IntakeBatch {
   id: string;
   code: string;
+  farmerName?: string;
+  variety?: string;
+  location?: string;
+  qualityGrade?: "A" | "B" | "C";
   weightKg: number;
   status: IntakeBatchStatus;
   harvestDate: string;
@@ -165,12 +169,67 @@ export interface MarketOrder {
   id: string;
   orderNumber: string;
   buyer: string;
+  buyerEmail?: string;
+  buyerPhone?: string;
+  deliveryLocation?: string;
+  productName?: string;
+  grade?: BatchGrade;
   neededKg: number;
   selectedKg: number;
-  /** e.g. "Pending Consolidation" - the badge text shown on the card */
+  pricePerKg?: number;
+  totalPrice?: number;
+  paymentStatus?: "Escrow Paid" | "Credit Approved" | "Pending Payment";
+  acceptedDate?: string;
+  /** e.g. "Buyer Accepted" - the badge text shown on the card */
   statusLabel: string;
   tab: Exclude<MarketOrderTab, "all">;
   batches: OrderBatchRow[];
+}
+
+/* ------------------------------------------------------------------ */
+/*  Transactions & Ledger                                              */
+/* ------------------------------------------------------------------ */
+
+export type TransactionType =
+  | "Marketplace Sale"
+  | "Seller Payout"
+  | "Vault Storage Fee";
+
+export type TransactionStatus = "Completed" | "Escrow Held" | "Processing" | "Failed";
+
+export interface TransactionRecord {
+  id: string;
+  referenceNo: string;
+  date: string;
+  type: TransactionType;
+  partyName: string;
+  description: string;
+  amount: number;
+  paymentMethod: string;
+  status: TransactionStatus;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Aggregator Settings                                                */
+/* ------------------------------------------------------------------ */
+
+export interface AggregatorSettings {
+  hubName: string;
+  hubId: string;
+  licenseNumber: string;
+  contactName: string;
+  email: string;
+  phone: string;
+  address: string;
+  maxCapacityTonnes: number;
+  spoilageRiskThresholdHours: number;
+  bankName: string;
+  accountNumber: string;
+  accountName: string;
+  settlementFrequency: "Instant" | "Daily" | "Weekly";
+  spoilageAlertsEmail: boolean;
+  orderAlertsSms: boolean;
+  twoFactorEnabled: boolean;
 }
 
 /* ------------------------------------------------------------------ */

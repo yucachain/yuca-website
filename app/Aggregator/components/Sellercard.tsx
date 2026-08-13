@@ -58,7 +58,7 @@ export default function SellerCard({ seller, onInitiatePayout }: SellerCardProps
       <button
         type="button"
         onClick={() => onInitiatePayout?.(seller)}
-        className="rounded-xl bg-[#215243] px-8 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#1a4336]"
+        className="w-full sm:w-auto rounded-xl bg-[#215243] px-8 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#1a4336]"
       >
         Initiate Payout
       </button>

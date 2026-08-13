@@ -7,7 +7,10 @@ import {
   Truck,
   ShoppingCart,
   HandCoins,
+  Receipt,
+  Settings,
   ShieldCheck,
+  X,
 } from "lucide-react";
 import type { SidebarNavItem } from "./types";
 
@@ -25,25 +28,46 @@ export const DEFAULT_NAV_ITEMS: SidebarNavItem[] = [
     label: "Sellers & Payouts",
     icon: <HandCoins size={18} strokeWidth={1.8} />,
   },
+  { id: "transactions", label: "Transactions", icon: <Receipt size={18} strokeWidth={1.8} /> },
+  { id: "settings", label: "Settings", icon: <Settings size={18} strokeWidth={1.8} /> },
 ];
 
 export interface AggregatorSidebarProps {
   items?: SidebarNavItem[];
   activeItemId: string;
   onItemChange: (id: string) => void;
+  onCloseMobileDrawer?: () => void;
 }
 
 export default function AggregatorSidebar({
   items = DEFAULT_NAV_ITEMS,
   activeItemId,
   onItemChange,
+  onCloseMobileDrawer,
 }: AggregatorSidebarProps) {
+  const handleItemClick = (id: string) => {
+    onItemChange(id);
+    onCloseMobileDrawer?.();
+  };
+
   return (
-    <aside className="flex w-full max-w-[260px] shrink-0 flex-col justify-between border-r border-gray-100 bg-white px-4 py-6">
+    <aside className="flex w-full max-w-[280px] shrink-0 flex-col justify-between border-r border-gray-100 bg-white px-4 py-6 overflow-y-auto no-scrollbar lg:sticky lg:top-0 lg:h-[calc(100vh-65px)]">
       <div>
-        <p className="mb-3 px-3 text-xs font-semibold tracking-wide text-gray-400">
-          AGGREGATOR ADMIN
-        </p>
+        <div className="flex items-center justify-between mb-3 px-3">
+          <p className="text-xs font-semibold tracking-wide text-gray-400">
+            AGGREGATOR ADMIN
+          </p>
+          {onCloseMobileDrawer && (
+            <button
+              type="button"
+              onClick={onCloseMobileDrawer}
+              className="lg:hidden p-1 rounded-lg text-gray-500 hover:bg-gray-100"
+              aria-label="Close admin menu"
+            >
+              <X size={18} />
+            </button>
+          )}
+        </div>
 
         <nav className="space-y-1">
           {items.map((item) => {
@@ -52,9 +76,9 @@ export default function AggregatorSidebar({
               <button
                 key={item.id}
                 type="button"
-                onClick={() => onItemChange(item.id)}
+                onClick={() => handleItemClick(item.id)}
                 className={[
-                  "flex w-full items-center gap-3 rounded-lg border-l-4 px-3 py-2.5 text-left text-sm transition-colors",
+                  "flex w-full items-center gap-3 rounded-lg border-l-4 px-3 py-2.5 text-left text-sm transition-colors cursor-pointer",
                   isActive
                     ? "border-emerald-800 bg-emerald-50/70 font-semibold text-emerald-800"
                     : "border-transparent text-gray-600 hover:bg-gray-50",
@@ -70,7 +94,7 @@ export default function AggregatorSidebar({
         </nav>
       </div>
 
-      <div className="flex items-start gap-2 border-t border-gray-100 px-3 pt-5">
+      <div className="flex items-start gap-2 border-t border-gray-100 px-3 pt-5 mt-6">
         <ShieldCheck size={18} strokeWidth={1.8} className="mt-0.5 shrink-0 text-emerald-700" />
         <div>
           <p className="text-sm font-semibold text-gray-900">Aggregator Workspace</p>

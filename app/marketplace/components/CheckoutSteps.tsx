@@ -17,7 +17,7 @@ const STEPS = [
 
 export default function CheckoutSteps({ currentStep }: CheckoutStepsProps) {
   return (
-    <div className="flex flex-1 flex-wrap items-center gap-4">
+    <div className="flex flex-wrap items-center gap-2.5 sm:gap-4">
       {STEPS.map((step, i) => {
         const isDone = step.n < currentStep;
         const isCurrent = step.n === currentStep;
@@ -25,28 +25,28 @@ export default function CheckoutSteps({ currentStep }: CheckoutStepsProps) {
 
         return (
           <React.Fragment key={step.n}>
-            <div className="flex items-center gap-3 font-sans">
+            <div className="flex items-center gap-2 sm:gap-3 font-sans">
               <span
                 className={[
-                  "flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold",
+                  "flex h-7 w-7 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-full text-xs sm:text-sm font-semibold",
                   isActive
                     ? "bg-emerald-800 text-white"
                     : "border-2 border-gray-300 bg-white text-gray-400",
                 ].join(" ")}
               >
-                {isDone ? <Check size={16} strokeWidth={2.5} /> : step.n}
+                {isDone ? <Check size={14} strokeWidth={2.5} /> : step.n}
               </span>
               <span>
                 <span
                   className={[
-                    "block text-base font-semibold",
+                    "block text-xs sm:text-base font-semibold",
                     isActive ? "text-gray-900" : "text-gray-400",
                   ].join(" ")}
                 >
                   {step.title}
                 </span>
                 <span
-                  className={["block text-xs", isActive ? "text-gray-500" : "text-gray-300"].join(
+                  className={["hidden sm:block text-xs", isActive ? "text-gray-500" : "text-gray-300"].join(
                     " "
                   )}
                 >
@@ -56,7 +56,7 @@ export default function CheckoutSteps({ currentStep }: CheckoutStepsProps) {
             </div>
 
             {i < STEPS.length - 1 && (
-              <span className="hidden h-px w-12 shrink-0 bg-gray-200 sm:block lg:w-20" />
+              <span className="hidden h-px w-6 sm:w-12 shrink-0 bg-gray-200 xs:block lg:w-20" />
             )}
           </React.Fragment>
         );

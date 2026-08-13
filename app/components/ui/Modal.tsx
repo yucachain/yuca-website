@@ -25,7 +25,7 @@ export default function Modal({ open, onClose, children, maxWidthClassName = "ma
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/30 px-4 py-10"
+      className="fixed inset-0 z-50 flex items-start sm:items-center justify-center overflow-y-auto bg-black/40 px-3 py-4 sm:px-4 sm:py-10 backdrop-blur-xs"
       onClick={onClose}
     >
       <div
@@ -33,7 +33,7 @@ export default function Modal({ open, onClose, children, maxWidthClassName = "ma
         aria-modal="true"
         onClick={(e) => e.stopPropagation()}
         className={[
-          "relative w-full rounded-3xl bg-white p-6 shadow-2xl sm:p-8",
+          "relative w-full max-h-[92vh] overflow-y-auto rounded-2xl sm:rounded-3xl bg-white p-5 sm:p-8 shadow-2xl",
           maxWidthClassName,
         ].join(" ")}
       >
@@ -41,9 +41,9 @@ export default function Modal({ open, onClose, children, maxWidthClassName = "ma
           type="button"
           onClick={onClose}
           aria-label="Close"
-          className="absolute right-5 top-5 text-gray-500 transition-colors hover:text-gray-900"
+          className="absolute right-4 top-4 sm:right-5 sm:top-5 rounded-full p-1 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900"
         >
-          <X size={22} strokeWidth={2} />
+          <X size={20} strokeWidth={2} />
         </button>
         {children}
       </div>

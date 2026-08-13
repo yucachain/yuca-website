@@ -1,4 +1,4 @@
-﻿// Stub placeholder
+// Stub placeholder
 "use client";
 
 import React from "react";
@@ -13,17 +13,13 @@ const VAT = 50;
 
 export default function ReviewOrderPage() {
   const router = useRouter();
-  const { cartItems, subtotal, total, removeFromCart } = useCart();
-
-  const reviewTotal = subtotal + VAT;
+  const { cartItems, subtotal, logisticsFee, hasLogistics, total, removeFromCart } = useCart();
 
   const handleRemove = (id: string) => {
     removeFromCart(id);
   };
 
   const handleConfirmOrder = async () => {
-    // Replace with your real "place order" call, e.g.:
-    // await fetch("/api/checkout/confirm", { method: "POST", body: JSON.stringify({ items }) });
     router.push("/marketplace/payment");
   };
 
@@ -42,11 +38,11 @@ export default function ReviewOrderPage() {
                 className="flex items-center justify-between text-sm"
               >
                 <span className="text-gray-800">
-                  {item.title} ({item.quantity})
+                  {item.title} ({item.quantity} {item.unit})
                 </span>
                 <div className="flex items-center gap-6">
                   <span className="font-medium text-gray-900">
-                    #{(item.pricePerTonne * item.quantity).toLocaleString()}
+                    ₦{(item.pricePerTonne * item.quantity).toLocaleString()}
                   </span>
                   <button
                     type="button"
@@ -67,46 +63,23 @@ export default function ReviewOrderPage() {
           </div>
         </ReviewSection>
 
-        {/*     <ReviewSection title="Shipping Address" actionLabel="Edit" onAction={() => router.push("/checkout/shipping")}>
-          <div className="space-y-1 text-sm text-gray-700">
-            <p className="font-medium text-gray-900">Damilare Muhammed</p>
-            <p>+2347065876121</p>
-            <p>muhammmeddamilare99@gmail.com</p>
-            <p className="pt-2">42, Igbasan avenue, akowonjo area, Ilorin, Kwara State, Nigeria.</p>
-          </div>
-        </ReviewSection> */}
-
-        {/*  <ReviewSection title="Payment Method" actionLabel="Change" onAction={() => router.push("/checkout/payment")}>
-          <p className="mb-3 text-sm font-medium text-gray-900">Card Payment</p>
-          <div className="grid grid-cols-3 gap-4 text-sm">
-            <div>
-              <p className="text-gray-500">Card Name</p>
-              <p className="mt-0.5 font-bold italic text-blue-700">VISA</p>
-            </div>
-            <div>
-              <p className="text-gray-500">Cardholder Name</p>
-              <p className="mt-0.5 text-gray-900">Penpal Active</p>
-            </div>
-            <div>
-              <p className="text-gray-500">Card Number</p>
-              <p className="mt-0.5 text-gray-900">xxxx xxxx xxxx 5432</p>
-            </div>
-          </div>
-        </ReviewSection> */}
-
         <ReviewSection title="Order Summary">
           <div className="space-y-2 text-sm">
             <div className="flex justify-between text-gray-700">
-              <span>Item ({cartItems.length})</span>
-              <span>#{subtotal.toLocaleString()}</span>
+              <span>Goods Subtotal ({cartItems.length} items)</span>
+              <span>₦{subtotal.toLocaleString()}</span>
             </div>
+
             <div className="flex justify-between text-gray-700">
-              <span>VAT</span>
-              <span>#{VAT.toLocaleString()}</span>
+              <span>Logistics &amp; Delivery Fee (5%)</span>
+              <span className={hasLogistics ? "font-semibold text-emerald-800" : "text-gray-400 line-through"}>
+                ₦{logisticsFee.toLocaleString()}
+              </span>
             </div>
-            <div className="flex justify-between border-t border-gray-200 pt-2 font-bold text-gray-900">
-              <span>Total</span>
-              <span>#{reviewTotal.toLocaleString()}</span>
+
+            <div className="flex justify-between border-t border-gray-200 pt-2 font-bold text-base text-gray-900">
+              <span>Total Payable</span>
+              <span className="text-[#0B6B46]">₦{total.toLocaleString()}</span>
             </div>
           </div>
         </ReviewSection>

@@ -3,18 +3,28 @@
 import React, { useMemo, useState } from "react";
 import MarketOrderFilterTabs from "./MarketOrderFilterTabs";
 import MarketOrderCard from "./MarketOrderCard";
+import ConsolidateOrdersModal from "./ConsolidateOrdersModal";
 import Pagination from "./Pagination";
 import type { MarketOrder, MarketOrderTab } from "./types";
 
-// Sample data standing in for a real "fetch marketplace orders" call.
+// Enhanced list of orders accepted by buyers from the Marketplace
 const ORDERS: MarketOrder[] = [
   {
     id: "1",
     orderNumber: "MO-2026-014",
-    buyer: "Green Valley Processing",
+    buyer: "Drevo Foods Ltd.",
+    buyerEmail: "procurement@drevofoods.com",
+    buyerPhone: "+234 803 456 7890",
+    deliveryLocation: "Ikeja Industrial Estate, Lagos",
+    productName: "TME 419 Cassava Stems (Grade A)",
+    grade: "A",
     neededKg: 12000,
     selectedKg: 11300,
-    statusLabel: "Pending Consolidation",
+    pricePerKg: 120,
+    totalPrice: 1440000,
+    paymentStatus: "Escrow Paid",
+    acceptedDate: "Aug 13, 2026 · 10:15 AM",
+    statusLabel: "Buyer Accepted - Pending Consolidation",
     tab: "pending",
     batches: [
       { id: "b1", batchCode: "YC-2026-00142", farmer: "Musa Ibrahim", weightKg: 3300, grade: "A" },
@@ -26,8 +36,17 @@ const ORDERS: MarketOrder[] = [
     id: "2",
     orderNumber: "MO-2026-015",
     buyer: "Sahel Foods Ltd.",
+    buyerEmail: "orders@sahelfoods.com",
+    buyerPhone: "+234 802 888 9911",
+    deliveryLocation: "Challawa Industrial Layout, Kano",
+    productName: "Fresh Cassava Tubers (Grade A)",
+    grade: "A",
     neededKg: 8000,
     selectedKg: 8000,
+    pricePerKg: 110,
+    totalPrice: 880000,
+    paymentStatus: "Escrow Paid",
+    acceptedDate: "Aug 12, 2026 · 02:40 PM",
     statusLabel: "Assigned to Vault",
     tab: "assigned",
     batches: [
@@ -39,8 +58,17 @@ const ORDERS: MarketOrder[] = [
     id: "3",
     orderNumber: "MO-2026-011",
     buyer: "Ibadan Millers Co.",
+    buyerEmail: "logistics@ibadanmillers.ng",
+    buyerPhone: "+234 805 777 4433",
+    deliveryLocation: "Challenge, Ibadan, Oyo State",
+    productName: "Industrial Cassava Starch Grade B",
+    grade: "B",
     neededKg: 10000,
     selectedKg: 10000,
+    pricePerKg: 135,
+    totalPrice: 1350000,
+    paymentStatus: "Credit Approved",
+    acceptedDate: "Aug 11, 2026 · 09:30 AM",
     statusLabel: "In Transit",
     tab: "in-transit",
     batches: [
@@ -52,8 +80,17 @@ const ORDERS: MarketOrder[] = [
     id: "4",
     orderNumber: "MO-2026-009",
     buyer: "Kano Starch Mills",
+    buyerEmail: "supplies@kanostarch.com",
+    buyerPhone: "+234 809 112 3344",
+    deliveryLocation: "Sharada Industrial Phase I, Kano",
+    productName: "Yellow Garri Mash (Grade A)",
+    grade: "A",
     neededKg: 6000,
     selectedKg: 6000,
+    pricePerKg: 140,
+    totalPrice: 840000,
+    paymentStatus: "Escrow Paid",
+    acceptedDate: "Aug 10, 2026 · 11:20 AM",
     statusLabel: "Fulfilled",
     tab: "fulfilled",
     batches: [
@@ -65,6 +102,7 @@ const ORDERS: MarketOrder[] = [
 export default function MarketOrdersSection() {
   const [activeTab, setActiveTab] = useState<MarketOrderTab>("all");
   const [page, setPage] = useState(1);
+  const [consolidateOrder, setConsolidateOrder] = useState<MarketOrder | null>(null);
 
   const counts = useMemo(
     () => ({
@@ -89,16 +127,12 @@ export default function MarketOrdersSection() {
     setPage(1);
   };
 
-  const handleConsolidate = (order: MarketOrder) => {
-    // Replace with your real "consolidate order" call, e.g.:
-    // await fetch(`/api/aggregator/orders/${order.orderNumber}/consolidate`, { method: "POST" });
-    console.log("Consolidate order", order.orderNumber);
-  };
-
   return (
     <>
       <h1 className="text-lg font-bold text-gray-900">Marketplace Orders</h1>
-      <p className="mt-1 text-sm text-gray-500">Track and manage all marketplace orders in real time.</p>
+      <p className="mt-1 text-sm text-gray-500">
+        Review orders accepted by buyers on the Marketplace, manage batch aggregation, and trigger consolidation.
+      </p>
 
       <div className="mt-6">
         <MarketOrderFilterTabs counts={counts} activeTab={activeTab} onChange={handleTabChange} />
@@ -106,7 +140,10 @@ export default function MarketOrdersSection() {
 
       <div className="mt-6">
         {currentOrder ? (
-          <MarketOrderCard order={currentOrder} onConsolidate={handleConsolidate} />
+          <MarketOrderCard
+            order={currentOrder}
+            onConsolidate={(order) => setConsolidateOrder(order)}
+          />
         ) : (
           <div className="rounded-2xl border border-gray-100 bg-white p-8 text-center text-sm text-gray-500">
             No orders in this category.
@@ -123,6 +160,33 @@ export default function MarketOrdersSection() {
             resultsLabel={`Showing ${page}/${filteredOrders.length} Results`}
           />
         </div>
+      )}
+
+      {/* Consolidation Modal */}
+      {consolidateOrder && (
+        <ConsolidateOrdersModal
+          orders={[
+            {
+              id: consolidateOrder.id,
+              orderNumber: consolidateOrder.orderNumber,
+              lotCode: `LOT-${consolidateOrder.orderNumber}`,
+              buyer: consolidateOrder.buyer,
+              product: consolidateOrder.productName || "Fresh Cassava Tubers",
+              weightKg: consolidateOrder.neededKg,
+              date: consolidateOrder.acceptedDate || "Today",
+              status: "pending",
+              paymentMade: consolidateOrder.paymentStatus === "Escrow Paid",
+              agreedPriceTotal: consolidateOrder.totalPrice || consolidateOrder.neededKg * 120,
+              pricePerKg: consolidateOrder.pricePerKg || 120,
+            },
+          ]}
+          open={!!consolidateOrder}
+          onClose={() => setConsolidateOrder(null)}
+          onConfirm={(orders) => {
+            console.log("Consolidated orders", orders);
+            setConsolidateOrder(null);
+          }}
+        />
       )}
     </>
   );
