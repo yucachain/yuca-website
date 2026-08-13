@@ -33,7 +33,7 @@ export default function BatchScannerPanel({
     <div className="rounded-2xl border border-gray-100 bg-white p-6">
       <div className="flex items-center gap-2">
         <ScanLine size={18} strokeWidth={1.8} className="text-gray-700" />
-        <h3 className="text-base font-semibold text-gray-900">
+        <h3 className="text-sm font-semibold text-gray-900">
           Batch scanner and summary
         </h3>
       </div>

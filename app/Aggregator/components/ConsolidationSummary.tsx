@@ -16,7 +16,7 @@ export default function ConsolidationSummary({
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <p className="text-sm text-gray-600">Combined total</p>
-          <p className="text-2xl font-bold text-emerald-900">
+          <p className="text-sm font-bold text-emerald-900">
             {combinedKg.toLocaleString()} kg
           </p>
         </div>

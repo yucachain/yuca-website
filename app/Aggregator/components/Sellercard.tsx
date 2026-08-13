@@ -24,7 +24,7 @@ export default function SellerCard({ seller, onInitiatePayout }: SellerCardProps
     <div className="rounded-2xl border border-gray-100 bg-white p-6 sm:p-8">
       <div className="flex flex-wrap items-start justify-between gap-3 border-b border-gray-100 pb-4">
         <div>
-          <h3 className="text-lg font-bold text-gray-900">{seller.name}</h3>
+          <h3 className="text-sm font-bold text-gray-900">{seller.name}</h3>
           <p className="mt-1 flex flex-wrap items-center gap-1.5 text-sm text-gray-500">
             {seller.location} · {seller.phone}
             <span className="ml-1.5 flex items-center gap-1 text-gray-700">

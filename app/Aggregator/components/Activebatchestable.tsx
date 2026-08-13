@@ -19,7 +19,7 @@ export default function ActiveBatchesTable({
   return (
     <div className="rounded-2xl border border-gray-100 bg-white p-6">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-bold text-gray-900">Active Batches</h3>
+        <h3 className="text-sm font-bold text-gray-900">Active Batches</h3>
         <button
           type="button"
           onClick={onViewAll}

@@ -20,7 +20,7 @@ export default function StorageUnitSelector({
 
   return (
     <div className="rounded-2xl border border-gray-100 bg-white p-6">
-      <h3 className="text-lg font-bold text-gray-900">Select storage unit</h3>
+      <h3 className="text-sm font-bold text-gray-900">Select storage unit</h3>
 
       <div className="mt-4 space-y-4">
         {units.map((unit) => {

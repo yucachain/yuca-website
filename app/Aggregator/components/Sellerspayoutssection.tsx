@@ -83,7 +83,7 @@ export default function SellersPayoutsSection() {
 
   return (
     <>
-      <h1 className="text-3xl font-bold text-gray-900">Registered Sellers</h1>
+      <h1 className="text-lg font-bold text-gray-900">Registered Sellers</h1>
       <p className="mt-1 text-sm text-gray-500">
         Farmers, buyers, and service providers with payout details
       </p>

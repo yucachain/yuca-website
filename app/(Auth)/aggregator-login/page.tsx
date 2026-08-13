@@ -35,7 +35,7 @@ export default function AggregatorLoginPage() {
     // TODO: wire up real API when ready
     await new Promise((resolve) => setTimeout(resolve, 500));
     setSubmitting(false);
-    router.push("/aggregator/dashboard");
+    router.push("/Aggregator/dashboard");
   };
 
   return (

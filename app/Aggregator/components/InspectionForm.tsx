@@ -149,7 +149,7 @@ export default function InspectionForm({ onSubmit }: InspectionFormProps) {
 
   return (
     <div className="rounded-2xl border border-gray-100 bg-white p-6">
-      <h3 className="text-base font-semibold text-gray-900">Inspection form</h3>
+      <h3 className="text-sm font-semibold text-gray-900">Inspection form</h3>
 
       <Formik
         initialValues={receiveBatchInitialValues}

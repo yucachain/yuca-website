@@ -8,19 +8,23 @@ export default function QuickActions({
   onSelect?: (action: QuickAction) => void;
 }) {
   return (
-    <div className="rounded-2xl border border-gray-100 bg-white p-6">
-      <h3 className="text-lg font-bold text-gray-900">Quick Actions</h3>
+    <div className="w-full rounded-2xl border border-gray-100 bg-white p-4">
+      <h3 className="text-xs font-bold uppercase tracking-wide text-gray-900">
+        Quick Actions
+      </h3>
 
-      <div className="mt-5 grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="mt-3 grid grid-cols-2 gap-1.5">
         {actions.map((action) => (
           <button
             key={action.id}
             type="button"
             onClick={() => onSelect?.(action)}
-            className="flex flex-col items-center justify-center gap-2 rounded-xl border border-gray-200 py-6 text-center transition-colors hover:border-emerald-700 hover:bg-emerald-50/40"
+            className="group flex w-full items-center gap-3 rounded-xl border border-transparent px-3 py-2.5 text-left transition-all hover:border-[#226049]/20 hover:bg-[#226049]/5"
           >
-            <span className="text-gray-700">{action.icon}</span>
-            <span className="text-sm font-medium text-gray-800">
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-gray-500 transition-colors group-hover:bg-[#226049]/10 group-hover:text-[#226049]">
+              {action.icon}
+            </span>
+            <span className="text-xs font-semibold text-gray-700 transition-colors group-hover:text-[#226049]">
               {action.label}
             </span>
           </button>

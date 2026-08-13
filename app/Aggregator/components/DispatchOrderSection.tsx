@@ -7,6 +7,7 @@ import DispatchOrderTable from "./DispatchOrderTable";
 import Pagination from "./Pagination";
 import OrderSummaryCard from "./OrderSummaryCard";
 import LogisticInfoForm from "./LogisticInfoForm";
+import DispatchSuccessModal from "./DispatchSuccessModal";
 import type { DispatchOrderRecord, DispatchOrderSummary } from "./types";
 import type { DispatchLogisticsValues } from "@/app/components/validation/schema";
 
@@ -27,7 +28,7 @@ const ORDERS: DispatchOrderRecord[] = [
     paymentMade: true,
     agreedPriceTotal: 3955000,
     pricePerKg: 350,
-    pickupHub: "YucaVault #1, Ilorin",
+    buyerDeliveryAddress: "12 Agbetoba Estate, Ilorin, Kwara State",
   },
   {
     id: "2",
@@ -41,7 +42,7 @@ const ORDERS: DispatchOrderRecord[] = [
     paymentMade: false,
     agreedPriceTotal: 4550000,
     pricePerKg: 350,
-    pickupHub: "YucaVault #3, Ibadan",
+    buyerDeliveryAddress: "Plot 7, Trans-Ekiti Road, Ado-Ekiti, Ekiti State",
   },
   {
     id: "3",
@@ -56,7 +57,7 @@ const ORDERS: DispatchOrderRecord[] = [
     paymentMade: true,
     agreedPriceTotal: 1750000,
     pricePerKg: 350,
-    pickupHub: "YucaVault #1, Ilorin",
+    buyerDeliveryAddress: "3 Warehouse Lane, Ibadan, Oyo State",
   },
   {
     id: "4",
@@ -70,7 +71,7 @@ const ORDERS: DispatchOrderRecord[] = [
     paymentMade: false,
     agreedPriceTotal: 3955000,
     pricePerKg: 350,
-    pickupHub: "YucaVault #1, Ilorin",
+    buyerDeliveryAddress: "Km 4, Offa–Ilorin Expressway, Offa, Kwara State",
   },
   {
     id: "5",
@@ -85,7 +86,7 @@ const ORDERS: DispatchOrderRecord[] = [
     paymentMade: true,
     agreedPriceTotal: 700000,
     pricePerKg: 350,
-    pickupHub: "YucaVault #1, Ilorin",
+    buyerDeliveryAddress: "12 Agbetoba Estate, Ilorin, Kwara State",
   },
   {
     id: "6",
@@ -100,7 +101,7 @@ const ORDERS: DispatchOrderRecord[] = [
     paymentMade: true,
     agreedPriceTotal: 1470000,
     pricePerKg: 350,
-    pickupHub: "YucaVault #3, Ibadan",
+    buyerDeliveryAddress: "15 Ring Road, Ibadan, Oyo State",
   },
   {
     id: "7",
@@ -115,7 +116,7 @@ const ORDERS: DispatchOrderRecord[] = [
     paymentMade: true,
     agreedPriceTotal: 2100000,
     pricePerKg: 350,
-    pickupHub: "YucaVault #1, Ilorin",
+    buyerDeliveryAddress: "22 GoldenPearl Industrial Area, Lagos, Lagos State",
   },
   {
     id: "8",
@@ -130,7 +131,7 @@ const ORDERS: DispatchOrderRecord[] = [
     paymentMade: true,
     agreedPriceTotal: 1155000,
     pricePerKg: 350,
-    pickupHub: "YucaVault #1, Ilorin",
+    buyerDeliveryAddress: "Block B, Offa Market Complex, Offa, Kwara State",
   },
   {
     id: "9",
@@ -145,7 +146,7 @@ const ORDERS: DispatchOrderRecord[] = [
     paymentMade: true,
     agreedPriceTotal: 2450000,
     pricePerKg: 350,
-    pickupHub: "YucaVault #3, Ibadan",
+    buyerDeliveryAddress: "3 Warehouse Lane, Ibadan, Oyo State",
   },
   {
     id: "10",
@@ -160,7 +161,7 @@ const ORDERS: DispatchOrderRecord[] = [
     paymentMade: true,
     agreedPriceTotal: 3150000,
     pricePerKg: 350,
-    pickupHub: "YucaVault #1, Ilorin",
+    buyerDeliveryAddress: "Plot 11, Green Valley Processing Complex, Abuja, FCT",
   },
   {
     id: "11",
@@ -175,7 +176,7 @@ const ORDERS: DispatchOrderRecord[] = [
     paymentMade: true,
     agreedPriceTotal: 1925000,
     pricePerKg: 350,
-    pickupHub: "YucaVault #3, Ibadan",
+    buyerDeliveryAddress: "15 Ring Road, Ibadan, Oyo State",
   },
   {
     id: "12",
@@ -189,7 +190,7 @@ const ORDERS: DispatchOrderRecord[] = [
     paymentMade: false,
     agreedPriceTotal: 1680000,
     pricePerKg: 350,
-    pickupHub: "YucaVault #1, Ilorin",
+    buyerDeliveryAddress: "Plot 7, Trans-Ekiti Road, Ado-Ekiti, Ekiti State",
   },
 ];
 
@@ -201,6 +202,10 @@ export default function DispatchOrderSection({ onAssignStorage }: DispatchOrderS
   const [activeTab, setActiveTab] = useState<DispatchOrderTab>("all");
   const [page, setPage] = useState(1);
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
+  const [successModalData, setSuccessModalData] = useState<{
+    order: DispatchOrderSummary;
+    logistics: DispatchLogisticsValues;
+  } | null>(null);
 
   const counts = useMemo(
     () => ({
@@ -230,16 +235,21 @@ export default function DispatchOrderSection({ onAssignStorage }: DispatchOrderS
   };
 
   const handleConfirmDispatch = async (values: DispatchLogisticsValues) => {
-    // Replace with your real "confirm dispatch" call, e.g.:
-    // await fetch(`/api/aggregator/orders/${selectedOrder?.orderNumber}/dispatch`, {
-    //   method: "POST",
-    //   body: JSON.stringify(values),
-    // });
-    console.log("Confirm dispatch", selectedOrder?.orderNumber, values);
+    if (!selectedOrder) return;
+    const summary: DispatchOrderSummary = {
+      orderNumber: selectedOrder.orderNumber,
+      lotCode: selectedOrder.lotCode,
+      buyer: selectedOrder.buyer,
+      paymentMade: selectedOrder.paymentMade,
+      agreedPriceTotal: selectedOrder.agreedPriceTotal,
+      pricePerKg: selectedOrder.pricePerKg,
+      lotWeightKg: selectedOrder.weightKg,
+      buyerDeliveryAddress: selectedOrder.buyerDeliveryAddress,
+    };
+    setSuccessModalData({ order: summary, logistics: values });
   };
 
   const handleIssueReceipt = async (values: DispatchLogisticsValues) => {
-    // Replace with your real "issue receipt" call.
     console.log("Issue receipt", selectedOrder?.orderNumber, values);
   };
 
@@ -253,7 +263,7 @@ export default function DispatchOrderSection({ onAssignStorage }: DispatchOrderS
       agreedPriceTotal: selectedOrder.agreedPriceTotal,
       pricePerKg: selectedOrder.pricePerKg,
       lotWeightKg: selectedOrder.weightKg,
-      pickupHub: selectedOrder.pickupHub,
+      buyerDeliveryAddress: selectedOrder.buyerDeliveryAddress,
     };
 
     return (
@@ -267,7 +277,7 @@ export default function DispatchOrderSection({ onAssignStorage }: DispatchOrderS
           Back to Dispatch Orders
         </button>
 
-        <h1 className="text-3xl font-bold text-gray-900">Dispatch Order</h1>
+        <h1 className="text-lg font-bold text-gray-900">Dispatch Order</h1>
         <div className="mt-1 flex items-center gap-3">
           <p className="text-sm text-gray-500">Order {summary.orderNumber}</p>
           <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-800">
@@ -282,6 +292,14 @@ export default function DispatchOrderSection({ onAssignStorage }: DispatchOrderS
             onIssueReceipt={handleIssueReceipt}
           />
         </div>
+
+        {successModalData && (
+          <DispatchSuccessModal
+            order={successModalData.order}
+            logistics={successModalData.logistics}
+            onClose={() => setSuccessModalData(null)}
+          />
+        )}
       </>
     );
   }
@@ -289,7 +307,7 @@ export default function DispatchOrderSection({ onAssignStorage }: DispatchOrderS
   // --- List view -----------------------------------------------------
   return (
     <>
-      <h1 className="text-3xl font-bold text-gray-900">Dispatch Order</h1>
+      <h1 className="text-lg font-bold text-gray-900">Dispatch Order</h1>
       <p className="mt-1 text-sm text-gray-500">
         Manage orders, storage assignments, and deliveries
       </p>

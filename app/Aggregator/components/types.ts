@@ -1,5 +1,26 @@
 import type { ReactNode } from "react";
 
+/* ------------------------------------------------------------------ */
+/*  Notifications                                                       */
+/* ------------------------------------------------------------------ */
+
+export type NotificationType =
+  | "batch-received"
+  | "storage-assigned"
+  | "dispatch"
+  | "market-order"
+  | "alert"
+  | "info";
+
+export interface Notification {
+  id: string;
+  type: NotificationType;
+  title: string;
+  description: string;
+  time: string;
+  read: boolean;
+}
+
 export interface AggregatorUser {
   initials: string;
   name: string;
@@ -84,7 +105,8 @@ export interface DispatchOrderSummary {
   agreedPriceTotal: number;
   pricePerKg: number;
   lotWeightKg: number;
-  pickupHub: string;
+  /** Buyer's company/delivery address */
+  buyerDeliveryAddress: string;
 }
  
 export type DispatchOrderStatus = "pending" | "dispatched" | "in-transit";
@@ -110,7 +132,8 @@ export interface DispatchOrderRecord {
   paymentMade: boolean;
   agreedPriceTotal: number;
   pricePerKg: number;
-  pickupHub: string;
+  /** Buyer's company/delivery address */
+  buyerDeliveryAddress: string;
 }
 
 /* ------------------------------------------------------------------ */

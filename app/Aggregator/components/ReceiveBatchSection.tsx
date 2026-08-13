@@ -15,7 +15,7 @@ export default function ReceiveBatchSection() {
 
   return (
     <div>
-      <h1 className="text-3xl font-bold text-gray-900">Receive Batch</h1>
+      <h1 className="text-lg font-bold text-gray-900">Receive Batch</h1>
       <p className="mt-1 text-sm text-gray-500">
         Scan the farmer&apos;s QR code, verify net weight, and grade the
         produce.

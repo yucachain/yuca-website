@@ -19,7 +19,7 @@ export default function MarketOrderCard({ order, onConsolidate }: MarketOrderCar
     <div className="rounded-2xl border border-gray-100 bg-white p-6 sm:p-8">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h3 className="text-lg font-bold text-gray-900">Order {order.orderNumber}</h3>
+          <h3 className="text-sm font-bold text-gray-900">Order {order.orderNumber}</h3>
           <p className="mt-1 text-sm text-gray-500">
             Buyer: {order.buyer} · Needed: {order.neededKg.toLocaleString()} kg · Selected so
             far: {order.selectedKg.toLocaleString()} kg
@@ -34,7 +34,7 @@ export default function MarketOrderCard({ order, onConsolidate }: MarketOrderCar
         <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-gray-100">
           <div className="h-full rounded-full bg-emerald-800" style={{ width: `${percent}%` }} />
         </div>
-        <span className="text-base font-bold text-gray-900">{percent}%</span>
+        <span className="text-sm font-bold text-gray-900">{percent}%</span>
       </div>
 
       <div className="mt-6 overflow-x-auto">

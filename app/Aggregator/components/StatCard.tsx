@@ -13,7 +13,7 @@ export default function StatCard({ data }: { data: StatCardData }) {
         <p className="text-sm text-gray-500">{data.label}</p>
       </div>
 
-      <p className="mt-3 text-2xl font-bold text-gray-900">{data.value}</p>
+      <p className="mt-3 text-sm font-bold text-gray-900">{data.value}</p>
 
       <p
         className={[

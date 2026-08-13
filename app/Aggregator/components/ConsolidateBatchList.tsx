@@ -19,7 +19,7 @@ export default function ConsolidationBatchList({
 }: ConsolidationBatchListProps) {
   return (
     <div>
-      <h3 className="text-lg font-bold text-gray-900">Batches in this order</h3>
+      <h3 className="text-sm font-bold text-gray-900">Batches in this order</h3>
 
       <div className="mt-4 space-y-3">
         {batches.map((batch) => (
@@ -42,7 +42,7 @@ export default function ConsolidationBatchList({
             </span>
 
             <span className="flex-1">
-              <span className="block text-base font-semibold text-gray-900">
+              <span className="block text-sm font-semibold text-gray-900">
                 {batch.batchCode}
               </span>
               <span className="block text-sm text-gray-500">{batch.farmer}</span>
@@ -57,7 +57,7 @@ export default function ConsolidationBatchList({
               Grade {batch.grade}
             </span>
 
-            <span className="w-24 shrink-0 text-right text-base font-bold text-gray-900">
+            <span className="w-24 shrink-0 text-right text-sm font-bold text-gray-900">
               {batch.weightKg.toLocaleString()} kg
             </span>
           </button>

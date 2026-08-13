@@ -20,7 +20,7 @@ export default function VaultAssignmentSelector({
 
   return (
     <div>
-      <p className="mb-2 text-base font-semibold text-gray-900">
+      <p className="mb-2 text-sm font-semibold text-gray-900">
         Assign consolidated group
       </p>
 
@@ -32,7 +32,7 @@ export default function VaultAssignmentSelector({
           className="flex w-full items-center justify-between rounded-xl border border-gray-200 px-5 py-4 text-left transition-colors hover:bg-gray-50"
         >
           <span>
-            <span className="block text-base font-semibold text-gray-900">
+            <span className="block text-sm font-semibold text-gray-900">
               {selected
                 ? `${selected.name} - ${selected.location}`
                 : "Select a vault"}

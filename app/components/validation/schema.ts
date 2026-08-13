@@ -303,24 +303,27 @@ export const ReceiveBatchSchema: Yup.ObjectSchema<ReceiveBatchValues> = Yup.obje
 /* ------------------------------------------------------------------ */
  
 export interface DispatchLogisticsValues {
-  transportCompany: string;
-  vehiclePlateNumber: string;
+  vaultPlateNumber: string;
+  vaultNumber: string;
+  driverName: string;
   deliveryDate: string;
   deliveryTime: string;
   additionalNotes: string;
 }
  
 export const dispatchLogisticsInitialValues: DispatchLogisticsValues = {
-  transportCompany: "",
-  vehiclePlateNumber: "",
+  vaultPlateNumber: "",
+  vaultNumber: "",
+  driverName: "",
   deliveryDate: "",
   deliveryTime: "",
   additionalNotes: "",
 };
  
 export const DispatchLogisticsSchema: Yup.ObjectSchema<DispatchLogisticsValues> = Yup.object({
-  transportCompany: Yup.string().trim().required("Transport company is required"),
-  vehiclePlateNumber: Yup.string().trim().required("Vehicle plate number is required"),
+  vaultPlateNumber: Yup.string().trim().required("Vault plate number is required"),
+  vaultNumber: Yup.string().trim().required("Vault number is required"),
+  driverName: Yup.string().trim().required("Driver name is required"),
   deliveryDate: Yup.string().trim().required("Delivery date is required"),
   deliveryTime: Yup.string().trim().required("Delivery time is required"),
   additionalNotes: Yup.string().trim().default(""),

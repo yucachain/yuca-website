@@ -72,22 +72,22 @@ const QUICK_ACTIONS: QuickAction[] = [
   {
     id: "receive-batch",
     label: "Receive Batch",
-    icon: <ArrowDownToLine size={22} strokeWidth={1.6} />,
+    icon: <ArrowDownToLine size={15} strokeWidth={1.8} />,
   },
   {
     id: "assign-storage",
     label: "Assign Storage",
-    icon: <Database size={22} strokeWidth={1.6} />,
+    icon: <Database size={15} strokeWidth={1.8} />,
   },
   {
     id: "market-orders",
     label: "Market Orders",
-    icon: <ShoppingCart size={22} strokeWidth={1.6} />,
+    icon: <ShoppingCart size={15} strokeWidth={1.8} />,
   },
   {
     id: "sellers-payouts",
     label: "Sellers / Payouts",
-    icon: <HandCoins size={22} strokeWidth={1.6} />,
+    icon: <HandCoins size={15} strokeWidth={1.8} />,
   },
 ];
 
@@ -148,7 +148,7 @@ export default function AggregatorOverviewPage() {
 
   return (
     <div className="flex min-h-screen flex-col font-sans bg-[#f9f9f9]">
-      <AggregatorNavbar hasNotifications />
+      <AggregatorNavbar />
 
       <div className="flex flex-1">
         <AggregatorSidebar
@@ -161,7 +161,7 @@ export default function AggregatorOverviewPage() {
             <>
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>
-                  <h1 className="text-3xl font-bold text-gray-900">Overview</h1>
+                  <h1 className="text-lg font-bold text-gray-900">Overview</h1>
                   <p className="mt-1 max-w-md text-sm text-gray-500">
                     Manage batch aggregation, storage, marketplace orders, and
                     dispatch operations.
@@ -180,16 +180,21 @@ export default function AggregatorOverviewPage() {
                 ))}
               </div>
 
-              <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-[1.4fr_1fr]">
-                <QuickActions
-                  actions={QUICK_ACTIONS}
-                  onSelect={(action) => setActiveSection(action.id)}
-                />
-                <RecentActivity items={RECENT_ACTIVITY} />
-              </div>
+              {/* Main content row: Active Batches (left) | Quick Actions + Recent Activity (right) */}
+              <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-[1.5fr_1fr]">
+                {/* Left: Active Batches table — fills the full height of the row */}
+                <div className="flex flex-col">
+                  <ActiveBatchesTable batches={ACTIVE_BATCHES} />
+                </div>
 
-              <div className="mt-6">
-                <ActiveBatchesTable batches={ACTIVE_BATCHES} />
+                {/* Right: Quick Actions stacked above Recent Activity */}
+                <div className="flex flex-col gap-4">
+                  <QuickActions
+                    actions={QUICK_ACTIONS}
+                    onSelect={(action) => setActiveSection(action.id)}
+                  />
+                  <RecentActivity items={RECENT_ACTIVITY} />
+                </div>
               </div>
             </>
           )}

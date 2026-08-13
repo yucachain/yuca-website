@@ -97,7 +97,7 @@ export default function MarketOrdersSection() {
 
   return (
     <>
-      <h1 className="text-3xl font-bold text-gray-900">Marketplace Orders</h1>
+      <h1 className="text-lg font-bold text-gray-900">Marketplace Orders</h1>
       <p className="mt-1 text-sm text-gray-500">Track and manage all marketplace orders in real time.</p>
 
       <div className="mt-6">

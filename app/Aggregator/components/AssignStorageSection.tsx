@@ -35,7 +35,7 @@ const STORAGE_UNITS: StorageUnit[] = [
   {
     id: "a-24",
     name: "Unit A-24",
-    facilityLabel: "YucaVault #1 Ilorin-OO14",
+    facilityLabel: "YucaHub #1 Ilorin-OO14",
     usedKg: 295,
     capacityKg: 300,
     status: "active",
@@ -43,7 +43,7 @@ const STORAGE_UNITS: StorageUnit[] = [
   {
     id: "b-12",
     name: "Unit B-12",
-    facilityLabel: "YucaVault #3 – Ibadan",
+    facilityLabel: "YucaHub #3 – Ilorin-0015",
     usedKg: 205,
     capacityKg: 300,
     status: "active",
@@ -51,7 +51,7 @@ const STORAGE_UNITS: StorageUnit[] = [
   {
     id: "yh-06",
     name: "Unit YH-06",
-    facilityLabel: "YucaHub P1 – Offa",
+    facilityLabel: "YucaHub #4 Ilorin-0016",
     usedKg: 0,
     capacityKg: 0,
     status: "offline",
@@ -76,7 +76,7 @@ export default function AssignStorageSection() {
 
   return (
     <>
-      <h1 className="text-3xl font-bold text-gray-900">Assign to Storage</h1>
+      <h1 className="text-lg font-bold text-gray-900">Assign to Storage</h1>
       <p className="mt-1 text-sm text-gray-500">
         Allocate intake batches into a warehouse unit
       </p>

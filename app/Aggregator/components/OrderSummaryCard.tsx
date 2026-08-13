@@ -19,7 +19,7 @@ function SummaryRow({
       ].join(" ")}
     >
       <span className="text-sm text-gray-500">{label}</span>
-      <span className="flex items-center gap-2 text-right text-base font-semibold text-gray-900">
+      <span className="flex items-center gap-2 text-right text-sm font-semibold text-gray-900">
         {children}
       </span>
     </div>
@@ -33,7 +33,7 @@ export default function OrderSummaryCard({
 }) {
   return (
     <div className="rounded-2xl border border-gray-100 bg-white p-6 sm:p-8">
-      <h3 className="text-lg font-bold text-gray-900">Order Summary</h3>
+      <h3 className="text-sm font-bold text-gray-900">Order Summary</h3>
 
       <div className="mt-2">
         <SummaryRow label="Buyer">
@@ -54,8 +54,8 @@ export default function OrderSummaryCard({
           {order.lotCode} ({order.lotWeightKg.toLocaleString()} kg)
         </SummaryRow>
 
-        <SummaryRow label="Pickup Hub" isLast>
-          {order.pickupHub}
+        <SummaryRow label="Delivery Address" isLast>
+          {order.buyerDeliveryAddress}
         </SummaryRow>
       </div>
     </div>

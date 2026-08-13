@@ -53,7 +53,7 @@ export default function BatchSelectionList({
 
   return (
     <div className="rounded-2xl border border-gray-100 bg-white p-6">
-      <h3 className="text-lg font-bold text-gray-900">Select Batches</h3>
+      <h3 className="text-sm font-bold text-gray-900">Select Batches</h3>
 
       <div className="mt-4 flex items-center gap-2 rounded-full border border-gray-200 bg-gray-50 px-4 py-2.5">
         <Search size={16} strokeWidth={1.8} className="text-gray-400" />
@@ -147,7 +147,7 @@ export default function BatchSelectionList({
         <p className="text-sm text-emerald-900">
           {selectedBatches.length} Batches Selected
         </p>
-        <p className="text-lg font-bold text-emerald-900">{totalWeight} kg</p>
+        <p className="text-sm font-bold text-emerald-900">{totalWeight} kg</p>
       </div>
     </div>
   );
