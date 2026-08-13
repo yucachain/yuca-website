@@ -228,7 +228,7 @@ export default function DispatchSuccessModal({
       row("Price per kg", `₦${fmt(order.pricePerKg)}`);
       row("Total Amount Paid", `₦${fmt(order.agreedPriceTotal)}`, true);
       row("Payment Status", order.paymentMade ? "✓ Payment Made" : "Pending");
-      const addr = doc.splitTextToSize(order.buyerDeliveryAddress, 75);
+      const addr = doc.splitTextToSize(order.buyerDeliveryAddress ?? "—", 75);
       doc.setFont("helvetica", "normal");
       doc.setFontSize(9);
       doc.setTextColor(gray);

@@ -9,7 +9,6 @@ export interface DispatchOrderRowMenuProps {
   onAssignStorage: (order: DispatchOrderRecord) => void;
   onAssignVault: (order: DispatchOrderRecord) => void;
   onViewReceipt: (order: DispatchOrderRecord) => void;
-  onViewDetails: (order: DispatchOrderRecord) => void;
 }
 
 export default function DispatchOrderRowMenu({
@@ -17,7 +16,6 @@ export default function DispatchOrderRowMenu({
   onAssignStorage,
   onAssignVault,
   onViewReceipt,
-  onViewDetails,
 }: DispatchOrderRowMenuProps) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -37,14 +35,16 @@ export default function DispatchOrderRowMenu({
     { label: "Assign to Storage", onSelect: () => onAssignStorage(order) },
     { label: "Assign to Vault", onSelect: () => onAssignVault(order) },
     { label: "View Receipt", onSelect: () => onViewReceipt(order) },
-    { label: "View Details", onSelect: () => onViewDetails(order) },
   ];
 
   return (
     <div className="relative inline-block" ref={rootRef}>
       <button
         type="button"
-        onClick={() => setOpen((v) => !v)}
+        onClick={(e) => {
+          e.stopPropagation(); // prevent row-select when opening menu
+          setOpen((v) => !v);
+        }}
         aria-haspopup="menu"
         aria-expanded={open}
         aria-label="Row actions"

@@ -1,21 +1,23 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
+import { Layers, X } from "lucide-react";
 import DispatchOrderFilterTabs, { DispatchOrderTab } from "./DispatchOrderFilter";
 import DispatchOrderTable from "./DispatchOrderTable";
 import Pagination from "./Pagination";
-import DispatchOrderDetailModal from "./DispatchOrderDetailModel";
 import DispatchReceiptModal from "./DispatchReceiptModal";
 import AssignToStorageModal from "./AssignStorageModal";
 import AssignToVaultModal from "./AssignToVaultModal";
+import ConsolidateOrdersModal from "./ConsolidateOrdersModal";
 import type { DispatchOrderRecord } from "./types";
 import type { DispatchLogisticsValues } from "@/app/components/validation/schema";
 
 const PER_PAGE = 5;
 
-// Sample data standing in for a real "fetch dispatch orders" call.
-// 4 pending + 5 dispatched + 3 in-transit = 12 total, matching the "All (12)" tab count.
+// ── Test data: 3 buyers × 3 orders each (Agbetoba Farms, Greenland Farms, Grando Ltd)
+// plus several single-order buyers = 15 total orders
 const ORDERS: DispatchOrderRecord[] = [
+  // ── Agbetoba Farms (3 orders) ─────────────────────────────
   {
     id: "1",
     orderNumber: "MO-2026-014",
@@ -26,49 +28,6 @@ const ORDERS: DispatchOrderRecord[] = [
     date: "Aug 27, 2026",
     status: "pending",
     paymentMade: true,
-    agreedPriceTotal: 3955000,
-    pricePerKg: 350,
-    pickupHub: "YucaVault #1, Ilorin",
-  },
-  {
-    id: "2",
-    orderNumber: "MO-2026-112",
-    lotCode: "CL-2026-00045",
-    buyer: "Greenland Farms",
-    product: "Cassava Flour",
-    weightKg: 13000,
-    date: "Aug 12, 2026",
-    status: "pending",
-    paymentMade: false,
-    agreedPriceTotal: 4550000,
-    pricePerKg: 350,
-    pickupHub: "YucaVault #3, Ibadan",
-  },
-  {
-    id: "3",
-    orderNumber: "MO-2026-034",
-    lotCode: "CL-2026-00052",
-    buyer: "Grando Ltd",
-    product: "Cassava Stems",
-    weightKg: 5000,
-    date: "Sep 27, 2026",
-    status: "in-transit",
-    storageLabel: "YucaVault #1, Ilorin",
-    paymentMade: true,
-    agreedPriceTotal: 1750000,
-    pricePerKg: 350,
-    pickupHub: "YucaVault #1, Ilorin",
-  },
-  {
-    id: "4",
-    orderNumber: "MO-2026-044",
-    lotCode: "CL-2026-00061",
-    buyer: "Penpal Farms",
-    product: "Cassava Flour",
-    weightKg: 11300,
-    date: "Jul 27, 2026",
-    status: "pending",
-    paymentMade: false,
     agreedPriceTotal: 3955000,
     pricePerKg: 350,
     pickupHub: "YucaVault #1, Ilorin",
@@ -85,6 +44,124 @@ const ORDERS: DispatchOrderRecord[] = [
     storageLabel: "YucaVault #1, Ilorin",
     paymentMade: true,
     agreedPriceTotal: 700000,
+    pricePerKg: 350,
+    pickupHub: "YucaVault #1, Ilorin",
+  },
+  {
+    id: "13",
+    orderNumber: "MO-2026-051",
+    lotCode: "CL-2026-00071",
+    buyer: "Agbetoba Farms",
+    product: "Cassava Flour",
+    weightKg: 6400,
+    date: "Aug 5, 2026",
+    status: "pending",
+    paymentMade: true,
+    agreedPriceTotal: 2240000,
+    pricePerKg: 350,
+    pickupHub: "YucaVault #1, Ilorin",
+  },
+  // ── Greenland Farms (3 orders) ────────────────────────────
+  {
+    id: "2",
+    orderNumber: "MO-2026-112",
+    lotCode: "CL-2026-00045",
+    buyer: "Greenland Farms",
+    product: "Cassava Flour",
+    weightKg: 13000,
+    date: "Aug 12, 2026",
+    status: "pending",
+    paymentMade: false,
+    agreedPriceTotal: 4550000,
+    pricePerKg: 350,
+    pickupHub: "YucaVault #3, Ibadan",
+  },
+  {
+    id: "12",
+    orderNumber: "MO-2026-039",
+    lotCode: "CL-2026-00057",
+    buyer: "Greenland Farms",
+    product: "Cassava Stems",
+    weightKg: 4800,
+    date: "Jul 5, 2026",
+    status: "pending",
+    paymentMade: false,
+    agreedPriceTotal: 1680000,
+    pricePerKg: 350,
+    pickupHub: "YucaVault #1, Ilorin",
+  },
+  {
+    id: "14",
+    orderNumber: "MO-2026-056",
+    lotCode: "CL-2026-00074",
+    buyer: "Greenland Farms",
+    product: "Cassava Starch",
+    weightKg: 7200,
+    date: "Aug 9, 2026",
+    status: "in-transit",
+    storageLabel: "YucaVault #3, Ibadan",
+    paymentMade: true,
+    agreedPriceTotal: 2520000,
+    pricePerKg: 350,
+    pickupHub: "YucaVault #3, Ibadan",
+  },
+  // ── Grando Ltd (3 orders) ─────────────────────────────────
+  {
+    id: "3",
+    orderNumber: "MO-2026-034",
+    lotCode: "CL-2026-00052",
+    buyer: "Grando Ltd",
+    product: "Cassava Stems",
+    weightKg: 5000,
+    date: "Sep 27, 2026",
+    status: "in-transit",
+    storageLabel: "YucaVault #1, Ilorin",
+    paymentMade: true,
+    agreedPriceTotal: 1750000,
+    pricePerKg: 350,
+    pickupHub: "YucaVault #1, Ilorin",
+  },
+  {
+    id: "9",
+    orderNumber: "MO-2026-028",
+    lotCode: "CL-2026-00041",
+    buyer: "Grando Ltd",
+    product: "Cassava Flour",
+    weightKg: 7000,
+    date: "Feb 21, 2026",
+    status: "dispatched",
+    storageLabel: "YucaVault #3, Ibadan",
+    paymentMade: true,
+    agreedPriceTotal: 2450000,
+    pricePerKg: 350,
+    pickupHub: "YucaVault #3, Ibadan",
+  },
+  {
+    id: "15",
+    orderNumber: "MO-2026-063",
+    lotCode: "CL-2026-00079",
+    buyer: "Grando Ltd",
+    product: "Cassava Stems",
+    weightKg: 3800,
+    date: "Aug 11, 2026",
+    status: "pending",
+    paymentMade: false,
+    agreedPriceTotal: 1330000,
+    pricePerKg: 350,
+    pickupHub: "YucaVault #1, Ilorin",
+  },
+  // ── Other buyers (single orders) ──────────────────────────
+  {
+    id: "4",
+    orderNumber: "MO-2026-044",
+    lotCode: "CL-2026-00061",
+    buyer: "Penpal Farms",
+    product: "Cassava Flour",
+    weightKg: 11300,
+    date: "Jul 27, 2026",
+    status: "pending",
+    paymentMade: false,
+    agreedPriceTotal: 3955000,
     pricePerKg: 350,
     pickupHub: "YucaVault #1, Ilorin",
   },
@@ -134,21 +211,6 @@ const ORDERS: DispatchOrderRecord[] = [
     pickupHub: "YucaVault #1, Ilorin",
   },
   {
-    id: "9",
-    orderNumber: "MO-2026-028",
-    lotCode: "CL-2026-00041",
-    buyer: "Grando Ltd",
-    product: "Cassava Flour",
-    weightKg: 7000,
-    date: "Feb 21, 2026",
-    status: "dispatched",
-    storageLabel: "YucaVault #3, Ibadan",
-    paymentMade: true,
-    agreedPriceTotal: 2450000,
-    pricePerKg: 350,
-    pickupHub: "YucaVault #3, Ibadan",
-  },
-  {
     id: "10",
     orderNumber: "MO-2026-031",
     lotCode: "CL-2026-00047",
@@ -178,27 +240,14 @@ const ORDERS: DispatchOrderRecord[] = [
     pricePerKg: 350,
     pickupHub: "YucaVault #3, Ibadan",
   },
-  {
-    id: "12",
-    orderNumber: "MO-2026-039",
-    lotCode: "CL-2026-00057",
-    buyer: "Greenland Farms",
-    product: "Cassava Stems",
-    weightKg: 4800,
-    date: "Jul 5, 2026",
-    status: "pending",
-    paymentMade: false,
-    agreedPriceTotal: 1680000,
-    pricePerKg: 350,
-    pickupHub: "YucaVault #1, Ilorin",
-  },
 ];
 
 export default function DispatchOrderSection() {
   const [activeTab, setActiveTab] = useState<DispatchOrderTab>("all");
   const [page, setPage] = useState(1);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
-  type ModalKind = "details" | "receipt" | "assign-storage" | "assign-vault" | null;
+  type ModalKind = "receipt" | "assign-storage" | "assign-vault" | "consolidate" | null;
   const [activeModal, setActiveModal] = useState<ModalKind>(null);
   const [modalOrderId, setModalOrderId] = useState<string | null>(null);
 
@@ -224,6 +273,12 @@ export default function DispatchOrderSection() {
 
   const modalOrder = ORDERS.find((o) => o.id === modalOrderId) ?? null;
 
+  // Derive consolidation eligibility from current selection
+  const selectedOrders = ORDERS.filter((o) => selectedIds.includes(o.id));
+  const uniqueBuyers = [...new Set(selectedOrders.map((o) => o.buyer))];
+  const canConsolidate = selectedOrders.length >= 2 && uniqueBuyers.length === 1;
+  const mixedBuyers = selectedOrders.length >= 2 && uniqueBuyers.length > 1;
+
   const handleTabChange = (tab: DispatchOrderTab) => {
     setActiveTab(tab);
     setPage(1);
@@ -243,27 +298,11 @@ export default function DispatchOrderSection() {
     order: DispatchOrderRecord,
     values: DispatchLogisticsValues
   ) => {
-    // Replace with your real "confirm dispatch" call, e.g.:
-    // await fetch(`/api/aggregator/orders/${order.orderNumber}/dispatch`, {
-    //   method: "POST",
-    //   body: JSON.stringify(values),
-    // });
     console.log("Confirm dispatch", order.orderNumber, values);
-    // Swap straight to the receipt modal for the same order, mirroring the
-    // "Order dispatched successfully!" flow in the mock.
     setActiveModal("receipt");
   };
 
-  const handleIssueReceipt = async (
-    order: DispatchOrderRecord,
-    values: DispatchLogisticsValues
-  ) => {
-    // Replace with your real "issue receipt" call.
-    console.log("Issue receipt", order.orderNumber, values);
-  };
-
   const handleDownloadReceipt = (order: DispatchOrderRecord) => {
-    // Replace with your real "download receipt PDF" call.
     console.log("Download receipt for", order.orderNumber);
   };
 
@@ -272,38 +311,94 @@ export default function DispatchOrderSection() {
     batchIds: string[],
     unitId: string
   ) => {
-    // Replace with your real "assign batches to storage unit" call.
     console.log("Assign storage for order", order.orderNumber, batchIds, unitId);
     closeModal();
   };
 
-  const handleAssignVault = (
-    order: DispatchOrderRecord,
-    batchIds: string[],
-    vaultId: string
-  ) => {
-    // Replace with your real "confirm consolidation and dispatch" call.
-    console.log("Assign vault for order", order.orderNumber, batchIds, vaultId);
+  const handleConsolidateConfirm = (orders: DispatchOrderRecord[]) => {
+    console.log("Consolidate orders", orders.map((o) => o.orderNumber));
+    setSelectedIds([]);
     closeModal();
   };
 
+  const showActionBar = selectedOrders.length >= 2;
+
   return (
-    <>
+    <div className="relative">
       <h1 className="text-3xl font-bold text-gray-900">Dispatch Order</h1>
       <p className="mt-1 text-sm text-gray-500">
         Manage orders, storage assignments, and deliveries
       </p>
 
-      <div className="mt-6">
+      {/* ── Filter row + Consolidate button ───────────────────────── */}
+      <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
         <DispatchOrderFilterTabs counts={counts} activeTab={activeTab} onChange={handleTabChange} />
+
+        <div className="flex shrink-0 items-center gap-2.5">
+          {/* Selection hint */}
+          {selectedOrders.length > 0 && (
+            <span
+              className={[
+                "rounded-lg px-3 py-1.5 text-xs font-medium",
+                mixedBuyers
+                  ? "bg-orange-50 text-orange-700"
+                  : canConsolidate
+                  ? "bg-emerald-50 text-emerald-800"
+                  : "bg-gray-100 text-gray-500",
+              ].join(" ")}
+            >
+              {mixedBuyers
+                ? `${selectedOrders.length} selected · different buyers`
+                : canConsolidate
+                ? `${selectedOrders.length} orders · ${uniqueBuyers[0]}`
+                : `${selectedOrders.length} selected`}
+            </span>
+          )}
+
+          {/* Clear selection */}
+          {selectedOrders.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setSelectedIds([])}
+              title="Clear selection"
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
+            >
+              <X size={15} strokeWidth={2} />
+            </button>
+          )}
+
+          {/* Consolidate button */}
+          <button
+            type="button"
+            disabled={!canConsolidate}
+            onClick={() => setActiveModal("consolidate")}
+            title={
+              !selectedOrders.length
+                ? "Select 2 or more orders from the same buyer"
+                : mixedBuyers
+                ? "Orders must belong to the same buyer"
+                : undefined
+            }
+            className={[
+              "flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold transition-colors",
+              canConsolidate
+                ? "bg-[#215243] text-white hover:bg-[#1a4336]"
+                : "cursor-not-allowed border border-gray-200 bg-gray-50 text-gray-400",
+            ].join(" ")}
+          >
+            <Layers size={15} strokeWidth={1.8} />
+            Consolidate Orders
+          </button>
+        </div>
       </div>
 
       <div className="mt-6">
         <DispatchOrderTable
           orders={pageItems}
+          selectedIds={selectedIds}
+          onSelectionChange={setSelectedIds}
           onAssignStorage={(order) => openModal("assign-storage", order)}
           onAssignVault={(order) => openModal("assign-vault", order)}
-          onViewDetails={(order) => openModal("details", order)}
           onViewReceipt={(order) => openModal("receipt", order)}
         />
       </div>
@@ -319,14 +414,7 @@ export default function DispatchOrderSection() {
         </div>
       )}
 
-      <DispatchOrderDetailModal
-        order={modalOrder}
-        open={activeModal === "details"}
-        onClose={closeModal}
-        onConfirmDispatch={handleConfirmDispatch}
-        onIssueReceipt={handleIssueReceipt}
-      />
-
+      {/* ── Modals ─────────────────────────────────────────────────── */}
       <DispatchReceiptModal
         order={modalOrder}
         open={activeModal === "receipt"}
@@ -345,8 +433,15 @@ export default function DispatchOrderSection() {
         order={modalOrder}
         open={activeModal === "assign-vault"}
         onClose={closeModal}
-        onConfirm={handleAssignVault}
+        onConfirmDispatch={handleConfirmDispatch}
       />
-    </>
+
+      <ConsolidateOrdersModal
+        orders={activeModal === "consolidate" ? selectedOrders : []}
+        open={activeModal === "consolidate"}
+        onClose={closeModal}
+        onConfirm={handleConsolidateConfirm}
+      />
+    </div>
   );
 }

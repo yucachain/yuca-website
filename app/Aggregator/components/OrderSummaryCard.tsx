@@ -31,6 +31,11 @@ export default function OrderSummaryCard({
 }: {
   order: DispatchOrderSummary;
 }) {
+  const hasPickupHub = Boolean(order.pickupHub);
+  const hasDeliveryAddress = Boolean(order.buyerDeliveryAddress);
+  // isLast logic: delivery address row is last if it exists, else pickupHub is last
+  const pickupIsLast = hasPickupHub && !hasDeliveryAddress;
+
   return (
     <div className="rounded-2xl border border-gray-100 bg-white p-6 sm:p-8">
       <h3 className="text-sm font-bold text-gray-900">Order Summary</h3>
@@ -54,9 +59,23 @@ export default function OrderSummaryCard({
           {order.lotCode} ({order.lotWeightKg.toLocaleString()} kg)
         </SummaryRow>
 
-        <SummaryRow label="Delivery Address" isLast>
-          {order.buyerDeliveryAddress}
-        </SummaryRow>
+        {hasPickupHub && (
+          <SummaryRow label="Pickup Hub" isLast={pickupIsLast}>
+            {order.pickupHub}
+          </SummaryRow>
+        )}
+
+        {hasDeliveryAddress && (
+          <SummaryRow label="Delivery Address" isLast>
+            {order.buyerDeliveryAddress}
+          </SummaryRow>
+        )}
+
+        {!hasPickupHub && !hasDeliveryAddress && (
+          <SummaryRow label="Delivery Address" isLast>
+            —
+          </SummaryRow>
+        )}
       </div>
     </div>
   );

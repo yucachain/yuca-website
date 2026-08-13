@@ -105,8 +105,10 @@ export interface DispatchOrderSummary {
   agreedPriceTotal: number;
   pricePerKg: number;
   lotWeightKg: number;
+  /** The YucaVault or hub that is dispatching / releasing the product */
+  pickupHub?: string;
   /** Buyer's company/delivery address */
-  buyerDeliveryAddress: string;
+  buyerDeliveryAddress?: string;
 }
  
 export type DispatchOrderStatus = "pending" | "dispatched" | "in-transit";
