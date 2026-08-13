@@ -140,7 +140,7 @@ export default function MarketplaceNavbar({
 
             {/* Profile Dropdown Menu */}
             {menuOpen && (
-              <div className="absolute right-0 mt-2 w-56 rounded-2xl border border-gray-100 bg-white p-2 shadow-xl animate-in fade-in slide-in-from-top-2 z-50">
+              <div className="absolute right-0 mt-2 w-48 sm:w-56 rounded-2xl border border-gray-100 bg-white p-2 shadow-xl animate-in fade-in slide-in-from-top-2 z-50">
                 <div className="px-3 py-2.5 border-b border-gray-100">
                   <p className="text-xs font-bold text-gray-900 truncate">{user.name}</p>
                   <p className="text-[11px] text-gray-500 truncate">{user.email || "Verified Buyer"}</p>

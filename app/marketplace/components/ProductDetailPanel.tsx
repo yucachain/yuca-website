@@ -129,20 +129,13 @@ export default function ProductDetailPanel({
           </div>
         </div>
 
-        <div className="flex gap-2 pt-1">
-          <button
-            type="button"
-            onClick={() => onContactSeller?.(batch)}
-            className="flex-1 rounded-lg border border-[#226049] py-2.5 text-[11px] font-semibold text-[#226049] hover:bg-emerald-50 transition-colors"
-          >
-            Contact Seller
-          </button>
+        <div className="pt-2">
           <button
             type="button"
             onClick={() => onPlaceOrder?.(batch)}
-            className="flex-1 rounded-lg bg-[#215243] py-2.5 text-[11px] font-semibold text-white hover:bg-[#1a4336] transition-colors"
+            className="w-full rounded-xl bg-[#226049] py-3 text-xs sm:text-sm font-bold text-white hover:bg-[#1a4b39] transition-all shadow-xs cursor-pointer active:scale-[0.99]"
           >
-            Place order
+            Place Order
           </button>
         </div>
 

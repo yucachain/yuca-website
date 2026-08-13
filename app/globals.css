@@ -160,6 +160,26 @@ input.green-range::-moz-range-thumb {
   scrollbar-width: none;  /* Firefox */
 }
 
+/* Hide scrollbars globally across all elements without affecting scroll behavior */
+::-webkit-scrollbar {
+  display: none;
+  width: 0px;
+  height: 0px;
+  background: transparent;
+}
+
+*, html, body {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+/* Prevent iOS/Android auto-zoom on input focus */
+@media (max-width: 768px) {
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+}
+
 /* Prevent horizontal page overflow on small viewports */
 html, body {
   max-width: 100vw;

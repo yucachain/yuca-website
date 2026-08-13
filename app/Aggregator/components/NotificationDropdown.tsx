@@ -78,7 +78,7 @@ export default function NotificationDropdown({
       <div
         role="dialog"
         aria-label="Notifications"
-        className="absolute right-0 top-full z-50 mt-2 w-[360px] overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-xl"
+        className="fixed inset-x-3 sm:inset-auto sm:right-0 top-16 sm:top-full z-50 mt-2 sm:mt-2.5 w-auto sm:w-[360px] max-w-sm sm:max-w-[360px] overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-2xl transition-all mx-auto sm:mx-0"
       >
         {/* Header */}
         <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">

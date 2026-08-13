@@ -347,6 +347,11 @@ export default function MarketplacePage() {
     addToCart(batch);
   };
 
+  const handlePlaceOrder = (batch: CassavaBatch) => {
+    addToCart(batch);
+    router.push("/marketplace/shipping");
+  };
+
   const panelOpen = selectedBatch !== null;
 
   return (
@@ -372,7 +377,7 @@ export default function MarketplacePage() {
               className="fixed inset-0 bg-black/40 backdrop-blur-xs"
               onClick={() => setShowMobileSidebar(false)}
             />
-            <div className="relative z-10 w-full max-w-[300px] bg-white h-full shadow-2xl">
+            <div className="relative z-10 w-full max-w-[280px] bg-white h-full shadow-2xl">
               <MarketplaceSidebar
                 activeCategoryId={activeCategoryId}
                 onCategoryChange={handleCategoryChange}
@@ -383,39 +388,35 @@ export default function MarketplacePage() {
           </div>
         )}
 
-        <main className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 min-w-0 bg-[#F9FAFB]">
-
-          <div className="flex items-center justify-between gap-4">
+        <main className="flex-1 overflow-y-auto px-4 sm:px-6 lg:px-8 py-6 min-w-0">
+          <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <h2 className="text-lg sm:text-xl font-bold text-gray-900">
-                {CATEGORY_LABELS[activeCategoryId]}
-              </h2>
-              <p className="mt-0.5 text-xs text-gray-500">
-                Browse and search through all categories
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowMobileSidebar(true)}
+                  className="lg:hidden flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 shadow-2xs hover:bg-gray-50"
+                >
+                  <Filter size={14} />
+                  Filter &amp; Categories
+                </button>
+                <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Cassava Marketplace</h1>
+              </div>
+              <p className="mt-1 text-xs sm:text-sm text-gray-500">
+                Browse verified cassava batches directly from farmers &amp; aggregators
               </p>
             </div>
 
-            <button
-              type="button"
-              onClick={() => setShowMobileSidebar(true)}
-              className="lg:hidden inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-lg bg-[#226049] text-white hover:bg-[#1a4b39] transition-colors shadow-xs"
-            >
-              <SlidersHorizontal size={14} />
-              Filter &amp; Categories
-            </button>
+            <div className="flex items-center gap-3 self-start sm:self-auto">
+              <span className="rounded-full bg-emerald-50 border border-emerald-200 px-3 py-1 text-xs font-semibold text-emerald-800">
+                {visibleBatches.length} Batches Available
+              </span>
+            </div>
           </div>
 
-          <div className="mt-4 flex flex-wrap items-center gap-3">
-            <span className="text-xs font-medium text-gray-500 whitespace-nowrap bg-gray-100 rounded-full px-3 py-1">
-              {visibleBatches.length} Batches found
-            </span>
-
-            <div className="relative flex-1 min-w-[140px] max-w-xs">
-              <Search
-                size={13}
-                strokeWidth={1.8}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-              />
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <div className="relative flex-1 min-w-[200px] max-w-md">
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
               <input
                 type="text"
                 placeholder="Search batches..."
@@ -425,7 +426,7 @@ export default function MarketplacePage() {
               />
             </div>
 
-            <div className="relative ml-auto flex items-center">
+            <div className="relative flex items-center">
               <label className="text-xs text-gray-500 mr-1.5 whitespace-nowrap">Sort By</label>
               <div className="relative inline-block">
                 <select
@@ -446,7 +447,7 @@ export default function MarketplacePage() {
             selectedBatchId={selectedBatch?.id || null}
             onViewDetails={handleViewDetails}
             onAddToCart={handleAddToCart}
-            onPlaceOrder={(b) => console.log("Place order", b.id)}
+            onPlaceOrder={handlePlaceOrder}
             panelOpen={panelOpen}
           />
 
@@ -472,8 +473,7 @@ export default function MarketplacePage() {
               <ProductDetailPanel
                 batch={selectedBatch}
                 onClose={handleClosePanel}
-                onContactSeller={(b) => console.log("Contact seller", b.id)}
-                onPlaceOrder={(b) => console.log("Place order", b.id)}
+                onPlaceOrder={handlePlaceOrder}
               />
             </div>
           </div>
@@ -485,8 +485,7 @@ export default function MarketplacePage() {
               <ProductDetailPanel
                 batch={selectedBatch}
                 onClose={handleClosePanel}
-                onContactSeller={(b) => console.log("Contact seller", b.id)}
-                onPlaceOrder={(b) => console.log("Place order", b.id)}
+                onPlaceOrder={handlePlaceOrder}
               />
             </div>
           </div>
