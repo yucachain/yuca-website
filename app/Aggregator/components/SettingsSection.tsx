@@ -9,9 +9,7 @@ import {
   Shield,
   Check,
   Save,
-  Lock,
   Smartphone,
-  AlertCircle,
 } from "lucide-react";
 import type { AggregatorSettings } from "./types";
 
