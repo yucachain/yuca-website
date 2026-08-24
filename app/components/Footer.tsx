@@ -25,10 +25,9 @@ export default function Footer() {
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-12 sm:pt-16 pb-8">
 
-        {/* Top Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 sm:gap-12 pb-8 sm:pb-12 border-b border-white/20">
 
-          {/* Brand Column */}
+
           <div className="flex flex-col gap-4 sm:gap-5 sm:col-span-2 md:col-span-1">
             <Link href="/" className="flex items-center gap-2 w-fit">
               <Image
@@ -59,7 +58,7 @@ export default function Footer() {
             </div>
           </div>
 
-          {/* Quick Links */}
+
           <div>
             <h3 className="text-xs sm:text-sm font-semibold uppercase tracking-widest text-white/70 mb-4 sm:mb-5">
               Quick Links
@@ -79,7 +78,7 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Products */}
+
           <div>
             <h3 className="text-xs sm:text-sm font-semibold uppercase tracking-widest text-white/70 mb-4 sm:mb-5">
               Products
@@ -101,7 +100,6 @@ export default function Footer() {
 
         </div>
 
-        {/* Bottom Bar */}
         <div className="pt-6 flex flex-col sm:flex-row justify-between items-center gap-3 text-center sm:text-left text-xs sm:text-sm text-white/60">
           <p>© 2026 YucaChain Limited. All rights reserved.</p>
 

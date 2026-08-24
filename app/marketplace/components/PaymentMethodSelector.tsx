@@ -1,4 +1,4 @@
-import React from "react";
+
 import { CreditCard, Landmark, Wallet } from "lucide-react";
 
 export type PaymentMethodId = "card" | "bank-transfer" | "yuca-wallet";

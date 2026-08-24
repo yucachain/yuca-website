@@ -10,6 +10,8 @@ import { LoginSchema } from "@/app/components/validation/schema";
 import AuthCard from "@/app/components/ui/Authcard";
 import AuthLayout from "@/app/components/ui/AuthLayout";
 
+import { useAuth } from "@/app/Context/AuthContext";
+
 interface AggregatorLoginValues {
   email: string;
   password: string;
@@ -17,6 +19,7 @@ interface AggregatorLoginValues {
 
 export default function AggregatorLoginPage() {
   const router = useRouter();
+  const { aggregatorLogin } = useAuth();
 
   const initialValues: AggregatorLoginValues = {
     email: "",
@@ -27,15 +30,26 @@ export default function AggregatorLoginPage() {
     values: AggregatorLoginValues,
     {
       setSubmitting,
+      setStatus,
     }: {
       setSubmitting: (value: boolean) => void;
       setStatus: (status?: string) => void;
     },
   ) => {
-    // TODO: wire up real API when ready
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    setSubmitting(false);
-    router.push("/Aggregator/dashboard");
+    setStatus(undefined);
+    try {
+      await aggregatorLogin({
+        email: values.email,
+        password: values.password,
+      });
+      router.push("/Aggregator/dashboard");
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : "Unable to log in. Please check your credentials.";
+      setStatus(message);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (

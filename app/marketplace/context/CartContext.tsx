@@ -10,13 +10,13 @@ import React, {
 } from "react";
 import type { CassavaBatch } from "../components/types";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+
 export interface CartEntry {
   id: string;
   batchCode: string;
   title: string;
   grade: string;
-  quantity: number;         // number of units (tonnes / bags etc.)
+  quantity: number;
   pricePerTonne: number;
   unit: string;
   currency: string;
@@ -32,7 +32,7 @@ type CartAction =
   | { type: "DECREASE"; id: string }
   | { type: "INIT"; items: CartEntry[] };
 
-// ─── Reducer ──────────────────────────────────────────────────────────────────
+
 function cartReducer(state: CartEntry[], action: CartAction): CartEntry[] {
   switch (action.type) {
     case "INIT":
@@ -63,7 +63,6 @@ function cartReducer(state: CartEntry[], action: CartAction): CartEntry[] {
   }
 }
 
-// ─── Context ──────────────────────────────────────────────────────────────────
 interface CartContextValue {
   cartItems: CartEntry[];
   totalItems: number;
@@ -83,12 +82,12 @@ const CartContext = createContext<CartContextValue | null>(null);
 
 const STORAGE_KEY = "yuca_cart_v1";
 
-// ─── Provider ─────────────────────────────────────────────────────────────────
+
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [cartItems, dispatch] = useReducer(cartReducer, []);
   const [hasLogistics, setHasLogistics] = React.useState<boolean>(true);
 
-  // Hydrate from localStorage on mount (client only)
+
   useEffect(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
@@ -99,16 +98,15 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         }
       }
     } catch {
-      // ignore parse errors
+
     }
   }, []);
 
-  // Persist to localStorage on every change
+
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(cartItems));
     } catch {
-      // ignore write errors
     }
   }, [cartItems]);
 
@@ -172,7 +170,6 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 }
 
-// ─── Hook ─────────────────────────────────────────────────────────────────────
 export function useCart(): CartContextValue {
   const ctx = useContext(CartContext);
   if (!ctx) throw new Error("useCart must be used inside <CartProvider>");

@@ -10,6 +10,8 @@ import { LoginSchema } from "@/app/components/validation/schema";
 import AuthCard from "@/app/components/ui/Authcard";
 import AuthLayout from "@/app/components/ui/AuthLayout";
 
+import { useAuth } from "@/app/Context/AuthContext";
+
 interface LoginValues {
   email: string;
   password: string;
@@ -18,6 +20,7 @@ interface LoginValues {
 
 export default function LoginPage() {
   const router = useRouter();
+  const { login } = useAuth();
 
   const initialValues: LoginValues = {
     email: "",
@@ -29,15 +32,27 @@ export default function LoginPage() {
     values: LoginValues,
     {
       setSubmitting,
+      setStatus,
     }: {
       setSubmitting: (value: boolean) => void;
       setStatus: (status?: string) => void;
     },
   ) => {
-    // TODO: wire up real API when ready
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    setSubmitting(false);
-    router.push("/marketplace");
+    setStatus(undefined);
+    try {
+      await login({
+        email: values.email,
+        password: values.password,
+        rememberMe: values.rememberMe,
+      });
+      router.push("/marketplace");
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : "Unable to log in. Please try again.";
+      setStatus(message);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (

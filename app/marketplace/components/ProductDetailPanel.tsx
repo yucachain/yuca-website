@@ -37,8 +37,6 @@ export default function ProductDetailPanel({
 
   return (
     <div className="flex flex-col h-full w-[400px] shrink-0 bg-white border-l border-gray-100 shadow-2xl">
-
-      {/* ── Sticky header ── */}
       <div className="flex items-start justify-between px-5 pt-5 pb-3 border-b border-gray-100 shrink-0">
         <div>
           <h2 className="text-[15px] font-bold text-gray-900 leading-tight">Product Details</h2>

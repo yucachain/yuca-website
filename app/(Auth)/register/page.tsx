@@ -14,9 +14,11 @@ import {
 } from "@/app/components/validation/schema";
 import AuthCard from "@/app/components/ui/Authcard";
 import AuthLayout from "@/app/components/ui/AuthLayout";
+import { useAuth } from "@/app/Context/AuthContext";
 
 export default function SignUpPage() {
   const router = useRouter();
+  const { register } = useAuth();
 
   const handleSubmit = async (
     values: SignUpValues,
@@ -30,12 +32,17 @@ export default function SignUpPage() {
   ) => {
     setStatus(null);
     try {
-      // Replace with your real sign-up call, e.g.:
-      // const res = await fetch("/api/auth/signup", { method: "POST", body: JSON.stringify(values) });
-      await new Promise((resolve) => setTimeout(resolve, 800));
-      router.push("/login");
-    } catch (err) {
-      setStatus("We couldn't create your account. Please try again.");
+      await register({
+        fullName: `${values.firstName} ${values.lastName}`.trim(),
+        name: `${values.firstName} ${values.lastName}`.trim(),
+        email: values.email,
+        password: values.password,
+      });
+      router.push("/marketplace");
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : "We couldn't create your account. Please try again.";
+      setStatus(message);
     } finally {
       setSubmitting(false);
     }

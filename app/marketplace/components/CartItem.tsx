@@ -84,7 +84,6 @@ export default function CartItem({ item, onIncrease, onDecrease, onRemove }: Car
         </div>
       </div>
 
-      {/* Column 4: Subtotal */}
       <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto pt-1 sm:pt-0 border-t sm:border-t-0 border-gray-100">
         <span className="sm:hidden text-xs font-semibold text-gray-900">Subtotal</span>
         <span className="text-sm font-bold text-emerald-800 sm:text-gray-900">

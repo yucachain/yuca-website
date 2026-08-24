@@ -6,18 +6,17 @@ export interface CassavaBatch {
   title: string;
   grade: QualityGrade;
   quantity: number;
-  unit?: string; // default "Tonnes"
+  unit?: string;
   pricePerTonne: number;
-  currency?: string; // default "₦"
+  currency?: string;
   location: string;
-  storageLocation?: string; // defaults to `location` if omitted
+  storageLocation?: string;
   seller: string;
-  storageTime: string; // e.g. "16hrs"
+  storageTime: string;
   temperatureC: number;
   humidityPercent: number;
   isNew?: boolean;
   description?: string;
-  /** First entry is the main photo; remaining entries are thumbnails. */
   images?: string[];
 }
 

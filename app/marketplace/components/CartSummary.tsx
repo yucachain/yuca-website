@@ -21,7 +21,6 @@ export default function CartSummary({ totalItems, subtotal, vat, total }: CartSu
     <div className="sticky top-6 w-full rounded-2xl border border-gray-100 bg-white p-6 shadow-xs">
       <h2 className="text-base font-bold text-gray-900 mb-4">Order Summary</h2>
 
-      {/* Logistics Delivery Option Selector */}
       <div className="mb-5 rounded-xl border border-emerald-100 bg-emerald-50/60 p-3.5 text-xs">
         <label className="flex items-start gap-2.5 cursor-pointer">
           <input

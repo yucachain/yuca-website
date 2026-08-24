@@ -1,6 +1,5 @@
-"use client";
+﻿"use client";
 
-import React from "react";
 import type { CassavaBatch } from "./types";
 import ProductCard from "./ProductCard";
 

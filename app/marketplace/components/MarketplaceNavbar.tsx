@@ -38,7 +38,6 @@ export default function MarketplaceNavbar({
   const dropdownRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
-  // Close dropdown on click outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -68,7 +67,6 @@ export default function MarketplaceNavbar({
   return (
     <header className="w-full border-b border-gray-100 bg-white/95 backdrop-blur-md sticky top-0 z-40 transition-all">
       <div className="flex items-center justify-between px-4 sm:px-6 lg:px-8 py-3">
-        {/* Brand Logo */}
         <Link href="/marketplace" className="flex items-center gap-2 group">
           <Image
             src="/images/Yucachain_Logo.png"
@@ -80,9 +78,7 @@ export default function MarketplaceNavbar({
           />
         </Link>
 
-        {/* Right Action Items */}
         <div className="flex items-center gap-2 sm:gap-4">
-          {/* Notifications Button */}
           <button
             type="button"
             onClick={handleBellTrigger}
@@ -95,7 +91,6 @@ export default function MarketplaceNavbar({
             )}
           </button>
 
-          {/* Cart Button */}
           <button
             type="button"
             onClick={handleCartTrigger}
@@ -112,7 +107,6 @@ export default function MarketplaceNavbar({
 
           <div className="h-6 w-px bg-gray-200/80 hidden sm:block" />
 
-          {/* User Profile Pill & Dropdown */}
           <div className="relative" ref={dropdownRef}>
             <button
               type="button"
@@ -138,7 +132,7 @@ export default function MarketplaceNavbar({
               />
             </button>
 
-            {/* Profile Dropdown Menu */}
+      
             {menuOpen && (
               <div className="absolute right-0 mt-2 w-48 sm:w-56 rounded-2xl border border-gray-100 bg-white p-2 shadow-xl animate-in fade-in slide-in-from-top-2 z-50">
                 <div className="px-3 py-2.5 border-b border-gray-100">

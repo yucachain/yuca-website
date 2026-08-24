@@ -29,8 +29,6 @@ export default function Navbar() {
   return (
     <header className="w-full bg-white/95 backdrop-blur-md border-b border-gray-100 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto flex items-center justify-between px-4 sm:px-6 py-3">
-
-        {/* Logo */}
         <Link href="/" className="flex items-center gap-2">
           <Image
             src="/images/Logo.png"
@@ -44,7 +42,7 @@ export default function Navbar() {
           </span>
         </Link>
 
-        {/* Desktop Nav Links */}
+
         <nav className="hidden md:flex items-center gap-1">
           {navLinks.map((item) => (
             <a
@@ -58,7 +56,6 @@ export default function Navbar() {
           ))}
         </nav>
 
-        {/* Action Buttons & Mobile Hamburger */}
         <div className="flex items-center gap-2">
           <Link
             href="/login"
@@ -78,8 +75,6 @@ export default function Navbar() {
           >
             Join Network
           </Link>
-
-          {/* Mobile Hamburger Toggle Button */}
           <button
             type="button"
             onClick={() => setMobileMenuOpen((prev) => !prev)}
@@ -91,7 +86,6 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* Mobile Slide-Down Navigation Menu */}
       {mobileMenuOpen && (
         <div className="md:hidden border-t border-gray-100 bg-white px-4 pt-3 pb-6 space-y-4 shadow-lg animate-in slide-in-from-top-2">
           <nav className="flex flex-col space-y-1">

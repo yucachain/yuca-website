@@ -8,7 +8,6 @@ import Footer from "@/app/components/Footer";
 export interface CheckoutShellProps {
   currentStep: CheckoutStepsProps["currentStep"];
   children: React.ReactNode;
-  /** Wraps children in the white rounded card used by Shipping/Payment/Review. Confirmation doesn't use it. */
   cardWrapper?: boolean;
   showBackToCart?: boolean;
   cardMaxWidth?: string;

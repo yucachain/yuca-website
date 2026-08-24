@@ -1,4 +1,4 @@
-import React from "react";
+
 import type { StatCardData } from "./types";
 
 export default function StatCard({ data }: { data: StatCardData }) {

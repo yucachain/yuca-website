@@ -39,7 +39,6 @@ export default function SettingsSection() {
   const [settings, setSettings] = useState<AggregatorSettings>(INITIAL_SETTINGS);
   const [savedSuccess, setSavedSuccess] = useState(false);
 
-  // Form handlers
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
     if (type === "checkbox") {
@@ -74,7 +73,6 @@ export default function SettingsSection() {
         )}
       </div>
 
-      {/* Tabs Bar */}
       <div className="flex flex-wrap gap-2 border-b border-gray-100 pb-2">
         <button
           type="button"
@@ -143,7 +141,7 @@ export default function SettingsSection() {
       </div>
 
       <form onSubmit={handleSave} className="space-y-6">
-        {/* Tab 1: Profile */}
+
         {activeTab === "profile" && (
           <div className="rounded-2xl border border-gray-100 bg-white p-5 sm:p-8 space-y-5 shadow-xs">
             <h2 className="text-base font-bold text-gray-900 border-b border-gray-100 pb-3">
@@ -232,7 +230,6 @@ export default function SettingsSection() {
           </div>
         )}
 
-        {/* Tab 2: Capacity */}
         {activeTab === "capacity" && (
           <div className="rounded-2xl border border-gray-100 bg-white p-5 sm:p-8 space-y-5 shadow-xs">
             <h2 className="text-base font-bold text-gray-900 border-b border-gray-100 pb-3">
@@ -325,7 +322,6 @@ export default function SettingsSection() {
           </div>
         )}
 
-        {/* Tab 4: Notifications */}
         {activeTab === "notifications" && (
           <div className="rounded-2xl border border-gray-100 bg-white p-5 sm:p-8 space-y-5 shadow-xs">
             <h2 className="text-base font-bold text-gray-900 border-b border-gray-100 pb-3">
@@ -412,7 +408,6 @@ export default function SettingsSection() {
           </div>
         )}
 
-        {/* Save Button Bar */}
         <div className="flex justify-end pt-2">
           <button
             type="submit"

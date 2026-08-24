@@ -2,7 +2,6 @@ import React from "react";
 import { Check } from "lucide-react";
 
 export interface CheckoutStepsProps {
-  /** 1 = Shipping active, 2 = Review active, 3 = Payment active, 4 = all complete */
   currentStep: 1 | 2 | 3 | 4;
 }
 
