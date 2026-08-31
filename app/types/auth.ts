@@ -55,6 +55,20 @@ export interface AuthState {
   error: string | null;
 }
 
+export interface ApiResponse<T> {
+  code : number;
+  status : string;
+  successful : boolean;
+  message : string;
+  data : T;
+}
+
+export interface MiscPayload {
+  id: string;
+  name: string;
+  description: string;
+}
+
 export interface AuthContextType extends AuthState {
   login: (payload: LoginPayload) => Promise<AuthResponse>;
   aggregatorLogin: (payload: LoginPayload) => Promise<AuthResponse>;
