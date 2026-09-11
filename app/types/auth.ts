@@ -17,7 +17,6 @@ export interface User {
 export interface LoginPayload {
   email: string;
   password: string;
-  rememberMe?: boolean;
 }
 
 export interface RegisterPayload {
@@ -26,14 +25,8 @@ export interface RegisterPayload {
   fullName?: string;
   name?: string;
   role?: UserRole | string;
-  companyName?: string;
-  phoneNumber?: string;
   firstName?: string;
   lastName?: string;
-  state?: string;
-  lga?: string;
-  farmName?: string;
-  businessName?: string;
 }
 
 export interface AuthResponse {
@@ -48,8 +41,8 @@ export interface ForgotPasswordPayload {
 }
 
 export interface ResetPasswordPayload {
-  token: string;
-  password: string;
+  resetToken: string;
+  newPassword: string;
 }
 
 export interface AuthState {
@@ -74,15 +67,9 @@ export interface AuthContextType extends AuthState {
 export interface RegisterRequest {
   firstName: string;
   lastName: string;
-  phoneNumber: string;
   email: string;
   password: string;
   role: string;
-  state: string;
-  lga: string;
-  farmName?: string;
-  companyName?: string;
-  businessName?: string;
 }
 
 export interface ApiResponse<T = unknown> {
@@ -135,7 +122,6 @@ export interface AuthContextValues extends AuthState {
 
 export interface ForgotPasswordRequest {
   email: string;
-  phoneNumber?: string;
 }
 
 export interface ResetPasswordRequest {

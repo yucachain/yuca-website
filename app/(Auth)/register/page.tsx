@@ -35,15 +35,9 @@ export default function RegisterPage() {
     const payload: RegisterRequest = {
       firstName: values.firstName,
       lastName: values.lastName,
-      phoneNumber: "",
       email: values.email,
       password: values.password,
       role: "Buyer",
-      state: "",
-      lga: "",
-      farmName: "",
-      companyName: "",
-      businessName: "",
     };
 
     try {

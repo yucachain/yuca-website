@@ -12,11 +12,16 @@ import {
   User,
   ForgotPasswordRequest,
   ResetPasswordRequest,
+  ResetPasswordPayload,
   RefreshTokenRequest, 
   RefreshTokenResponseData
 } from "../types/auth";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "";
+const API_BASE_URL = (process.env.NEXT_PUBLIC_API_BASE_URL || "").replace(/\/$/, "");
+
+function apiUrl(path: string) {
+  return `${API_BASE_URL}${path}`;
+}
 
 export async function registerUser(payload: RegisterRequest): Promise<ApiResponse> {
   const response = await fetch(`${API_BASE_URL}/api/v1/auth/register`, {
@@ -38,16 +43,30 @@ export async function registerUser(payload: RegisterRequest): Promise<ApiRespons
 }
 
 export async function loginUser(payload: LoginRequest): Promise<LoginResponse> {
-  const response = await fetch(`${API_BASE_URL}/api/v1/auth/login`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Accept: "application/json",
-    },
-    body: JSON.stringify(payload),
-  });
+  const endpoint = apiUrl("/api/v1/auth/login");
+  let response: Response;
 
-  const data: LoginResponse = await response.json();
+  try {
+    response = await fetch(endpoint, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+  } catch {
+    throw new Error(
+      `Unable to reach the authentication server at ${endpoint}. Check NEXT_PUBLIC_API_BASE_URL, the backend, and its CORS configuration.`,
+    );
+  }
+
+  let data: LoginResponse;
+  try {
+    data = await response.json();
+  } catch {
+    throw new Error(`The authentication server returned an invalid response (HTTP ${response.status}).`);
+  }
 
   if (!response.ok || !data.successful) {
     throw new Error(data.message || `Login failed with status ${response.status}`);
@@ -219,15 +238,9 @@ const authService = {
     const response = await registerUser({
       firstName: payload.firstName || "",
       lastName: payload.lastName || "",
-      phoneNumber: payload.phoneNumber || "",
       email: payload.email,
       password: payload.password,
       role: payload.role || "Buyer",
-      state: payload.state || "",
-      lga: payload.lga || "",
-      farmName: payload.farmName || "",
-      companyName: payload.companyName || "",
-      businessName: payload.businessName || "",
     });
 
     const user: User = {
@@ -260,16 +273,19 @@ const authService = {
     throw new Error("getCurrentUser is not implemented for this backend");
   },
 
-  async forgotPassword(payload: { email: string }): Promise<{ message: string }> {
-    return { message: `Reset link sent to ${payload.email}` };
+  async forgotPassword(payload: ForgotPasswordRequest): Promise<{ message: string }> {
+    const response = await forgotPassword(payload);
+    return { message: response.message };
   },
 
-  async resetPassword(payload: { token: string; password: string }): Promise<{ message: string }> {
-    return { message: "Password reset successful" };
+  async resetPassword(payload: ResetPasswordPayload): Promise<{ message: string }> {
+    const response = await resetPassword(payload);
+    return { message: response.message };
   },
 
-  async refreshToken(refreshToken: string): Promise<{ token: string }> {
-    return { token: refreshToken };
+  async refreshToken(): Promise<{ token: string }> {
+    const token = await refreshAccessToken();
+    return { token };
   },
 
   async updateProfile(userData: Partial<User>): Promise<User> {
