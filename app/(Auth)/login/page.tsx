@@ -9,51 +9,46 @@ import Button from "@/app/components/ui/Button";
 import { LoginSchema } from "@/app/components/validation/schema";
 import AuthCard from "@/app/components/ui/Authcard";
 import AuthLayout from "@/app/components/ui/AuthLayout";
-
-import { useAuth } from "@/app/Context/AuthContext";
-
-interface LoginValues {
-  email: string;
-  password: string;
-  rememberMe: boolean;
-}
+import { loginUser } from "@/app/Services/authService";
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login } = useAuth();
 
-  const initialValues: LoginValues = {
+  const initialValues = {
     email: "",
     password: "",
     rememberMe: false,
   };
 
   const handleSubmit = async (
-    values: LoginValues,
+    values: typeof initialValues,
     {
       setSubmitting,
       setStatus,
     }: {
       setSubmitting: (value: boolean) => void;
-      setStatus: (status?: string) => void;
+      setStatus: (status: string | null) => void;
     },
   ) => {
-    setStatus(undefined);
+    setStatus(null);
+
     try {
-      await login({
-        email: values.email,
+      await loginUser({
+        identifier: values.email,
         password: values.password,
-        rememberMe: values.rememberMe,
       });
-      router.push("/marketplace");
+      router.push("/dashboard");
     } catch (err: unknown) {
       const message =
-        err instanceof Error ? err.message : "Unable to log in. Please try again.";
+        err instanceof Error
+          ? err.message
+          : "An unexpected error occurred. Please try again.";
       setStatus(message);
     } finally {
       setSubmitting(false);
     }
   };
+ 
 
   return (
     <AuthLayout>

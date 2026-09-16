@@ -9,8 +9,7 @@ import Button from "@/app/components/ui/Button";
 import { LoginSchema } from "@/app/components/validation/schema";
 import AuthCard from "@/app/components/ui/Authcard";
 import AuthLayout from "@/app/components/ui/AuthLayout";
-
-import { useAuth } from "@/app/Context/AuthContext";
+import { loginAggregator } from "@/app/Services/authService";
 
 interface AggregatorLoginValues {
   email: string;
@@ -19,7 +18,6 @@ interface AggregatorLoginValues {
 
 export default function AggregatorLoginPage() {
   const router = useRouter();
-  const { aggregatorLogin } = useAuth();
 
   const initialValues: AggregatorLoginValues = {
     email: "",
@@ -37,15 +35,18 @@ export default function AggregatorLoginPage() {
     },
   ) => {
     setStatus(undefined);
+
     try {
-      await aggregatorLogin({
+      await loginAggregator({
         email: values.email,
         password: values.password,
       });
       router.push("/Aggregator/dashboard");
     } catch (err: unknown) {
       const message =
-        err instanceof Error ? err.message : "Unable to log in. Please check your credentials.";
+        err instanceof Error
+          ? err.message
+          : "Unable to log in. Please check your credentials.";
       setStatus(message);
     } finally {
       setSubmitting(false);

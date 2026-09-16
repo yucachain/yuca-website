@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Formik, Form } from "formik";
 import FormInput from "@/app/components/ui/FormInput";
 import Button from "@/app/components/ui/Button";
@@ -15,6 +16,7 @@ import {
 } from "@/app/components/validation/schema";
 import AuthLayout from "@/app/components/ui/AuthLayout";
 import AuthCard from "@/app/components/ui/Authcard";
+import { forgotPassword } from "@/app/Services/authService";
 
 function EnvelopeIcon() {
   return (
@@ -46,36 +48,88 @@ function EnvelopeIcon() {
 }
 
 export default function ForgotPasswordPage() {
+  const router = useRouter();
   const [sent, setSent] = useState(false);
   const [sentEmail, setSentEmail] = useState("");
+  const [apiError, setApiError] = useState("");
 
   const handleSendLink = async (
     values: ForgotPasswordValues,
-    { setSubmitting }: { setSubmitting: (v: boolean) => void },
+    {
+      setSubmitting,
+      setStatus,
+    }: {
+      setSubmitting: (value: boolean) => void;
+      setStatus: (status: string | null) => void;
+    },
   ) => {
-    // Replace with your real "send reset link" call, e.g.:
-    // await fetch("/api/auth/forgot-password", { method: "POST", body: JSON.stringify(values) });
-    await new Promise((resolve) => setTimeout(resolve, 800));
-    setSentEmail(values.email);
-    setSent(true);
-    setSubmitting(false);
+    setApiError("");
+    setStatus(null);
+
+    try {
+      await forgotPassword({ email: values.email });
+      setSentEmail(values.email);
+      setSent(true);
+    } catch (error: unknown) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "We couldn't send the reset link. Please try again.";
+      setStatus(message);
+      setApiError(message);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleResend = async () => {
-    // Replace with your real resend call, reusing sentEmail.
-    await new Promise((resolve) => setTimeout(resolve, 600));
+    if (!sentEmail) return;
+
+    try {
+      setApiError("");
+      await forgotPassword({ email: sentEmail });
+    } catch (error: unknown) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "We couldn't resend the reset link.";
+      setApiError(message);
+    }
   };
 
   const handleVerifyLink = async (
     values: VerifyResetLinkValues,
-    { setSubmitting }: { setSubmitting: (v: boolean) => void },
+    {
+      setSubmitting,
+      setStatus,
+    }: {
+      setSubmitting: (value: boolean) => void;
+      setStatus: (status: string | null) => void;
+    },
   ) => {
-    await new Promise((resolve) => setTimeout(resolve, 600));
-    setSubmitting(false);
+    setStatus(null);
+
+    try {
+      const parsedUrl = new URL(values.resetLink);
+      const token = parsedUrl.searchParams.get("token");
+
+      if (!token) {
+        throw new Error("This link is missing a reset token.");
+      }
+
+      router.push(`/resetpassword?token=${encodeURIComponent(token)}`);
+    } catch (error: unknown) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "This reset link is invalid. Please paste a valid link.";
+      setStatus(message);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
-    //<div className="relative min-h-screen w-full bg-[#f8f9f8] overflow-hidden flex flex-col font-sans text-[#171717]">
     <AuthLayout>
       <AuthCard title="Forgot Password">
         <p className="-mt-4 pt-0 mb-8 text-center text-base leading-relaxed text-gray-600">
@@ -89,8 +143,14 @@ export default function ForgotPasswordPage() {
             validationSchema={ForgotPasswordSchema}
             onSubmit={handleSendLink}
           >
-            {({ isSubmitting }) => (
+            {({ isSubmitting, status }) => (
               <Form className="space-y-8" noValidate>
+                {status && (
+                  <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
+                    {status}
+                  </div>
+                )}
+
                 <FormInput
                   name="email"
                   label="Email Address"
@@ -100,7 +160,7 @@ export default function ForgotPasswordPage() {
                 />
 
                 <Button type="submit" disabled={isSubmitting}>
-                  Send Reset Link
+                  {isSubmitting ? "Sending..." : "Send Reset Link"}
                 </Button>
 
                 <Link
@@ -121,16 +181,25 @@ export default function ForgotPasswordPage() {
               validationSchema={VerifyResetLinkSchema}
               onSubmit={handleVerifyLink}
             >
-              {({ isSubmitting, values }) => (
+              {({ isSubmitting, values, status }) => (
                 <Form className="space-y-8" noValidate>
+                  {status && (
+                    <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
+                      {status}
+                    </div>
+                  )}
+
                   <FormInput
                     name="resetLink"
                     label="Reset Link"
                     placeholder="Paste reset link"
                   />
 
-                  <Button type="submit" disabled={!values.resetLink.trim()}>
-                    Verify Link
+                  <Button
+                    type="submit"
+                    disabled={!values.resetLink.trim() || isSubmitting}
+                  >
+                    {isSubmitting ? "Verifying..." : "Verify Link"}
                   </Button>
 
                   <Link
@@ -143,7 +212,7 @@ export default function ForgotPasswordPage() {
               )}
             </Formik>
 
-            <div className="flex gap-4 rounded-2xl border border-emerald-950/25  p-5">
+            <div className="flex gap-4 rounded-2xl border border-emerald-950/25 p-5">
               <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-800">
                 <EnvelopeIcon />
               </span>
@@ -152,12 +221,16 @@ export default function ForgotPasswordPage() {
                   Check your email
                 </p>
                 <p className="mt-1 text-sm leading-relaxed text-emerald-900">
-                  We&apos;ve sent a password reset link to{" "}
-                  {sentEmail || "your email"}. The link will expire in 15
-                  minutes..
+                  We&apos;ve sent a password reset link to {sentEmail || "your email"}. The link will expire in 15 minutes.
                 </p>
               </div>
             </div>
+
+            {apiError && (
+              <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
+                {apiError}
+              </div>
+            )}
 
             <p className="text-center text-sm text-gray-600">
               Didn&apos;t receive email? Check your spam folder, or{" "}
@@ -173,6 +246,5 @@ export default function ForgotPasswordPage() {
         )}
       </AuthCard>
     </AuthLayout>
-    //</div>
   );
 }
