@@ -73,6 +73,7 @@ interface CartContextValue {
   vat: number;
   total: number;
   addToCart: (batch: CassavaBatch) => void;
+  replaceCart: (items: CartEntry[]) => void;
   removeFromCart: (id: string) => void;
   increaseQty: (id: string) => void;
   decreaseQty: (id: string) => void;
@@ -127,6 +128,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     dispatch({ type: "ADD", entry });
   }, []);
 
+  const replaceCart = useCallback(
+    (items: CartEntry[]) => dispatch({ type: "INIT", items }),
+    []
+  );
   const removeFromCart = useCallback(
     (id: string) => dispatch({ type: "REMOVE", id }),
     []
@@ -162,6 +167,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     vat,
     total,
     addToCart,
+    replaceCart,
     removeFromCart,
     increaseQty,
     decreaseQty,

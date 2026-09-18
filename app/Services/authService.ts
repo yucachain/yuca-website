@@ -17,7 +17,9 @@ import {
   RefreshTokenResponseData
 } from "../types/auth";
 
-const API_BASE_URL = (process.env.NEXT_PUBLIC_API_BASE_URL || "").replace(/\/$/, "");
+const API_BASE_URL = (process.env.NEXT_PUBLIC_API_BASE_URL || "")
+  .replace(/\/index\.html?$/i, "")
+  .replace(/\/$/, "");
 
 function apiUrl(path: string) {
   return `${API_BASE_URL}${path}`;

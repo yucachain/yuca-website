@@ -1,6 +1,8 @@
 import { refreshAccessToken } from "@/app/Services/authService";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "";
+const API_BASE_URL = (process.env.NEXT_PUBLIC_API_BASE_URL || "")
+  .replace(/\/index\.html?$/i, "")
+  .replace(/\/$/, "");
 
 export async function fetchWithAuth<T>(
   endpoint: string,
