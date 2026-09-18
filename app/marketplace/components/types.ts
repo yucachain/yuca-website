@@ -9,6 +9,7 @@ export interface CassavaBatch {
   unit?: string;
   pricePerTonne: number;
   currency?: string;
+  category?: string;
   location: string;
   storageLocation?: string;
   seller: string;

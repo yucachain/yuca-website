@@ -12,6 +12,8 @@ import type { MarketplaceFilters } from "./components/FilterPanel";
 import { useCart } from "./context/CartContext";
 import { useRouter } from "next/navigation";
 import Footer from "@/app/components/Footer";
+import { marketplaceApi } from "@/app/Services/marketplaceService";
+import type { MarketplaceListing } from "@/app/types/marketplace";
 
 const ALL_BATCHES: (CassavaBatch & { category: string })[] = [
   {
@@ -287,10 +289,46 @@ const CATEGORY_LABELS: Record<string, string> = {
 
 const ITEMS_PER_PAGE = 8;
 
+const normalizeListingToBatch = (
+  listing: Partial<MarketplaceListing> & Record<string, unknown>,
+  fallbackCategory = "raw-cassava",
+): CassavaBatch => {
+  const gradeValue = String(listing.grade ?? listing.qualityGrade ?? "A").toUpperCase();
+  const grade = gradeValue === "B" ? "B" : "A";
+  const quantity = Number(listing.quantity ?? listing.quantityAvailable ?? 0);
+  const unit = String(listing.unit ?? "Tonnes");
+  const pricePerTonne = Number(listing.pricePerTonne ?? listing.price ?? 0);
+  const category = String(listing.category ?? fallbackCategory);
+
+  return {
+    id: String(listing.id ?? listing.batchCode ?? `${category}-${Math.random()}`),
+    batchCode: String(listing.batchCode ?? listing.id ?? "BCH-UNKNOWN"),
+    title: String(listing.title ?? "Cassava Product"),
+    grade,
+    quantity: Number.isFinite(quantity) ? quantity : 0,
+    unit,
+    pricePerTonne: Number.isFinite(pricePerTonne) ? pricePerTonne : 0,
+    currency: String(listing.currency ?? "₦"),
+    category,
+    location: String(listing.location ?? listing.origin ?? "Unknown location"),
+    storageLocation: String(listing.storageLocation ?? listing.location ?? "Unknown location"),
+    seller: String(listing.seller ?? listing.sellerName ?? "Verified Seller"),
+    storageTime: String(listing.storageTime ?? listing.storageDuration ?? "N/A"),
+    temperatureC: Number(listing.temperatureC ?? listing.temperature ?? 25),
+    humidityPercent: Number(listing.humidityPercent ?? listing.humidity ?? 50),
+    isNew: Boolean(listing.isNew ?? true),
+    description: String(
+      listing.description ?? "Freshly sourced cassava product available for purchase.",
+    ),
+    images: Array.isArray(listing.images) ? listing.images.filter(Boolean) as string[] : [],
+  };
+};
+
 export default function MarketplacePage() {
   const { addToCart, totalItems } = useCart();
   const router = useRouter();
 
+  const [allBatches, setAllBatches] = useState<CassavaBatch[]>(ALL_BATCHES);
   const [activeCategoryId, setActiveCategoryId] = useState("raw-cassava");
   const [selectedBatch, setSelectedBatch] = useState<CassavaBatch | null>(null);
   const [panelVisible, setPanelVisible] = useState(false);
@@ -299,7 +337,47 @@ export default function MarketplacePage() {
   const [sortBy, setSortBy] = useState("Newest");
   const [page, setPage] = useState(1);
   const [showMobileSidebar, setShowMobileSidebar] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const fetchMarketplaceData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const listings = await marketplaceApi.getListings();
+        if (cancelled) return;
+
+        if (Array.isArray(listings) && listings.length > 0) {
+          const normalized = listings.map((listing) =>
+            normalizeListingToBatch(listing as Partial<MarketplaceListing> & Record<string, unknown>)
+          );
+          setAllBatches(normalized);
+        } else {
+          setAllBatches(ALL_BATCHES);
+        }
+      } catch (err) {
+        if (cancelled) return;
+        console.error("Failed to load marketplace listings:", err);
+        setError("Unable to load marketplace listings right now. Showing sample inventory instead.");
+        setAllBatches(ALL_BATCHES);
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchMarketplaceData();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     if (selectedBatch) {
@@ -310,7 +388,7 @@ export default function MarketplacePage() {
   }, [selectedBatch]);
 
   const visibleBatches = useMemo(() => {
-    let list = ALL_BATCHES.filter((b) => {
+    let list = allBatches.filter((b) => {
       const catMatch = b.category === activeCategoryId;
       const gradeMatch = filters.grades.length === 0 || filters.grades.includes(b.grade as "A" | "B");
       const searchMatch = search === "" || b.title.toLowerCase().includes(search.toLowerCase());

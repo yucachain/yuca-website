@@ -1,7 +1,7 @@
 
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import MarketplaceNavbar from "../components/MarketplaceNavbar";
 import CartItem from "../components/CartItem";
 import CartSummary from "../components/CartSummary";
@@ -9,6 +9,7 @@ import { useCart } from "../context/CartContext";
 import { useRouter } from "next/navigation";
 import { ShoppingCart } from "lucide-react";
 import Footer from "@/app/components/Footer";
+import { cartApi } from "@/app/Services/cartService";
 
 export default function CartPage() {
   const {
@@ -20,9 +21,86 @@ export default function CartPage() {
     increaseQty,
     decreaseQty,
     removeFromCart,
+    replaceCart,
   } = useCart();
 
   const router = useRouter();
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const fetchCart = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const localCart = (() => {
+          try {
+            const raw = localStorage.getItem("yuca_cart_v1");
+            const parsed = raw ? JSON.parse(raw) : [];
+            return Array.isArray(parsed) ? parsed : [];
+          } catch {
+            return [];
+          }
+        })();
+
+        const cart = await cartApi.getCart();
+        if (cancelled) return;
+
+        if (cart?.items?.length) {
+          replaceCart(
+            cart.items.map((item) => ({
+              ...item,
+              unit: item.unit || "Tonnes",
+              currency: item.currency || "₦",
+              pricePerTonne: item.pricePerTonne || item.price || 0,
+              quantity: item.quantity || 1,
+            }))
+          );
+          return;
+        }
+
+        if (localCart.length > 0) {
+          replaceCart(localCart);
+          return;
+        }
+
+        replaceCart([]);
+      } catch (err) {
+        if (!cancelled) {
+          console.error("Failed to load cart:", err);
+
+          const fallbackCart = (() => {
+            try {
+              const raw = localStorage.getItem("yuca_cart_v1");
+              const parsed = raw ? JSON.parse(raw) : [];
+              return Array.isArray(parsed) ? parsed : [];
+            } catch {
+              return [];
+            }
+          })();
+
+          if (fallbackCart.length > 0) {
+            replaceCart(fallbackCart);
+          }
+
+          setError("Unable to load your cart right now. Showing your saved local cart instead.");
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchCart();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [replaceCart]);
 
   return (
     <div className="flex flex-col min-h-screen bg-[#F9FAFB]">
@@ -38,6 +116,18 @@ export default function CartPage() {
           <p className="mt-0.5 text-xs text-gray-500">
             {totalItems} {totalItems === 1 ? "item" : "items"} in your cart
           </p>
+
+          {error && (
+            <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
+              {error}
+            </div>
+          )}
+
+          {loading && cartItems.length === 0 && (
+            <div className="mt-6 rounded-xl border border-dashed border-gray-200 bg-white px-4 py-8 text-center text-sm text-gray-500">
+              Loading your cart...
+            </div>
+          )}
 
           <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_280px] xl:grid-cols-[1fr_300px]">
 
