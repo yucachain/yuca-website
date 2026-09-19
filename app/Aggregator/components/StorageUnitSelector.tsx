@@ -26,10 +26,6 @@ export default function StorageUnitSelector({
         {units.map((unit) => {
           const isSelected = unit.id === selectedId;
           const isOffline = unit.status === "offline";
-          const fillPercent =
-            unit.capacityKg > 0
-              ? Math.min(100, (unit.usedKg / unit.capacityKg) * 100)
-              : 0;
 
           return (
             <button
@@ -66,7 +62,7 @@ export default function StorageUnitSelector({
                       </span>
                     </p>
                     <p className="mt-0.5 text-xs text-gray-500">
-                      {unit.usedKg}/{unit.capacityKg} kg
+                      Capacity: {unit.capacityKg.toLocaleString()} kg
                     </p>
                   </div>
                 </div>
@@ -79,15 +75,8 @@ export default function StorageUnitSelector({
                       : "bg-emerald-50 text-emerald-700",
                   ].join(" ")}
                 >
-                  {isOffline ? "Offline" : "Active"}
+                  {isOffline ? "Unavailable" : "Active"}
                 </span>
-              </div>
-
-              <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-gray-100">
-                <div
-                  className="h-full rounded-full bg-emerald-800"
-                  style={{ width: `${fillPercent}%` }}
-                />
               </div>
             </button>
           );

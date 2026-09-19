@@ -16,6 +16,7 @@ import QuickActions from "@/app/Aggregator/components/Quickactions";
 import RecentActivity from "@/app/Aggregator/components/Recentactivity";
 import ActiveBatchesTable from "@/app/Aggregator/components/Activebatchestable";
 import ReceiveBatchSection from "@/app/Aggregator/components/ReceiveBatchSection";
+import VaultManagementSection from "@/app/Aggregator/components/VaultManagementSection";
 import DispatchOrderSection from "@/app/Aggregator/components/DispatchOrderSection";
 import MarketOrdersSection from "@/app/Aggregator/components/MarketOrdersSection";
 import SellersPayoutsSection from "@/app/Aggregator/components/Sellerspayoutssection";
@@ -76,8 +77,8 @@ const QUICK_ACTIONS: QuickAction[] = [
     icon: <ArrowDownToLine size={15} strokeWidth={1.8} />,
   },
   {
-    id: "assign-storage",
-    label: "Assign Storage",
+    id: "vaults",
+    label: "Storage & Vaults",
     icon: <Database size={15} strokeWidth={1.8} />,
   },
   {
@@ -104,44 +105,6 @@ const RECENT_ACTIVITY: ActivityItem[] = [
     time: "09:12 AM",
   },
   { id: "3", description: "Order MO-2026-011 dispatched", time: "08:50 AM" },
-];
-
-const ACTIVE_BATCHES: BatchRow[] = [
-  {
-    id: "1",
-    batchCode: "YC-2026-00142",
-    seller: "Musa Ibrahim",
-    weightKg: 5000,
-    status: "Assign Storage",
-  },
-  {
-    id: "2",
-    batchCode: "YC-2026-00134",
-    seller: "Aloba Farms",
-    weightKg: 2000,
-    status: "In Storage",
-  },
-  {
-    id: "3",
-    batchCode: "YC-2026-00142",
-    seller: "Kays & Sons",
-    weightKg: 500,
-    status: "Pending Transfer",
-  },
-  {
-    id: "4",
-    batchCode: "YC-2026-00142",
-    seller: "Garba Farms",
-    weightKg: 10000,
-    status: "Assign Storage",
-  },
-  {
-    id: "5",
-    batchCode: "YC-2026-00142",
-    seller: "Musa Ibrahim",
-    weightKg: 5000,
-    status: "In Storage",
-  },
 ];
 
 export default function AggregatorOverviewPage() {
@@ -203,7 +166,10 @@ export default function AggregatorOverviewPage() {
               <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-[1.5fr_1fr]">
                 {/* Left: Active Batches table */}
                 <div className="flex flex-col overflow-x-auto touch-scroll">
-                  <ActiveBatchesTable batches={ACTIVE_BATCHES} />
+                  <ActiveBatchesTable
+                    onViewAll={() => setActiveSection("vaults")}
+                    onAssignStorage={() => setActiveSection("vaults")}
+                  />
                 </div>
 
                 {/* Right: Quick Actions stacked above Recent Activity */}
@@ -219,6 +185,9 @@ export default function AggregatorOverviewPage() {
           )}
 
           {activeSection === "receive-batch" && <ReceiveBatchSection />}
+          {(activeSection === "vaults" || activeSection === "assign-storage") && (
+            <VaultManagementSection initialSubTab="assign" />
+          )}
           {activeSection === "dispatch-order" && <DispatchOrderSection />}
           {activeSection === "market-orders" && <MarketOrdersSection />}
           {activeSection === "sellers-payouts" && <SellersPayoutsSection />}

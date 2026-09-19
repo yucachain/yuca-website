@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-import { Bell, ShoppingCart, ChevronDown, User, Package, LogOut, Settings } from "lucide-react";
+import { Bell, ShoppingCart, ChevronDown, User, Package, LogOut, Settings, Truck } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -163,6 +163,18 @@ export default function MarketplaceNavbar({
                   >
                     <Package size={15} className="text-gray-500" />
                     My Cart ({cartCount})
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMenuOpen(false);
+                      router.push("/marketplace/track");
+                    }}
+                    className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
+                  >
+                    <Truck size={15} className="text-gray-500" />
+                    Track Shipments
                   </button>
 
                   <button

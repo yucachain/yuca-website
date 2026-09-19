@@ -1,447 +1,285 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
-import { Layers, X } from "lucide-react";
-import DispatchOrderFilterTabs, { DispatchOrderTab } from "./DispatchOrderFilter";
-import DispatchOrderTable from "./DispatchOrderTable";
-import Pagination from "./Pagination";
+import React, { useEffect, useMemo, useState } from "react";
+import {
+  Truck,
+  Plus,
+  RefreshCw,
+  Eye,
+  CheckCircle2,
+  Clock,
+  ArrowRight,
+  Printer,
+  FileText,
+} from "lucide-react";
+import type { DispatchRecord, DispatchStatus } from "@/app/types/batchVaultDispatch";
+import { dispatchService } from "@/app/Services/dispatchService";
+import CreateDispatchModal from "./CreateDispatchModal";
 import DispatchReceiptModal from "./DispatchReceiptModal";
-import AssignToStorageModal from "./AssignStorageModal";
-import AssignToVaultModal from "./AssignToVaultModal";
-import ConsolidateOrdersModal from "./ConsolidateOrdersModal";
-import type { DispatchOrderRecord } from "./types";
-import type { DispatchLogisticsValues } from "@/app/components/validation/schema";
 
-const PER_PAGE = 5;
-
-// ── Test data: 3 buyers × 3 orders each (Agbetoba Farms, Greenland Farms, Grando Ltd)
-// plus several single-order buyers = 15 total orders
-const ORDERS: DispatchOrderRecord[] = [
-  // ── Agbetoba Farms (3 orders) ─────────────────────────────
-  {
-    id: "1",
-    orderNumber: "MO-2026-014",
-    lotCode: "CL-2026-00031",
-    buyer: "Agbetoba Farms",
-    product: "Cassava Stems",
-    weightKg: 11300,
-    date: "Aug 27, 2026",
-    status: "pending",
-    paymentMade: true,
-    agreedPriceTotal: 3955000,
-    pricePerKg: 350,
-    pickupHub: "YucaVault #1, Ilorin",
-  },
-  {
-    id: "5",
-    orderNumber: "MO-2026-016",
-    lotCode: "CL-2026-00027",
-    buyer: "Agbetoba Farms",
-    product: "Cassava Stems",
-    weightKg: 2000,
-    date: "May 27, 2026",
-    status: "dispatched",
-    storageLabel: "YucaVault #1, Ilorin",
-    paymentMade: true,
-    agreedPriceTotal: 700000,
-    pricePerKg: 350,
-    pickupHub: "YucaVault #1, Ilorin",
-  },
-  {
-    id: "13",
-    orderNumber: "MO-2026-051",
-    lotCode: "CL-2026-00071",
-    buyer: "Agbetoba Farms",
-    product: "Cassava Flour",
-    weightKg: 6400,
-    date: "Aug 5, 2026",
-    status: "pending",
-    paymentMade: true,
-    agreedPriceTotal: 2240000,
-    pricePerKg: 350,
-    pickupHub: "YucaVault #1, Ilorin",
-  },
-  // ── Greenland Farms (3 orders) ────────────────────────────
-  {
-    id: "2",
-    orderNumber: "MO-2026-112",
-    lotCode: "CL-2026-00045",
-    buyer: "Greenland Farms",
-    product: "Cassava Flour",
-    weightKg: 13000,
-    date: "Aug 12, 2026",
-    status: "pending",
-    paymentMade: false,
-    agreedPriceTotal: 4550000,
-    pricePerKg: 350,
-    pickupHub: "YucaVault #3, Ibadan",
-  },
-  {
-    id: "12",
-    orderNumber: "MO-2026-039",
-    lotCode: "CL-2026-00057",
-    buyer: "Greenland Farms",
-    product: "Cassava Stems",
-    weightKg: 4800,
-    date: "Jul 5, 2026",
-    status: "pending",
-    paymentMade: false,
-    agreedPriceTotal: 1680000,
-    pricePerKg: 350,
-    pickupHub: "YucaVault #1, Ilorin",
-  },
-  {
-    id: "14",
-    orderNumber: "MO-2026-056",
-    lotCode: "CL-2026-00074",
-    buyer: "Greenland Farms",
-    product: "Cassava Starch",
-    weightKg: 7200,
-    date: "Aug 9, 2026",
-    status: "in-transit",
-    storageLabel: "YucaVault #3, Ibadan",
-    paymentMade: true,
-    agreedPriceTotal: 2520000,
-    pricePerKg: 350,
-    pickupHub: "YucaVault #3, Ibadan",
-  },
-  // ── Grando Ltd (3 orders) ─────────────────────────────────
-  {
-    id: "3",
-    orderNumber: "MO-2026-034",
-    lotCode: "CL-2026-00052",
-    buyer: "Grando Ltd",
-    product: "Cassava Stems",
-    weightKg: 5000,
-    date: "Sep 27, 2026",
-    status: "in-transit",
-    storageLabel: "YucaVault #1, Ilorin",
-    paymentMade: true,
-    agreedPriceTotal: 1750000,
-    pricePerKg: 350,
-    pickupHub: "YucaVault #1, Ilorin",
-  },
-  {
-    id: "9",
-    orderNumber: "MO-2026-028",
-    lotCode: "CL-2026-00041",
-    buyer: "Grando Ltd",
-    product: "Cassava Flour",
-    weightKg: 7000,
-    date: "Feb 21, 2026",
-    status: "dispatched",
-    storageLabel: "YucaVault #3, Ibadan",
-    paymentMade: true,
-    agreedPriceTotal: 2450000,
-    pricePerKg: 350,
-    pickupHub: "YucaVault #3, Ibadan",
-  },
-  {
-    id: "15",
-    orderNumber: "MO-2026-063",
-    lotCode: "CL-2026-00079",
-    buyer: "Grando Ltd",
-    product: "Cassava Stems",
-    weightKg: 3800,
-    date: "Aug 11, 2026",
-    status: "pending",
-    paymentMade: false,
-    agreedPriceTotal: 1330000,
-    pricePerKg: 350,
-    pickupHub: "YucaVault #1, Ilorin",
-  },
-  // ── Other buyers (single orders) ──────────────────────────
-  {
-    id: "4",
-    orderNumber: "MO-2026-044",
-    lotCode: "CL-2026-00061",
-    buyer: "Penpal Farms",
-    product: "Cassava Flour",
-    weightKg: 11300,
-    date: "Jul 27, 2026",
-    status: "pending",
-    paymentMade: false,
-    agreedPriceTotal: 3955000,
-    pricePerKg: 350,
-    pickupHub: "YucaVault #1, Ilorin",
-  },
-  {
-    id: "6",
-    orderNumber: "MO-2026-018",
-    lotCode: "CL-2026-00029",
-    buyer: "Nino Farms",
-    product: "Cassava Stems",
-    weightKg: 4200,
-    date: "May 2, 2026",
-    status: "dispatched",
-    storageLabel: "YucaVault #3, Ibadan",
-    paymentMade: true,
-    agreedPriceTotal: 1470000,
-    pricePerKg: 350,
-    pickupHub: "YucaVault #3, Ibadan",
-  },
-  {
-    id: "7",
-    orderNumber: "MO-2026-021",
-    lotCode: "CL-2026-00033",
-    buyer: "GoldenPearl Ltd",
-    product: "Cassava Flour",
-    weightKg: 6000,
-    date: "Apr 18, 2026",
-    status: "dispatched",
-    storageLabel: "YucaVault #1, Ilorin",
-    paymentMade: true,
-    agreedPriceTotal: 2100000,
-    pricePerKg: 350,
-    pickupHub: "YucaVault #1, Ilorin",
-  },
-  {
-    id: "8",
-    orderNumber: "MO-2026-025",
-    lotCode: "CL-2026-00038",
-    buyer: "Kays & Sons",
-    product: "Cassava Stems",
-    weightKg: 3300,
-    date: "Mar 9, 2026",
-    status: "dispatched",
-    storageLabel: "YucaVault #1, Ilorin",
-    paymentMade: true,
-    agreedPriceTotal: 1155000,
-    pricePerKg: 350,
-    pickupHub: "YucaVault #1, Ilorin",
-  },
-  {
-    id: "10",
-    orderNumber: "MO-2026-031",
-    lotCode: "CL-2026-00047",
-    buyer: "Green Valley",
-    product: "Cassava Stems",
-    weightKg: 9000,
-    date: "Jun 14, 2026",
-    status: "in-transit",
-    storageLabel: "YucaVault #1, Ilorin",
-    paymentMade: true,
-    agreedPriceTotal: 3150000,
-    pricePerKg: 350,
-    pickupHub: "YucaVault #1, Ilorin",
-  },
-  {
-    id: "11",
-    orderNumber: "MO-2026-036",
-    lotCode: "CL-2026-00054",
-    buyer: "Nino Farms",
-    product: "Cassava Flour",
-    weightKg: 5500,
-    date: "Jun 30, 2026",
-    status: "in-transit",
-    storageLabel: "YucaVault #3, Ibadan",
-    paymentMade: true,
-    agreedPriceTotal: 1925000,
-    pricePerKg: 350,
-    pickupHub: "YucaVault #3, Ibadan",
-  },
-];
+export type DispatchOrderTab = "all" | "pending" | "dispatched" | "in-transit" | "delivered";
 
 export default function DispatchOrderSection() {
   const [activeTab, setActiveTab] = useState<DispatchOrderTab>("all");
-  const [page, setPage] = useState(1);
-  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [dispatches, setDispatches] = useState<DispatchRecord[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  type ModalKind = "receipt" | "assign-storage" | "assign-vault" | "consolidate" | null;
-  const [activeModal, setActiveModal] = useState<ModalKind>(null);
-  const [modalOrderId, setModalOrderId] = useState<string | null>(null);
+  // Modals
+  const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [receiptRecord, setReceiptRecord] = useState<DispatchRecord | null>(null);
+
+  const fetchDispatches = async () => {
+    setLoading(true);
+    try {
+      const statusParam = activeTab === "all" ? undefined : activeTab;
+      const data = await dispatchService.getDispatches(statusParam as any);
+      setDispatches(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error("Failed to load dispatches:", err);
+      setDispatches([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchDispatches();
+  }, [activeTab]);
 
   const counts = useMemo(
     () => ({
-      all: ORDERS.length,
-      pending: ORDERS.filter((o) => o.status === "pending").length,
-      dispatched: ORDERS.filter((o) => o.status === "dispatched").length,
-      "in-transit": ORDERS.filter((o) => o.status === "in-transit").length,
+      all: dispatches.length,
+      pending: dispatches.filter((o) => o.status === "pending").length,
+      dispatched: dispatches.filter((o) => o.status === "dispatched").length,
+      "in-transit": dispatches.filter((o) => o.status === "in-transit").length,
+      delivered: dispatches.filter((o) => o.status === "delivered").length,
     }),
-    []
+    [dispatches]
   );
 
-  const filtered = useMemo(
-    () => (activeTab === "all" ? ORDERS : ORDERS.filter((o) => o.status === activeTab)),
-    [activeTab]
-  );
+  const handleAdvanceStatus = async (dispatch: DispatchRecord) => {
+    const nextStatusMap: Record<DispatchStatus, DispatchStatus> = {
+      pending: "dispatched",
+      dispatched: "in-transit",
+      "in-transit": "delivered",
+      delivered: "delivered",
+    };
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
-  const startIndex = (page - 1) * PER_PAGE;
-  const pageItems = filtered.slice(startIndex, startIndex + PER_PAGE);
-  const rangeEnd = Math.min(startIndex + PER_PAGE, filtered.length);
+    const nextStatus = nextStatusMap[dispatch.status];
+    if (nextStatus === dispatch.status) return;
 
-  const modalOrder = ORDERS.find((o) => o.id === modalOrderId) ?? null;
+    setDispatches((prev) =>
+      prev.map((d) => (d.id === dispatch.id ? { ...d, status: nextStatus } : d))
+    );
 
-  // Derive consolidation eligibility from current selection
-  const selectedOrders = ORDERS.filter((o) => selectedIds.includes(o.id));
-  const uniqueBuyers = [...new Set(selectedOrders.map((o) => o.buyer))];
-  const canConsolidate = selectedOrders.length >= 2 && uniqueBuyers.length === 1;
-  const mixedBuyers = selectedOrders.length >= 2 && uniqueBuyers.length > 1;
-
-  const handleTabChange = (tab: DispatchOrderTab) => {
-    setActiveTab(tab);
-    setPage(1);
+    try {
+      await dispatchService.updateStatus(dispatch.id, { status: nextStatus });
+    } catch (err) {
+      console.error("Failed to advance dispatch status:", err);
+    }
   };
 
-  const openModal = (kind: Exclude<ModalKind, null>, order: DispatchOrderRecord) => {
-    setModalOrderId(order.id);
-    setActiveModal(kind);
+  const handleViewReceipt = async (dispatch: DispatchRecord) => {
+    try {
+      const fullRecord = await dispatchService.getDispatchById(dispatch.id);
+      setReceiptRecord(fullRecord || dispatch);
+    } catch {
+      setReceiptRecord(dispatch);
+    }
   };
-
-  const closeModal = () => {
-    setActiveModal(null);
-    setModalOrderId(null);
-  };
-
-  const handleConfirmDispatch = async (
-    order: DispatchOrderRecord,
-    values: DispatchLogisticsValues
-  ) => {
-    console.log("Confirm dispatch", order.orderNumber, values);
-    setActiveModal("receipt");
-  };
-
-  const handleDownloadReceipt = (order: DispatchOrderRecord) => {
-    console.log("Download receipt for", order.orderNumber);
-  };
-
-  const handleAssignStorage = (
-    order: DispatchOrderRecord,
-    batchIds: string[],
-    unitId: string
-  ) => {
-    console.log("Assign storage for order", order.orderNumber, batchIds, unitId);
-    closeModal();
-  };
-
-  const handleConsolidateConfirm = (orders: DispatchOrderRecord[]) => {
-    console.log("Consolidate orders", orders.map((o) => o.orderNumber));
-    setSelectedIds([]);
-    closeModal();
-  };
-
-  const showActionBar = selectedOrders.length >= 2;
 
   return (
-    <div className="relative">
-      <h1 className="text-3xl font-bold text-gray-900">Dispatch Order</h1>
-      <p className="mt-1 text-sm text-gray-500">
-        Manage orders, storage assignments, and deliveries
-      </p>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-100 pb-5">
+        <div>
+          <h1 className="text-xl font-bold text-gray-900">Dispatch &amp; Logistics Management</h1>
+          <p className="mt-1 text-xs sm:text-sm text-gray-500">
+            Release outbound shipments from YucaVault storage, assign carriers, and monitor freight progress.
+          </p>
+        </div>
 
-      {/* ── Filter row + Consolidate button ───────────────────────── */}
-      <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
-        <DispatchOrderFilterTabs counts={counts} activeTab={activeTab} onChange={handleTabChange} />
-
-        <div className="flex shrink-0 items-center gap-2.5">
-          {/* Selection hint */}
-          {selectedOrders.length > 0 && (
-            <span
-              className={[
-                "rounded-lg px-3 py-1.5 text-xs font-medium",
-                mixedBuyers
-                  ? "bg-orange-50 text-orange-700"
-                  : canConsolidate
-                  ? "bg-emerald-50 text-emerald-800"
-                  : "bg-gray-100 text-gray-500",
-              ].join(" ")}
-            >
-              {mixedBuyers
-                ? `${selectedOrders.length} selected · different buyers`
-                : canConsolidate
-                ? `${selectedOrders.length} orders · ${uniqueBuyers[0]}`
-                : `${selectedOrders.length} selected`}
-            </span>
-          )}
-
-          {/* Clear selection */}
-          {selectedOrders.length > 0 && (
-            <button
-              type="button"
-              onClick={() => setSelectedIds([])}
-              title="Clear selection"
-              className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
-            >
-              <X size={15} strokeWidth={2} />
-            </button>
-          )}
-
-          {/* Consolidate button */}
+        <div className="flex items-center gap-3">
           <button
             type="button"
-            disabled={!canConsolidate}
-            onClick={() => setActiveModal("consolidate")}
-            title={
-              !selectedOrders.length
-                ? "Select 2 or more orders from the same buyer"
-                : mixedBuyers
-                ? "Orders must belong to the same buyer"
-                : undefined
-            }
-            className={[
-              "flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold transition-colors",
-              canConsolidate
-                ? "bg-[#215243] text-white hover:bg-[#1a4336]"
-                : "cursor-not-allowed border border-gray-200 bg-gray-50 text-gray-400",
-            ].join(" ")}
+            onClick={fetchDispatches}
+            disabled={loading}
+            className="p-2.5 rounded-xl border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 transition-colors shadow-xs cursor-pointer"
+            title="Refresh dispatches"
           >
-            <Layers size={15} strokeWidth={1.8} />
-            Consolidate Orders
+            <RefreshCw size={15} className={loading ? "animate-spin text-[#226049]" : ""} />
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setCreateModalOpen(true)}
+            className="inline-flex items-center gap-2 rounded-xl bg-[#226049] px-4 py-2.5 text-xs font-semibold text-white hover:bg-[#1a4336] transition-colors shadow-xs cursor-pointer"
+          >
+            <Plus size={15} />
+            Create Dispatch Release
           </button>
         </div>
       </div>
 
-      <div className="mt-6">
-        <DispatchOrderTable
-          orders={pageItems}
-          selectedIds={selectedIds}
-          onSelectionChange={setSelectedIds}
-          onAssignStorage={(order) => openModal("assign-storage", order)}
-          onAssignVault={(order) => openModal("assign-vault", order)}
-          onViewReceipt={(order) => openModal("receipt", order)}
-        />
+      {/* Tabs */}
+      <div className="flex items-center gap-2 overflow-x-auto touch-scroll py-2 no-scrollbar">
+        {[
+          { key: "all", label: `All Orders (${counts.all})` },
+          { key: "pending", label: `Pending (${counts.pending})` },
+          { key: "dispatched", label: `Dispatched (${counts.dispatched})` },
+          { key: "in-transit", label: `In Transit (${counts["in-transit"]})` },
+          { key: "delivered", label: `Delivered (${counts.delivered})` },
+        ].map((tab) => (
+          <button
+            key={tab.key}
+            type="button"
+            onClick={() => setActiveTab(tab.key as any)}
+            className={[
+              "rounded-xl px-4 py-2 text-xs font-semibold whitespace-nowrap transition-all cursor-pointer",
+              activeTab === tab.key
+                ? "bg-[#226049] text-white shadow-xs"
+                : "bg-white border border-gray-200 text-gray-600 hover:bg-gray-50",
+            ].join(" ")}
+          >
+            {tab.label}
+          </button>
+        ))}
       </div>
 
-      {filtered.length > 0 && (
-        <div className="mt-6">
-          <Pagination
-            currentPage={page}
-            totalPages={totalPages}
-            onPageChange={setPage}
-            resultsLabel={`Showing ${startIndex + 1}-${rangeEnd} of ${filtered.length} Results`}
-          />
+      {/* Dispatches Table */}
+      <div className="rounded-2xl border border-gray-100 bg-white p-5 sm:p-6 shadow-xs">
+        <div className="overflow-x-auto touch-scroll">
+          {loading ? (
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <RefreshCw size={24} className="animate-spin text-[#226049] mb-2" />
+              <p className="text-xs font-semibold text-gray-700">Loading Dispatch Records...</p>
+            </div>
+          ) : (
+            <table className="w-full min-w-[700px] text-left text-xs">
+              <thead>
+                <tr className="border-b border-gray-100 text-gray-400 font-semibold uppercase tracking-wider text-[10px]">
+                  <th className="pb-3 pr-4">Tracking Code</th>
+                  <th className="pb-3 pr-4">Pickup Hub</th>
+                  <th className="pb-3 pr-4">Carrier</th>
+                  <th className="pb-3 pr-4">Weight (KG)</th>
+                  <th className="pb-3 pr-4">Weighbridge Ticket</th>
+                  <th className="pb-3 pr-4">Status</th>
+                  <th className="pb-3 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {dispatches.map((dispatch) => (
+                  <tr key={dispatch.id} className="hover:bg-gray-50/70 transition-colors">
+                    <td className="py-3.5 pr-4 font-mono font-bold text-gray-900">
+                      {dispatch.trackingNumber || dispatch.trackingCode || `TRK-${dispatch.id.slice(0, 8)}`}
+                    </td>
+                    <td className="py-3.5 pr-4 text-gray-700 font-medium">
+                      {dispatch.pickupHub || "YucaVault #1 Ilorin"}
+                    </td>
+                    <td className="py-3.5 pr-4 text-gray-800 font-semibold">
+                      {dispatch.carrierName || "Kobo360"}
+                    </td>
+                    <td className="py-3.5 pr-4 text-gray-900 font-bold">
+                      {(dispatch.weightKg || 0).toLocaleString()} kg
+                    </td>
+                    <td className="py-3.5 pr-4 font-mono text-gray-600">
+                      {dispatch.weighbridgeTicket || "WB-PENDING"}
+                    </td>
+                    <td className="py-3.5 pr-4">
+                      <span
+                        className={[
+                          "inline-flex rounded-full px-2.5 py-0.5 text-[11px] font-semibold",
+                          dispatch.status === "pending"
+                            ? "bg-amber-50 text-amber-700 border border-amber-200"
+                            : dispatch.status === "dispatched"
+                            ? "bg-blue-50 text-blue-700 border border-blue-200"
+                            : dispatch.status === "in-transit"
+                            ? "bg-purple-50 text-purple-700 border border-purple-200"
+                            : "bg-emerald-50 text-emerald-800 border border-emerald-200",
+                        ].join(" ")}
+                      >
+                        {dispatch.status === "in-transit" ? "In Transit" : dispatch.status}
+                      </span>
+                    </td>
+                    <td className="py-3.5 text-right">
+                      <div className="inline-flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleViewReceipt(dispatch)}
+                          className="inline-flex items-center gap-1 rounded-lg border border-gray-200 px-2.5 py-1 text-gray-600 hover:bg-gray-50 transition-colors cursor-pointer"
+                          title="Generate Receipt"
+                        >
+                          <FileText size={13} />
+                          <span>Receipt</span>
+                        </button>
+
+                        {dispatch.status !== "delivered" && (
+                          <button
+                            type="button"
+                            onClick={() => handleAdvanceStatus(dispatch)}
+                            className="inline-flex items-center gap-1 rounded-lg bg-emerald-50 border border-emerald-200 px-2.5 py-1 text-[#226049] hover:bg-emerald-100 transition-colors font-semibold cursor-pointer"
+                            title="Advance shipment status"
+                          >
+                            <span>Next</span>
+                            <ArrowRight size={12} />
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+
+          {!loading && dispatches.length === 0 && (
+            <div className="py-12 text-center text-xs text-gray-500">
+              No dispatch orders found matching this filter. Click &quot;Create Dispatch Release&quot; to issue a new delivery.
+            </div>
+          )}
         </div>
+      </div>
+
+      {/* Create Release Modal */}
+      {createModalOpen && (
+        <CreateDispatchModal
+          open={createModalOpen}
+          onClose={() => setCreateModalOpen(false)}
+          onSuccess={(newRecord) => {
+            setDispatches((prev) => [newRecord, ...prev]);
+          }}
+        />
       )}
 
-      {/* ── Modals ─────────────────────────────────────────────────── */}
-      <DispatchReceiptModal
-        order={modalOrder}
-        open={activeModal === "receipt"}
-        onClose={closeModal}
-        onDownloadReceipt={handleDownloadReceipt}
-      />
-
-      <AssignToStorageModal
-        order={modalOrder}
-        open={activeModal === "assign-storage"}
-        onClose={closeModal}
-        onAssign={handleAssignStorage}
-      />
-
-      <AssignToVaultModal
-        order={modalOrder}
-        open={activeModal === "assign-vault"}
-        onClose={closeModal}
-        onConfirmDispatch={handleConfirmDispatch}
-      />
-
-      <ConsolidateOrdersModal
-        orders={activeModal === "consolidate" ? selectedOrders : []}
-        open={activeModal === "consolidate"}
-        onClose={closeModal}
-        onConfirm={handleConsolidateConfirm}
-      />
+      {/* Dispatch Receipt Modal */}
+      {receiptRecord && (
+        <DispatchReceiptModal
+          open={!!receiptRecord}
+          onClose={() => setReceiptRecord(null)}
+          order={{
+            id: receiptRecord.id,
+            orderNumber: receiptRecord.orderNumber || `MO-${receiptRecord.id.slice(0, 6)}`,
+            lotCode: receiptRecord.lotCode || "CL-2026-00021",
+            buyer: receiptRecord.buyerName || "Verified Buyer",
+            product: "Cassava Tubers",
+            weightKg: receiptRecord.weightKg,
+            date: receiptRecord.dispatchedAt || "Today",
+            status: receiptRecord.status as any,
+            paymentMade: true,
+            agreedPriceTotal: receiptRecord.weightKg * 140,
+            pricePerKg: 140,
+            pickupHub: receiptRecord.pickupHub,
+            carrier: receiptRecord.carrierName,
+            trackingNumber: receiptRecord.trackingNumber || receiptRecord.trackingCode,
+            weighbridgeTicket: receiptRecord.weighbridgeTicket,
+          } as any}
+          onDownloadReceipt={() => {
+            if (typeof window !== "undefined") {
+              window.print();
+            }
+          }}
+        />
+      )}
     </div>
   );
 }

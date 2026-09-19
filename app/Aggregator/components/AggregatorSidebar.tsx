@@ -11,6 +11,8 @@ import {
   Settings,
   ShieldCheck,
   X,
+  Database,
+  Layers,
 } from "lucide-react";
 import type { SidebarNavItem } from "./types";
 
@@ -20,6 +22,11 @@ export const DEFAULT_NAV_ITEMS: SidebarNavItem[] = [
     id: "receive-batch",
     label: "Receive Batches",
     icon: <FileInput size={18} strokeWidth={1.8} />,
+  },
+  {
+    id: "vaults",
+    label: "Storage & Vaults",
+    icon: <Layers size={18} strokeWidth={1.8} />,
   },
   { id: "market-orders", label: "Market Orders", icon: <ShoppingCart size={18} strokeWidth={1.8} /> },
   { id: "dispatch-order", label: "Dispatch Order", icon: <Truck size={18} strokeWidth={1.8} /> },
