@@ -5,6 +5,7 @@ import { Bell, ShoppingCart, ChevronDown, User, Package, LogOut, Settings } from
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/app/Context/AuthContext";
 
 export interface MarketplaceUser {
   initials: string;
@@ -22,21 +23,29 @@ export interface MarketplaceNavbarProps {
 }
 
 const defaultUser: MarketplaceUser = {
-  initials: "DF",
-  name: "Drevo Foods Ltd.",
-  email: "procurement@drevofoods.com",
+  initials: "YU",
+  name: "Marketplace User",
+  email: "buyer@yucachain.com",
 };
 
 export default function MarketplaceNavbar({
-  user = defaultUser,
+  user: userProp,
   cartCount = 0,
   hasNotifications = false,
   onBellClick,
   onCartClick,
 }: MarketplaceNavbarProps) {
+  const { user: authUser, logout } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
+
+  const activeUser = {
+    name: authUser?.name || userProp?.name || defaultUser.name,
+    initials: authUser?.initials || userProp?.initials || defaultUser.initials,
+    email: authUser?.email || userProp?.email || defaultUser.email,
+    role: authUser?.role || userProp?.role || "Verified Buyer",
+  };
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -116,11 +125,11 @@ export default function MarketplaceNavbar({
               aria-haspopup="true"
             >
               <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#226049]/10 text-xs sm:text-sm font-bold text-[#226049]">
-                {user.initials}
+                {activeUser.initials}
               </span>
               <span className="hidden text-left sm:block">
-                <span className="block text-xs sm:text-sm font-bold text-gray-900 leading-tight">
-                  {user.name}
+                <span className="block text-xs sm:text-sm font-bold text-gray-900 leading-tight truncate max-w-[150px]">
+                  {activeUser.name}
                 </span>
               </span>
               <ChevronDown
@@ -136,8 +145,11 @@ export default function MarketplaceNavbar({
             {menuOpen && (
               <div className="absolute right-0 mt-2 w-48 sm:w-56 rounded-2xl border border-gray-100 bg-white p-2 shadow-xl animate-in fade-in slide-in-from-top-2 z-50">
                 <div className="px-3 py-2.5 border-b border-gray-100">
-                  <p className="text-xs font-bold text-gray-900 truncate">{user.name}</p>
-                  <p className="text-[11px] text-gray-500 truncate">{user.email || "Verified Buyer"}</p>
+                  <p className="text-xs font-bold text-gray-900 truncate">{activeUser.name}</p>
+                  <p className="text-[11px] text-gray-500 truncate">{activeUser.email}</p>
+                  <span className="mt-1 inline-block rounded-md bg-[#226049]/10 px-2 py-0.5 text-[10px] font-semibold text-[#226049]">
+                    {activeUser.role}
+                  </span>
                 </div>
 
                 <div className="py-1 space-y-0.5">
@@ -155,8 +167,9 @@ export default function MarketplaceNavbar({
 
                   <button
                     type="button"
-                    onClick={() => {
+                    onClick={async () => {
                       setMenuOpen(false);
+                      await logout();
                       router.push("/login");
                     }}
                     className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-medium text-red-600 hover:bg-red-50 transition-colors cursor-pointer"

@@ -328,3 +328,76 @@ export const DispatchLogisticsSchema: Yup.ObjectSchema<DispatchLogisticsValues> 
   deliveryTime: Yup.string().trim().required("Delivery time is required"),
   additionalNotes: Yup.string().trim().default(""),
 });
+
+/* ------------------------------------------------------------------ */
+/*  Aggregator / Partner — Login                                       */
+/* ------------------------------------------------------------------ */
+
+export interface AggregatorLoginValues {
+  identifier: string;
+  password: string;
+}
+
+export const aggregatorLoginInitialValues: AggregatorLoginValues = {
+  identifier: "",
+  password: "",
+};
+
+export const AggregatorLoginSchema: Yup.ObjectSchema<AggregatorLoginValues> = Yup.object({
+  identifier: Yup.string()
+    .trim()
+    .required("Email or username is required"),
+  password: Yup.string().required("Password is required"),
+});
+
+/* ------------------------------------------------------------------ */
+/*  Aggregator / Partner — Register                                    */
+/* ------------------------------------------------------------------ */
+
+export interface AggregatorRegisterValues {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phoneNumber: string;
+  password: string;
+  confirmPassword: string;
+  // licenseNumber is optional per the API spec
+  licenseNumber: string;
+  hubName: string;
+  hubState: string;
+  hubLga: string;
+  // businessName & accountType are auto-filled — not shown in UI
+}
+
+export const aggregatorRegisterInitialValues: AggregatorRegisterValues = {
+  firstName: "",
+  lastName: "",
+  email: "",
+  phoneNumber: "",
+  password: "",
+  confirmPassword: "",
+  licenseNumber: "",
+  hubName: "",
+  hubState: "",
+  hubLga: "",
+};
+
+export const AggregatorRegisterSchema: Yup.ObjectSchema<AggregatorRegisterValues> = Yup.object({
+  firstName: nameRule("First name"),
+  lastName: nameRule("Last name"),
+  email: emailRule,
+  phoneNumber: Yup.string()
+    .trim()
+    .required("Phone number is required")
+    .matches(/^\+?[0-9\s\-()]{7,20}$/, "Enter a valid phone number"),
+  password: passwordRule,
+  confirmPassword: confirmPasswordRule,
+  // Optional — sent only if provided
+  licenseNumber: Yup.string().trim().optional().default(""),
+  hubName: Yup.string()
+    .trim()
+    .required("Hub name is required")
+    .min(2, "Hub name must be at least 2 characters"),
+  hubState: Yup.string().trim().required("Hub state is required"),
+  hubLga: Yup.string().trim().required("Hub LGA is required"),
+});

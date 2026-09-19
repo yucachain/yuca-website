@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Building2,
   Database,
@@ -10,32 +10,87 @@ import {
   Check,
   Save,
   Smartphone,
+  Loader2,
 } from "lucide-react";
 import type { AggregatorSettings } from "./types";
+import { aggregatorService } from "@/app/Services/aggregatorService";
+import { useAuth } from "@/app/Context/AuthContext";
 
-const INITIAL_SETTINGS: AggregatorSettings = {
-  hubName: "YucaVault #1 Ilorin Hub",
-  hubId: "AGG-HUB-KWR-001",
-  licenseNumber: "YUC-AGGR-LIC-2026-994",
-  contactName: "Penpal Aggregator Admin",
-  email: "penpal@yucachain.com",
-  phone: "+234 803 123 4567",
-  address: "Plot 14 Agro-Industrial Estate, Offa Road, Ilorin, Kwara State",
-  maxCapacityTonnes: 1500,
+const BLANK_SETTINGS: AggregatorSettings = {
+  businessName: "",
+  hubName: "",
+  hubId: "",
+  licenseNumber: "",
+  hubState: "",
+  hubLga: "",
+  contactName: "",
+  email: "",
+  phone: "",
+  address: "",
+  maxCapacityTonnes: 0,
   spoilageRiskThresholdHours: 24,
-  bankName: "Zenith Bank Plc",
-  accountNumber: "1012345678",
-  accountName: "Penpal Yuca Hub Ltd",
+  bankName: "",
+  accountNumber: "",
+  accountName: "",
   settlementFrequency: "Daily",
-  spoilageAlertsEmail: true,
-  orderAlertsSms: true,
-  twoFactorEnabled: true,
+  spoilageAlertsEmail: false,
+  orderAlertsSms: false,
+  twoFactorEnabled: false,
 };
 
 export default function SettingsSection() {
+  const { user: authUser } = useAuth();
   const [activeTab, setActiveTab] = useState<"profile" | "capacity" | "payout" | "notifications" | "security">("profile");
-  const [settings, setSettings] = useState<AggregatorSettings>(INITIAL_SETTINGS);
+  const [settings, setSettings] = useState<AggregatorSettings>(BLANK_SETTINGS);
   const [savedSuccess, setSavedSuccess] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadSettings = async () => {
+      setLoading(true);
+      try {
+        const res = await aggregatorService.getSettings();
+        setSettings({
+          businessName: res?.businessName || authUser?.businessName || "YucaChain",
+          hubName: res?.hubName || authUser?.hubName || "",
+          hubId: res?.hubId || "",
+          licenseNumber: res?.licenseNumber || "",
+          hubState: res?.hubState || authUser?.hubState || "",
+          hubLga: res?.hubLga || authUser?.hubLga || "",
+          contactName: res?.contactName || authUser?.name || "",
+          email: res?.email || authUser?.email || "",
+          phone: res?.phone || authUser?.phoneNumber || "",
+          address: res?.address || "",
+          maxCapacityTonnes: Number(res?.maxTonnesCapacity ?? res?.maxCapacityTonnes ?? 0),
+          spoilageRiskThresholdHours: Number(res?.spoilageRiskThresholdHours ?? 24),
+          bankName: res?.bankName || "",
+          accountNumber: res?.accountNumber || "",
+          accountName: res?.accountName || "",
+          settlementFrequency: (res?.settlementFrequency as any) || "Daily",
+          spoilageAlertsEmail: Boolean(res?.spoilageAlertsEmail),
+          orderAlertsSms: Boolean(res?.orderAlertsSms),
+          twoFactorEnabled: Boolean(res?.twoFactorEnabled),
+        });
+      } catch (err: any) {
+        console.warn("Could not load settings from server:", err);
+        // Fallback to real logged-in user profile, NOT fake demo data
+        setSettings({
+          ...BLANK_SETTINGS,
+          businessName: authUser?.businessName || "YucaChain",
+          hubName: authUser?.hubName || "",
+          hubState: authUser?.hubState || "",
+          hubLga: authUser?.hubLga || "",
+          contactName: authUser?.name || "",
+          email: authUser?.email || "",
+          phone: authUser?.phoneNumber || "",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadSettings();
+  }, [authUser]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
@@ -47,10 +102,28 @@ export default function SettingsSection() {
     }
   };
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSavedSuccess(true);
-    setTimeout(() => setSavedSuccess(false), 3000);
+    setIsSaving(true);
+    try {
+      await aggregatorService.updateSettings({
+        businessName: settings.businessName || "YucaChain",
+        hubName: settings.hubName,
+        hubId: settings.hubId,
+        licenseNumber: settings.licenseNumber,
+        hubState: settings.hubState,
+        hubLga: settings.hubLga,
+        maxTonnesCapacity: Number(settings.maxCapacityTonnes) || 0,
+        spoilageRiskThresholdHours: Number(settings.spoilageRiskThresholdHours) || 0,
+        settlementFrequency: settings.settlementFrequency || "Daily",
+      });
+      setSavedSuccess(true);
+      setTimeout(() => setSavedSuccess(false), 3500);
+    } catch (err: any) {
+      console.error("Failed to update settings on server:", err);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -108,7 +181,7 @@ export default function SettingsSection() {
               : "bg-white border border-gray-200 text-gray-600 hover:bg-gray-50",
           ].join(" ")}
         >
-          <CreditCard size={16} /> Payout Details
+          <CreditCard size={16} /> Bank &amp; Settlement
         </button>
 
         <button
@@ -138,6 +211,13 @@ export default function SettingsSection() {
         </button>
       </div>
 
+      {loading ? (
+        <div className="flex flex-col items-center justify-center rounded-2xl border border-gray-100 bg-white p-16 text-center shadow-xs">
+          <Loader2 size={24} className="animate-spin text-[#226049] mb-3" />
+          <p className="text-sm font-semibold text-gray-900">Loading Hub Settings...</p>
+          <p className="text-xs text-gray-500 mt-1">Connecting to live aggregator API</p>
+        </div>
+      ) : (
       <form onSubmit={handleSave} className="space-y-6">
 
         {activeTab === "profile" && (
@@ -148,25 +228,25 @@ export default function SettingsSection() {
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
-                <label className="block text-xs font-semibold text-gray-700">Hub / Facility Name</label>
+                <label className="block text-xs font-semibold text-gray-700">Business / Aggregator Name</label>
                 <input
                   type="text"
-                  name="hubName"
-                  value={settings.hubName}
+                  name="businessName"
+                  value={settings.businessName || "YucaChain"}
                   onChange={handleChange}
                   className="mt-1.5 w-full rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-xs sm:text-sm text-gray-900 outline-none focus:border-emerald-700 focus:ring-1 focus:ring-emerald-700"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-gray-700">Operating License Number</label>
+                <label className="block text-xs font-semibold text-gray-700">Hub / Facility Name</label>
                 <input
                   type="text"
-                  name="licenseNumber"
-                  value={settings.licenseNumber}
+                  name="hubName"
+                  value={settings.hubName}
                   onChange={handleChange}
-                  className="mt-1.5 w-full rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-2.5 text-xs sm:text-sm text-gray-700 outline-none"
-                  readOnly
+                  placeholder="e.g. Ogun Central Hub"
+                  className="mt-1.5 w-full rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-xs sm:text-sm text-gray-900 outline-none focus:border-emerald-700 focus:ring-1 focus:ring-emerald-700"
                 />
               </div>
 
@@ -177,6 +257,7 @@ export default function SettingsSection() {
                   name="contactName"
                   value={settings.contactName}
                   onChange={handleChange}
+                  placeholder="Full Name"
                   className="mt-1.5 w-full rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-xs sm:text-sm text-gray-900 outline-none focus:border-emerald-700"
                 />
               </div>
@@ -188,6 +269,7 @@ export default function SettingsSection() {
                   name="email"
                   value={settings.email}
                   onChange={handleChange}
+                  placeholder="hub@example.com"
                   className="mt-1.5 w-full rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-xs sm:text-sm text-gray-900 outline-none focus:border-emerald-700"
                 />
               </div>
@@ -199,31 +281,46 @@ export default function SettingsSection() {
                   name="phone"
                   value={settings.phone}
                   onChange={handleChange}
+                  placeholder="+234 800 000 0000"
                   className="mt-1.5 w-full rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-xs sm:text-sm text-gray-900 outline-none focus:border-emerald-700"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-gray-700">Hub ID Code</label>
+                <label className="block text-xs font-semibold text-gray-700">Hub State</label>
                 <input
                   type="text"
-                  name="hubId"
-                  value={settings.hubId}
-                  className="mt-1.5 w-full rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-2.5 text-xs sm:text-sm text-gray-700 outline-none"
-                  readOnly
+                  name="hubState"
+                  value={settings.hubState || ""}
+                  onChange={handleChange}
+                  placeholder="e.g. Ogun"
+                  className="mt-1.5 w-full rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-xs sm:text-sm text-gray-900 outline-none focus:border-emerald-700"
                 />
               </div>
-            </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-gray-700">Physical Address</label>
-              <input
-                type="text"
-                name="address"
-                value={settings.address}
-                onChange={handleChange}
-                className="mt-1.5 w-full rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-xs sm:text-sm text-gray-900 outline-none focus:border-emerald-700"
-              />
+              <div>
+                <label className="block text-xs font-semibold text-gray-700">Hub LGA</label>
+                <input
+                  type="text"
+                  name="hubLga"
+                  value={settings.hubLga || ""}
+                  onChange={handleChange}
+                  placeholder="e.g. Abeokuta North"
+                  className="mt-1.5 w-full rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-xs sm:text-sm text-gray-900 outline-none focus:border-emerald-700"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-700">Physical Address</label>
+                <input
+                  type="text"
+                  name="address"
+                  value={settings.address}
+                  onChange={handleChange}
+                  placeholder="e.g. Plot 14 Agro-Industrial Estate"
+                  className="mt-1.5 w-full rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-xs sm:text-sm text-gray-900 outline-none focus:border-emerald-700"
+                />
+              </div>
             </div>
           </div>
         )}
@@ -409,12 +506,27 @@ export default function SettingsSection() {
         <div className="flex justify-end pt-2">
           <button
             type="submit"
-            className="inline-flex items-center gap-2 rounded-xl bg-[#226049] px-6 py-3 text-sm font-semibold text-white hover:bg-[#1a4b39] transition-all cursor-pointer shadow-sm"
+            disabled={isSaving}
+            className={[
+              "inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-semibold text-white transition-all cursor-pointer shadow-sm",
+              isSaving
+                ? "bg-gray-400 cursor-not-allowed"
+                : "bg-[#226049] hover:bg-[#1a4b39] active:scale-[0.99]",
+            ].join(" ")}
           >
-            <Save size={16} /> Save Changes
+            {isSaving ? (
+              <>
+                <Loader2 size={16} className="animate-spin" /> Saving Settings...
+              </>
+            ) : (
+              <>
+                <Save size={16} /> Save Changes
+              </>
+            )}
           </button>
         </div>
       </form>
+      )}
     </div>
   );
 }

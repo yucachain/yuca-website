@@ -52,7 +52,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (typeof window === "undefined") return;
     try {
       localStorage.setItem(StorageKey.TOKEN, authToken);
+      localStorage.setItem("accessToken", authToken);
       localStorage.setItem(StorageKey.USER, JSON.stringify(userData));
+      if (userData.role) {
+        localStorage.setItem("userRole", String(userData.role));
+      }
     } catch {
 
     }
@@ -62,8 +66,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (typeof window === "undefined") return;
     try {
       localStorage.removeItem(StorageKey.TOKEN);
+      localStorage.removeItem("accessToken");
       localStorage.removeItem(StorageKey.REFRESH_TOKEN);
+      localStorage.removeItem("refreshToken");
       localStorage.removeItem(StorageKey.USER);
+      localStorage.removeItem("userRole");
     } catch {
 
     }
@@ -78,21 +85,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           return;
         }
 
-        const savedToken = localStorage.getItem(StorageKey.TOKEN);
+        const savedToken =
+          localStorage.getItem(StorageKey.TOKEN) ||
+          localStorage.getItem("accessToken");
         const savedUserJson = localStorage.getItem(StorageKey.USER);
 
-        if (savedToken && savedUserJson) {
-          try {
-            const parsedUser: User = JSON.parse(savedUserJson);
-            if (!parsedUser.initials && parsedUser.name) {
-              parsedUser.initials = getInitials(parsedUser.name);
+        if (savedToken) {
+          setToken(savedToken);
+          if (savedUserJson) {
+            try {
+              const parsedUser: User = JSON.parse(savedUserJson);
+              if (!parsedUser.initials && parsedUser.name) {
+                parsedUser.initials = getInitials(parsedUser.name);
+              }
+              setUser(parsedUser);
+              setStatus(AuthStatus.AUTHENTICATED);
+            } catch {
+              // will refresh below
             }
-            setToken(savedToken);
-            setUser(parsedUser);
+          }
+
+          // Fetch fresh user profile from /api/v1/auth/me
+          try {
+            const freshUser = await authService.getCurrentUser();
+            setUser(freshUser);
             setStatus(AuthStatus.AUTHENTICATED);
-          } catch {
-            clearSession();
-            setStatus(AuthStatus.UNAUTHENTICATED);
+            persistSession(savedToken, freshUser);
+          } catch (profileErr) {
+            if (!savedUserJson) {
+              clearSession();
+              setStatus(AuthStatus.UNAUTHENTICATED);
+            }
           }
         } else {
           setStatus(AuthStatus.UNAUTHENTICATED);

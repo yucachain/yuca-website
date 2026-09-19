@@ -33,6 +33,7 @@ export interface AddCartItemRequest {
   id?: string;
   batchCode?: string;
   listingId?: string;
+  batchId?: string;
   title: string;
   grade?: CartGrade;
   quantity: number;

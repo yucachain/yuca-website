@@ -1,123 +1,55 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import MarketOrderFilterTabs from "./MarketOrderFilterTabs";
 import MarketOrderCard from "./MarketOrderCard";
 import ConsolidateOrdersModal from "./ConsolidateOrdersModal";
 import Pagination from "./Pagination";
 import type { MarketOrder, MarketOrderTab } from "./types";
-
-// Enhanced list of orders accepted by buyers from the Marketplace
-const ORDERS: MarketOrder[] = [
-  {
-    id: "1",
-    orderNumber: "MO-2026-014",
-    buyer: "Drevo Foods Ltd.",
-    buyerEmail: "procurement@drevofoods.com",
-    buyerPhone: "+234 803 456 7890",
-    deliveryLocation: "Ikeja Industrial Estate, Lagos",
-    productName: "TME 419 Cassava Stems (Grade A)",
-    grade: "A",
-    neededKg: 12000,
-    selectedKg: 11300,
-    pricePerKg: 120,
-    totalPrice: 1440000,
-    paymentStatus: "Escrow Paid",
-    acceptedDate: "Aug 13, 2026 · 10:15 AM",
-    statusLabel: "Buyer Accepted - Pending Consolidation",
-    tab: "pending",
-    batches: [
-      { id: "b1", batchCode: "YC-2026-00142", farmer: "Musa Ibrahim", weightKg: 3300, grade: "A" },
-      { id: "b2", batchCode: "YC-2026-00122", farmer: "Global Farms", weightKg: 6000, grade: "A" },
-      { id: "b3", batchCode: "YC-2026-00104", farmer: "Garba Farms", weightKg: 2000, grade: "B" },
-    ],
-  },
-  {
-    id: "2",
-    orderNumber: "MO-2026-015",
-    buyer: "Sahel Foods Ltd.",
-    buyerEmail: "orders@sahelfoods.com",
-    buyerPhone: "+234 802 888 9911",
-    deliveryLocation: "Challawa Industrial Layout, Kano",
-    productName: "Fresh Cassava Tubers (Grade A)",
-    grade: "A",
-    neededKg: 8000,
-    selectedKg: 8000,
-    pricePerKg: 110,
-    totalPrice: 880000,
-    paymentStatus: "Escrow Paid",
-    acceptedDate: "Aug 12, 2026 · 02:40 PM",
-    statusLabel: "Assigned to Vault",
-    tab: "assigned",
-    batches: [
-      { id: "b4", batchCode: "YC-2026-00151", farmer: "Aloba Farms", weightKg: 5000, grade: "A" },
-      { id: "b5", batchCode: "YC-2026-00133", farmer: "Kays & Sons", weightKg: 3000, grade: "B" },
-    ],
-  },
-  {
-    id: "3",
-    orderNumber: "MO-2026-011",
-    buyer: "Ibadan Millers Co.",
-    buyerEmail: "logistics@ibadanmillers.ng",
-    buyerPhone: "+234 805 777 4433",
-    deliveryLocation: "Challenge, Ibadan, Oyo State",
-    productName: "Industrial Cassava Starch Grade B",
-    grade: "B",
-    neededKg: 10000,
-    selectedKg: 10000,
-    pricePerKg: 135,
-    totalPrice: 1350000,
-    paymentStatus: "Credit Approved",
-    acceptedDate: "Aug 11, 2026 · 09:30 AM",
-    statusLabel: "In Transit",
-    tab: "in-transit",
-    batches: [
-      { id: "b6", batchCode: "YC-2026-00098", farmer: "Top Farmers Ltd.", weightKg: 7000, grade: "A" },
-      { id: "b7", batchCode: "YC-2026-00087", farmer: "Musa Ibrahim", weightKg: 3000, grade: "A" },
-    ],
-  },
-  {
-    id: "4",
-    orderNumber: "MO-2026-009",
-    buyer: "Kano Starch Mills",
-    buyerEmail: "supplies@kanostarch.com",
-    buyerPhone: "+234 809 112 3344",
-    deliveryLocation: "Sharada Industrial Phase I, Kano",
-    productName: "Yellow Garri Mash (Grade A)",
-    grade: "A",
-    neededKg: 6000,
-    selectedKg: 6000,
-    pricePerKg: 140,
-    totalPrice: 840000,
-    paymentStatus: "Escrow Paid",
-    acceptedDate: "Aug 10, 2026 · 11:20 AM",
-    statusLabel: "Fulfilled",
-    tab: "fulfilled",
-    batches: [
-      { id: "b8", batchCode: "YC-2026-00065", farmer: "Garba Farms", weightKg: 6000, grade: "B" },
-    ],
-  },
-];
+import { aggregatorService } from "@/app/Services/aggregatorService";
+import { Check, RefreshCw, ShoppingCart } from "lucide-react";
 
 export default function MarketOrdersSection() {
+  const [orders, setOrders] = useState<MarketOrder[]>([]);
+  const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<MarketOrderTab>("all");
   const [page, setPage] = useState(1);
   const [consolidateOrder, setConsolidateOrder] = useState<MarketOrder | null>(null);
+  const [actionMessage, setActionMessage] = useState<string | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  // Load orders strictly from API
+  const fetchOrders = async () => {
+    setLoading(true);
+    try {
+      const data = await aggregatorService.getMarketOrders();
+      setOrders(Array.isArray(data) ? data : []);
+    } catch (err: any) {
+      console.error("Failed to load market orders from API:", err);
+      setOrders([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchOrders();
+  }, []);
 
   const counts = useMemo(
     () => ({
-      all: ORDERS.length,
-      pending: ORDERS.filter((o) => o.tab === "pending").length,
-      assigned: ORDERS.filter((o) => o.tab === "assigned").length,
-      "in-transit": ORDERS.filter((o) => o.tab === "in-transit").length,
-      fulfilled: ORDERS.filter((o) => o.tab === "fulfilled").length,
+      all: orders.length,
+      pending: orders.filter((o) => o.tab === "pending").length,
+      assigned: orders.filter((o) => o.tab === "assigned").length,
+      "in-transit": orders.filter((o) => o.tab === "in-transit").length,
+      fulfilled: orders.filter((o) => o.tab === "fulfilled").length,
     }),
-    []
+    [orders]
   );
 
   const filteredOrders = useMemo(
-    () => (activeTab === "all" ? ORDERS : ORDERS.filter((o) => o.tab === activeTab)),
-    [activeTab]
+    () => (activeTab === "all" ? orders : orders.filter((o) => o.tab === activeTab)),
+    [activeTab, orders]
   );
 
   const currentOrder = filteredOrders[page - 1];
@@ -127,31 +59,105 @@ export default function MarketOrdersSection() {
     setPage(1);
   };
 
+  const handleConfirmConsolidation = async () => {
+    if (!consolidateOrder) return;
+    setIsProcessing(true);
+    const orderId = consolidateOrder.id;
+    const vaultLotId = `LOT-${consolidateOrder.orderNumber}`;
+    const batchIds = consolidateOrder.batches.map((b) => b.id);
+
+    try {
+      await aggregatorService.assignBatches(orderId, {
+        batchIds,
+        vaultLotId,
+      });
+
+      await aggregatorService.updateOrderStatus(orderId, "ASSIGNED");
+
+      setOrders((prev) =>
+        prev.map((o) =>
+          o.id === orderId
+            ? {
+                ...o,
+                tab: "assigned" as const,
+                statusLabel: "Assigned to Vault",
+              }
+            : o
+        )
+      );
+
+      setActionMessage(`Order ${consolidateOrder.orderNumber} successfully assigned to Vault Lot ${vaultLotId}!`);
+      setTimeout(() => setActionMessage(null), 4000);
+    } catch (err: any) {
+      console.error("Failed to assign batches:", err);
+      setActionMessage(`Failed to assign batches: ${err?.message || "Server error"}`);
+      setTimeout(() => setActionMessage(null), 5000);
+    } finally {
+      setIsProcessing(false);
+      setConsolidateOrder(null);
+    }
+  };
+
   return (
     <>
-      <h1 className="text-lg font-bold text-gray-900">Marketplace Orders</h1>
-      <p className="mt-1 text-sm text-gray-500">
-        Review orders accepted by buyers on the Marketplace, manage batch aggregation, and trigger consolidation.
-      </p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-lg font-bold text-gray-900">Marketplace Orders</h1>
+          <p className="mt-1 text-sm text-gray-500">
+            Review orders placed by buyers on the Marketplace, manage batch aggregation, and trigger consolidation.
+          </p>
+        </div>
+
+        <button
+          type="button"
+          onClick={fetchOrders}
+          disabled={loading}
+          className="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-3.5 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer self-start sm:self-auto shadow-xs"
+        >
+          <RefreshCw size={13} className={loading ? "animate-spin text-[#226049]" : ""} />
+          {loading ? "Loading..." : "Refresh Orders"}
+        </button>
+      </div>
+
+      {actionMessage && (
+        <div className="mt-4 rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-3 flex items-center gap-2 text-xs font-medium text-emerald-800 animate-in fade-in">
+          <Check size={16} className="text-emerald-700 shrink-0" />
+          <span>{actionMessage}</span>
+        </div>
+      )}
 
       <div className="mt-6">
         <MarketOrderFilterTabs counts={counts} activeTab={activeTab} onChange={handleTabChange} />
       </div>
 
       <div className="mt-6">
-        {currentOrder ? (
+        {loading ? (
+          <div className="flex flex-col items-center justify-center rounded-2xl border border-gray-100 bg-white p-12 text-center shadow-xs">
+            <RefreshCw size={24} className="animate-spin text-[#226049] mb-3" />
+            <p className="text-sm font-semibold text-gray-900">Loading Marketplace Orders...</p>
+            <p className="text-xs text-gray-500 mt-1">Connecting to live aggregator API</p>
+          </div>
+        ) : currentOrder ? (
           <MarketOrderCard
             order={currentOrder}
             onConsolidate={(order) => setConsolidateOrder(order)}
           />
         ) : (
-          <div className="rounded-2xl border border-gray-100 bg-white p-8 text-center text-sm text-gray-500">
-            No orders in this category.
+          <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-gray-200 bg-white p-12 text-center">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 text-gray-400 mb-3">
+              <ShoppingCart size={20} strokeWidth={1.8} />
+            </div>
+            <p className="text-sm font-bold text-gray-900">No Market Orders Found</p>
+            <p className="mt-1 text-xs text-gray-500 max-w-sm">
+              {activeTab === "all"
+                ? "There are currently no marketplace orders assigned to your hub. When buyers purchase batches from the marketplace, they will appear here live."
+                : `No orders found under the "${activeTab}" category.`}
+            </p>
           </div>
         )}
       </div>
 
-      {filteredOrders.length > 0 && (
+      {!loading && filteredOrders.length > 0 && (
         <div className="mt-6">
           <Pagination
             currentPage={page}
@@ -182,10 +188,7 @@ export default function MarketOrdersSection() {
           ]}
           open={!!consolidateOrder}
           onClose={() => setConsolidateOrder(null)}
-          onConfirm={(orders) => {
-            console.log("Consolidated orders", orders);
-            setConsolidateOrder(null);
-          }}
+          onConfirm={handleConfirmConsolidation}
         />
       )}
     </>

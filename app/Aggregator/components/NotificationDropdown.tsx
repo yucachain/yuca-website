@@ -12,6 +12,7 @@ import {
   ShoppingCart,
   Info,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import type { Notification, NotificationType } from "./types";
 
 const typeConfig: Record<
@@ -63,6 +64,7 @@ export default function NotificationDropdown({
   onMarkAllRead,
   onMarkRead,
 }: NotificationDropdownProps) {
+  const router = useRouter();
   const unreadCount = notifications.filter((n) => !n.read).length;
 
   return (
@@ -99,7 +101,7 @@ export default function NotificationDropdown({
               <button
                 type="button"
                 onClick={onMarkAllRead}
-                className="flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium text-[#226049] transition-colors hover:bg-[#226049]/10"
+                className="flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium text-[#226049] transition-colors hover:bg-[#226049]/10 cursor-pointer"
               >
                 <CheckCheck size={13} strokeWidth={2} />
                 Mark all read
@@ -109,7 +111,7 @@ export default function NotificationDropdown({
               type="button"
               onClick={onClose}
               aria-label="Close notifications"
-              className="flex h-7 w-7 items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700"
+              className="flex h-7 w-7 items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700 cursor-pointer"
             >
               <X size={15} strokeWidth={2} />
             </button>
@@ -135,7 +137,7 @@ export default function NotificationDropdown({
                       type="button"
                       onClick={() => onMarkRead?.(notif.id)}
                       className={[
-                        "flex w-full items-start gap-3 px-5 py-4 text-left transition-colors hover:bg-gray-50",
+                        "flex w-full items-start gap-3 px-5 py-4 text-left transition-colors hover:bg-gray-50 cursor-pointer",
                         !notif.read ? "bg-[#226049]/[0.03]" : "",
                         idx !== notifications.length - 1
                           ? "border-b border-gray-50"
@@ -192,7 +194,11 @@ export default function NotificationDropdown({
           <div className="border-t border-gray-100 px-5 py-3">
             <button
               type="button"
-              className="w-full rounded-xl border border-[#226049]/30 py-2.5 text-xs font-semibold text-[#226049] transition-colors hover:bg-[#226049]/5"
+              onClick={() => {
+                onClose();
+                router.push("/marketplace/notifications");
+              }}
+              className="w-full rounded-xl border border-[#226049]/30 py-2.5 text-xs font-semibold text-[#226049] transition-colors hover:bg-[#226049]/5 cursor-pointer"
             >
               View all notifications
             </button>

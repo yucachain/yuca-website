@@ -26,7 +26,6 @@ export default function CartPage() {
 
   const router = useRouter();
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -34,7 +33,6 @@ export default function CartPage() {
     const fetchCart = async () => {
       try {
         setLoading(true);
-        setError(null);
 
         const localCart = (() => {
           try {
@@ -85,8 +83,6 @@ export default function CartPage() {
           if (fallbackCart.length > 0) {
             replaceCart(fallbackCart);
           }
-
-          setError("Unable to load your cart right now. Showing your saved local cart instead.");
         }
       } finally {
         if (!cancelled) {
@@ -116,12 +112,6 @@ export default function CartPage() {
           <p className="mt-0.5 text-xs text-gray-500">
             {totalItems} {totalItems === 1 ? "item" : "items"} in your cart
           </p>
-
-          {error && (
-            <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
-              {error}
-            </div>
-          )}
 
           {loading && cartItems.length === 0 && (
             <div className="mt-6 rounded-xl border border-dashed border-gray-200 bg-white px-4 py-8 text-center text-sm text-gray-500">

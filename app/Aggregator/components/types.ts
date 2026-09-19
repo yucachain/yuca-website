@@ -181,9 +181,12 @@ export interface TransactionRecord {
 
 
 export interface AggregatorSettings {
+  businessName?: string;
   hubName: string;
   hubId: string;
   licenseNumber: string;
+  hubState?: string;
+  hubLga?: string;
   contactName: string;
   email: string;
   phone: string;

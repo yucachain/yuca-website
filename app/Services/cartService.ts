@@ -4,6 +4,7 @@ import {
   AddCartItemRequest,
   UpdateCartItemRequest,
 } from '@/app/types/cart';
+import { refreshAccessToken } from '@/app/Services/authService';
 
 const BASE_URL = (process.env.NEXT_PUBLIC_API_BASE_URL || '')
   .replace(/\/index\.html?$/i, '')
@@ -21,6 +22,24 @@ function buildApiUrl(endpoint: string) {
   }
 
   return `${base}${hasApiPrefix ? '' : API_PREFIX}${normalizedEndpoint}`;
+}
+
+function getAuthToken(): string {
+  if (typeof window === 'undefined') return '';
+  const candidateKeys = ['accessToken', 'yuca_access_token', 'token', 'authToken'];
+  for (const key of candidateKeys) {
+    const raw = localStorage.getItem(key);
+    if (!raw) continue;
+    let clean = raw.trim();
+    if (clean.startsWith('"') && clean.endsWith('"')) {
+      clean = clean.slice(1, -1).trim();
+    }
+    if (clean.startsWith('Bearer ')) {
+      clean = clean.slice(7).trim();
+    }
+    if (clean) return clean;
+  }
+  return '';
 }
 
 function normalizeCartResponse(payload: any): Cart {
@@ -47,20 +66,34 @@ function normalizeCartResponse(payload: any): Cart {
 }
 
 async function fetcher<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+  let token = getAuthToken();
   const requestUrl = /^https?:\/\//i.test(endpoint) ? endpoint : buildApiUrl(endpoint);
 
-  const headers: HeadersInit = {
+  const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     Accept: 'application/json',
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    ...options.headers,
+    ...((options.headers as Record<string, string>) || {}),
   };
 
-  const response = await fetch(requestUrl, {
+  let response = await fetch(requestUrl, {
     ...options,
     headers,
   });
+
+  if (response.status === 401) {
+    try {
+      const refreshed = await refreshAccessToken();
+      if (refreshed) {
+        token = refreshed;
+        headers['Authorization'] = `Bearer ${refreshed}`;
+        response = await fetch(requestUrl, {
+          ...options,
+          headers,
+        });
+      }
+    } catch {}
+  }
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
@@ -72,7 +105,11 @@ async function fetcher<T>(endpoint: string, options: RequestInit = {}): Promise<
   }
 
   if (response.headers.get('content-type')?.includes('application/json')) {
-    return response.json();
+    const json = await response.json();
+    if (json && typeof json === 'object' && 'data' in json && json.data !== null && json.data !== undefined) {
+      return json.data as T;
+    }
+    return json;
   }
 
   return {} as T;
@@ -90,33 +127,56 @@ export const cartApi = {
 
   // POST /api/v1/cart/items
   addItem: async (data: AddCartItemRequest): Promise<CartItem> => {
+    const isUuid = (str?: string) =>
+      Boolean(str && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str));
+
+    const body: Record<string, any> = {
+      quantity: Number(data.quantity) || 1,
+    };
+    if (isUuid(data.listingId)) {
+      body.listingId = data.listingId;
+    } else if (isUuid(data.id)) {
+      body.listingId = data.id;
+    }
+    if (isUuid(data.batchId)) {
+      body.batchId = data.batchId;
+    }
+
     const payload = await fetcher<any>('/cart/items', {
       method: 'POST',
-      body: JSON.stringify(data),
+      body: JSON.stringify(body),
     });
 
     return {
       ...(payload ?? {}),
-      unit: payload?.unit || 'Tonnes',
-      currency: payload?.currency || '₦',
-      pricePerTonne: payload?.pricePerTonne ?? payload?.price ?? 0,
-      quantity: payload?.quantity ?? 1,
+      id: payload?.id || data.id || data.listingId || String(Math.random()),
+      title: payload?.title || data.title || 'Cassava Product',
+      grade: payload?.grade || data.grade || 'A',
+      unit: payload?.unit || data.unit || 'Tonnes',
+      currency: payload?.currency || data.currency || '₦',
+      pricePerTonne: payload?.pricePerTonne ?? payload?.price ?? data.pricePerTonne ?? 0,
+      quantity: payload?.quantity ?? data.quantity ?? 1,
     };
   },
 
   // PUT /api/v1/cart/items/{id}
   updateItemQuantity: async (id: string, data: UpdateCartItemRequest): Promise<CartItem> => {
+    const body = {
+      quantity: Number(data.quantity) || 1,
+    };
+
     const payload = await fetcher<any>(`/cart/items/${id}`, {
       method: 'PUT',
-      body: JSON.stringify(data),
+      body: JSON.stringify(body),
     });
 
     return {
       ...(payload ?? {}),
+      id: payload?.id || id,
       unit: payload?.unit || 'Tonnes',
       currency: payload?.currency || '₦',
       pricePerTonne: payload?.pricePerTonne ?? payload?.price ?? 0,
-      quantity: payload?.quantity ?? 1,
+      quantity: payload?.quantity ?? data.quantity ?? 1,
     };
   },
 

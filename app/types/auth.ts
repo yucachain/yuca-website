@@ -10,6 +10,13 @@ export interface User {
   phoneNumber?: string;
   avatarUrl?: string;
   isVerified?: boolean;
+  firstName?: string;
+  lastName?: string;
+  businessName?: string;
+  hubName?: string;
+  hubState?: string;
+  hubLga?: string;
+  accountType?: string;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -101,8 +108,22 @@ export interface LoginResponse {
 }
 
 export interface AggregatorLoginRequest {
-  email: string;
+  identifier: string;
   password: string;
+}
+
+export interface AggregatorRegisterRequest {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phoneNumber: string;
+  password: string;
+  businessName: string;
+  licenseNumber?: string;
+  hubName: string;
+  hubState: string;
+  hubLga: string;
+  accountType: string;
 }
 
 export interface MiscPayload {

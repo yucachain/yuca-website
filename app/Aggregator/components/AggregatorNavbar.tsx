@@ -1,104 +1,134 @@
 "use client";
 
-import React, { useState } from "react";
-import { Search, Bell, ChevronDown, Menu } from "lucide-react";
+import React, { useState, useRef, useEffect } from "react";
+import { Search, Bell, ChevronDown, Menu, LogOut, Building2 } from "lucide-react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/app/Context/AuthContext";
 import type { AggregatorUser, Notification } from "./types";
 import NotificationDropdown from "./NotificationDropdown";
+import { notificationService } from "@/app/Services/notificationService";
+import type { MarketplaceNotification } from "@/app/types/notification";
 
 export interface AggregatorNavbarProps {
   user?: AggregatorUser;
   hasNotifications?: boolean;
   onSearch?: (query: string) => void;
-  /** Optional: override the default sample notifications */
+  /** Optional: override notifications */
   notifications?: Notification[];
   onToggleMobileSidebar?: () => void;
 }
 
 const defaultUser: AggregatorUser = {
-  initials: "PP",
-  name: "Penpal",
-  role: "Aggregator",
+  initials: "HM",
+  name: "Hub Manager",
+  role: "YucaChain Partner",
 };
 
-/** Sample notifications shown until a real API is wired up */
-const SAMPLE_NOTIFICATIONS: Notification[] = [
-  {
-    id: "1",
-    type: "batch-received",
-    title: "Batch AGG-000234 received",
-    description: "Batch from Alaba Farms has been received and logged.",
-    time: "09:45 AM · Today",
-    read: false,
-  },
-  {
-    id: "2",
-    type: "storage-assigned",
-    title: "Batch AGG-000221 assigned to storage",
-    description: "Assigned to YucaVault #1 Ilorin — Unit A-24.",
-    time: "09:12 AM · Today",
-    read: false,
-  },
-  {
-    id: "3",
-    type: "dispatch",
-    title: "Order MO-2026-011 dispatched",
-    description: "Lot CL-2026-00031 is now in transit to Ibadan Millers Co.",
-    time: "08:50 AM · Today",
-    read: true,
-  },
-  {
-    id: "4",
-    type: "alert",
-    title: "3 batches at spoilage risk",
-    description:
-      "Batches YC-2026-00142, YC-2026-00134, and YC-2026-00129 need immediate attention.",
-    time: "Yesterday · 06:30 PM",
-    read: false,
-  },
-  {
-    id: "5",
-    type: "market-order",
-    title: "New market order MO-2026-016",
-    description:
-      "Green Valley Processing placed a new order for 12,000 kg of cassava.",
-    time: "Yesterday · 02:15 PM",
-    read: true,
-  },
-  {
-    id: "6",
-    type: "info",
-    title: "System maintenance scheduled",
-    description:
-      "Yucachain will undergo brief maintenance on Aug 12, 2026 at 2:00 AM.",
-    time: "Aug 8, 2026",
-    read: true,
-  },
-];
+function mapToNavbarNotification(notif: MarketplaceNotification): Notification {
+  let type: Notification["type"] = "info";
+  if (notif.category === "shipping") {
+    type = "dispatch";
+  } else if (notif.category === "pricing" || notif.category === "order") {
+    type = "market-order";
+  } else if (notif.category === "payment") {
+    type = "batch-received";
+  }
+
+  return {
+    id: notif.id,
+    type,
+    title: notif.title,
+    description: notif.message,
+    time: notif.time,
+    read: notif.read,
+  };
+}
 
 export default function AggregatorNavbar({
-  user = defaultUser,
+  user: userProp,
   notifications: notificationsProp,
   onSearch,
   onToggleMobileSidebar,
 }: AggregatorNavbarProps) {
+  const router = useRouter();
+  const { user: authUser, logout } = useAuth();
   const [query, setQuery] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
   const [bellOpen, setBellOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   const [notifications, setNotifications] = useState<Notification[]>(
-    notificationsProp ?? SAMPLE_NOTIFICATIONS
+    notificationsProp ?? []
   );
+
+  useEffect(() => {
+    if (notificationsProp) {
+      setNotifications(notificationsProp);
+      return;
+    }
+
+    let isMounted = true;
+    notificationService
+      .getNotifications()
+      .then((data) => {
+        if (isMounted && Array.isArray(data)) {
+          setNotifications(data.map(mapToNavbarNotification));
+        }
+      })
+      .catch((err) => {
+        console.error("Failed to load notifications for aggregator navbar:", err);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [notificationsProp]);
+
+  const activeUser = {
+    name: authUser?.name || userProp?.name || defaultUser.name,
+    initials: authUser?.initials || userProp?.initials || defaultUser.initials,
+    role: authUser?.hubName
+      ? `${authUser.hubName}`
+      : authUser?.role || userProp?.role || defaultUser.role,
+    email: authUser?.email,
+  };
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
-  const handleMarkRead = (id: string) => {
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleMarkRead = async (id: string) => {
     setNotifications((prev) =>
       prev.map((n) => (n.id === id ? { ...n, read: true } : n))
     );
+    try {
+      await notificationService.markAsRead(id);
+    } catch (err) {
+      console.error("Failed to mark notification as read:", err);
+    }
   };
 
-  const handleMarkAllRead = () => {
+  const handleMarkAllRead = async () => {
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    try {
+      await notificationService.markAllAsRead();
+    } catch (err) {
+      console.error("Failed to mark all notifications as read:", err);
+    }
+  };
+
+  const handleSignOut = async () => {
+    setMenuOpen(false);
+    await logout();
+    router.push("/partner-access/login");
   };
 
   return (
@@ -150,7 +180,7 @@ export default function AggregatorNavbar({
               aria-label="Notifications"
               aria-expanded={bellOpen}
               onClick={() => setBellOpen((v) => !v)}
-              className="relative flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-full border border-gray-200 text-gray-600 transition-colors hover:bg-gray-50"
+              className="relative flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-full border border-gray-200 text-gray-600 transition-colors hover:bg-gray-50 cursor-pointer"
             >
               <Bell size={18} strokeWidth={1.6} />
               {unreadCount > 0 && (
@@ -170,25 +200,60 @@ export default function AggregatorNavbar({
 
           <div className="h-7 sm:h-8 w-px bg-gray-200" />
 
-          <button
-            type="button"
-            onClick={() => setMenuOpen((v) => !v)}
-            className="flex items-center gap-2 sm:gap-3 rounded-full py-1 pl-1 pr-1.5 sm:pr-2 transition-colors hover:bg-gray-50"
-            aria-expanded={menuOpen}
-          >
-            <span className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full bg-[#226049]/10 text-xs sm:text-sm font-semibold text-[#226049]">
-              {user.initials}
-            </span>
-            <span className="hidden text-left leading-tight md:block">
-              <span className="block text-sm font-semibold text-gray-900">
-                {user.name}
+          {/* User profile button + dropdown */}
+          <div className="relative" ref={dropdownRef}>
+            <button
+              type="button"
+              onClick={() => setMenuOpen((v) => !v)}
+              className="flex items-center gap-2 sm:gap-3 rounded-full py-1 pl-1 pr-1.5 sm:pr-2 transition-colors hover:bg-gray-50 cursor-pointer"
+              aria-expanded={menuOpen}
+              aria-haspopup="true"
+            >
+              <span className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full bg-[#226049]/10 text-xs sm:text-sm font-semibold text-[#226049]">
+                {activeUser.initials}
               </span>
-              <span className="block text-xs text-gray-500">{user.role}</span>
-            </span>
-            <span className="text-gray-400">
-              <ChevronDown size={14} strokeWidth={1.8} />
-            </span>
-          </button>
+              <span className="hidden text-left leading-tight md:block">
+                <span className="block text-sm font-semibold text-gray-900 truncate max-w-[160px]">
+                  {activeUser.name}
+                </span>
+                <span className="block text-xs text-gray-500 truncate max-w-[160px]">
+                  {activeUser.role}
+                </span>
+              </span>
+              <ChevronDown
+                size={14}
+                strokeWidth={1.8}
+                className={`text-gray-400 transition-transform duration-200 ${
+                  menuOpen ? "rotate-180 text-gray-700" : ""
+                }`}
+              />
+            </button>
+
+            {menuOpen && (
+              <div className="absolute right-0 mt-2 w-52 sm:w-60 rounded-2xl border border-gray-100 bg-white p-2 shadow-xl animate-in fade-in slide-in-from-top-2 z-50">
+                <div className="px-3 py-2.5 border-b border-gray-100">
+                  <p className="text-xs font-bold text-gray-900 truncate">{activeUser.name}</p>
+                  {activeUser.email && (
+                    <p className="text-[11px] text-gray-500 truncate">{activeUser.email}</p>
+                  )}
+                  <span className="mt-1 inline-block rounded-md bg-[#226049]/10 px-2 py-0.5 text-[10px] font-semibold text-[#226049]">
+                    {activeUser.role}
+                  </span>
+                </div>
+
+                <div className="py-1">
+                  <button
+                    type="button"
+                    onClick={handleSignOut}
+                    className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-medium text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+                  >
+                    <LogOut size={15} />
+                    Sign Out
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </header>

@@ -9,10 +9,11 @@ import Button from "@/app/components/ui/Button";
 import { LoginSchema } from "@/app/components/validation/schema";
 import AuthCard from "@/app/components/ui/Authcard";
 import AuthLayout from "@/app/components/ui/AuthLayout";
-import { loginUser } from "@/app/Services/authService";
+import { useAuth } from "@/app/Context/AuthContext";
 
 export default function LoginPage() {
   const router = useRouter();
+  const { login } = useAuth();
 
   const initialValues = {
     email: "",
@@ -33,11 +34,11 @@ export default function LoginPage() {
     setStatus(null);
 
     try {
-      await loginUser({
-        identifier: values.email,
+      await login({
+        email: values.email,
         password: values.password,
       });
-      router.push("/dashboard");
+      router.push("/marketplace");
     } catch (err: unknown) {
       const message =
         err instanceof Error
@@ -116,16 +117,6 @@ export default function LoginPage() {
                   className="font-medium text-[#226049]"
                 >
                   Reset it here
-                </Link>
-              </div>
-              {/* Partner login crosslink */}
-              <div className="text-center text-xs text-gray-400 pt-1">
-                Are you a partner?{" "}
-                <Link
-                  href="/aggregator-login"
-                  className="text-[#226049] font-medium"
-                >
-                  Partner Login
                 </Link>
               </div>
             </Form>
