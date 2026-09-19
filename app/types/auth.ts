@@ -1,4 +1,4 @@
-import { UserRole, AuthStatus } from "@/app/enums";
+import { AuthStatus, UserRole } from "@/app/enums";
 
 export interface User {
   id: string;
@@ -10,6 +10,13 @@ export interface User {
   phoneNumber?: string;
   avatarUrl?: string;
   isVerified?: boolean;
+  firstName?: string;
+  lastName?: string;
+  businessName?: string;
+  hubName?: string;
+  hubState?: string;
+  hubLga?: string;
+  accountType?: string;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -17,7 +24,6 @@ export interface User {
 export interface LoginPayload {
   email: string;
   password: string;
-  rememberMe?: boolean;
 }
 
 export interface RegisterPayload {
@@ -26,8 +32,8 @@ export interface RegisterPayload {
   fullName?: string;
   name?: string;
   role?: UserRole | string;
-  companyName?: string;
-  phoneNumber?: string;
+  firstName?: string;
+  lastName?: string;
 }
 
 export interface AuthResponse {
@@ -42,8 +48,8 @@ export interface ForgotPasswordPayload {
 }
 
 export interface ResetPasswordPayload {
-  token: string;
-  password: string;
+  resetToken: string;
+  newPassword: string;
 }
 
 export interface AuthState {
@@ -63,4 +69,93 @@ export interface AuthContextType extends AuthState {
   updateUser: (userData: Partial<User>) => void;
   refreshUser: () => Promise<User | null>;
   clearError: () => void;
+}
+
+export interface RegisterRequest {
+  firstName: string;
+  lastName: string;
+  email: string;
+  password: string;
+  role: string;
+}
+
+export interface ApiResponse<T = unknown> {
+  code: number;
+  status: string;
+  successful: boolean;
+  message: string;
+  data?: T;
+}
+
+export interface LoginRequest {
+  identifier: string;
+  password: string;
+}
+
+export interface AuthData {
+  accessToken: string;
+  refreshToken: string;
+  expiresIn: number;
+  role: string;
+}
+
+export interface LoginResponse {
+  code: number;
+  status: string;
+  successful: boolean;
+  message: string;
+  data: AuthData;
+}
+
+export interface AggregatorLoginRequest {
+  identifier: string;
+  password: string;
+}
+
+export interface AggregatorRegisterRequest {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phoneNumber: string;
+  password: string;
+  businessName: string;
+  licenseNumber?: string;
+  hubName: string;
+  hubState: string;
+  hubLga: string;
+  accountType: string;
+}
+
+export interface MiscPayload {
+  id: string;
+  name: string;
+  description: string;
+}
+
+export interface AuthContextValues extends AuthState {
+  login: (payload: LoginPayload) => Promise<AuthResponse>;
+  register: (payload: RegisterPayload) => Promise<AuthResponse>;
+  logout: () => Promise<void>;
+  updateUser: (userData: Partial<User>) => void;
+  refreshUser: () => Promise<User | null>;
+  clearError: () => void;
+}
+
+export interface ForgotPasswordRequest {
+  email: string;
+}
+
+export interface ResetPasswordRequest {
+  resetToken: string;
+  newPassword: string;
+}
+
+export interface RefreshTokenRequest {
+  refreshToken: string;
+}
+
+export interface RefreshTokenResponseData {
+  accessToken: string;
+  refreshToken: string;
+  expiresIn?: number;
 }

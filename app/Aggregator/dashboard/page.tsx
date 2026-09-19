@@ -191,11 +191,6 @@ export default function AggregatorOverviewPage() {
                     dispatch operations.
                   </p>
                 </div>
-
-                <div className="flex items-center gap-2 rounded-full bg-red-50 px-3.5 py-1.5 text-xs sm:text-sm font-medium text-red-600 self-start">
-                  <AlertTriangle size={15} strokeWidth={1.8} className="shrink-0" />
-                  <span>3 Batches at spoilage risk</span>
-                </div>
               </div>
 
               <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">

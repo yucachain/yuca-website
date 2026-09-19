@@ -28,6 +28,7 @@ export enum ApiEndpoints {
 
   LOGIN = "/auth/login",
   AGGREGATOR_LOGIN = "/auth/aggregator/login",
+  AGGREGATOR_REGISTER = "/auth/aggregator/register",
   REGISTER = "/auth/register",
   LOGOUT = "/auth/logout",
   REFRESH_TOKEN = "/auth/refresh-token",

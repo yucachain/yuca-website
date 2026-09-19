@@ -4,7 +4,7 @@ import React, { useState, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Formik, Form } from "formik";
-import PasswordInput from "@/app/components/ui/FormInput";
+import PasswordInput from "@/app/components/ui/PasswordInput";
 import Button from "@/app/components/ui/Button";
 import { Check } from "lucide-react";
 
@@ -15,6 +15,7 @@ import {
 } from "@/app/components/validation/schema";
 import AuthCard from "@/app/components/ui/Authcard";
 import AuthLayout from "@/app/components/ui/AuthLayout";
+import { resetPassword } from "@/app/Services/authService";
 
 function ResetPasswordContent() {
   const searchParams = useSearchParams();
@@ -27,16 +28,30 @@ function ResetPasswordContent() {
       setSubmitting,
       setStatus,
     }: {
-      setSubmitting: (v: boolean) => void;
-      setStatus: (v: string | null) => void;
+      setSubmitting: (value: boolean) => void;
+      setStatus: (value: string | null) => void;
     },
   ) => {
     setStatus(null);
+
+    if (!token) {
+      setStatus("This reset link is missing a valid token.");
+      setSubmitting(false);
+      return;
+    }
+
     try {
-      await new Promise((resolve) => setTimeout(resolve, 800));
+      await resetPassword({
+        resetToken: token,
+        newPassword: values.password,
+      });
       setResetDone(true);
-    } catch (err) {
-      setStatus("This reset link may have expired. Please request a new one.");
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : "This reset link may have expired. Please request a new one.";
+      setStatus(message);
     } finally {
       setSubmitting(false);
     }
@@ -58,8 +73,7 @@ function ResetPasswordContent() {
             </h1>
 
             <p className="mt-4 max-w-xs text-base leading-relaxed text-gray-500">
-              Your password has been reset successfully. You can now log in with
-              your new password.
+              Your password has been reset successfully. You can now log in with your new password.
             </p>
 
             <Link href="/login" className="mt-8 w-full">
@@ -74,7 +88,11 @@ function ResetPasswordContent() {
   return (
     <AuthLayout>
       <AuthCard title="Reset Password">
-        {!token && <div></div>}
+        {!token && (
+          <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
+            This reset link is invalid or expired.
+          </div>
+        )}
 
         <Formik
           initialValues={resetPasswordInitialValues}
@@ -103,8 +121,8 @@ function ResetPasswordContent() {
                 autoComplete="new-password"
               />
 
-              <Button type="submit" disabled={isSubmitting}>
-                Reset Password
+              <Button type="submit" disabled={isSubmitting || !token}>
+                {isSubmitting ? "Resetting..." : "Reset Password"}
               </Button>
             </Form>
           )}

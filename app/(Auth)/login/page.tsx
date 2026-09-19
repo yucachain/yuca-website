@@ -9,51 +9,47 @@ import Button from "@/app/components/ui/Button";
 import { LoginSchema } from "@/app/components/validation/schema";
 import AuthCard from "@/app/components/ui/Authcard";
 import AuthLayout from "@/app/components/ui/AuthLayout";
-
 import { useAuth } from "@/app/Context/AuthContext";
-
-interface LoginValues {
-  email: string;
-  password: string;
-  rememberMe: boolean;
-}
 
 export default function LoginPage() {
   const router = useRouter();
   const { login } = useAuth();
 
-  const initialValues: LoginValues = {
+  const initialValues = {
     email: "",
     password: "",
     rememberMe: false,
   };
 
   const handleSubmit = async (
-    values: LoginValues,
+    values: typeof initialValues,
     {
       setSubmitting,
       setStatus,
     }: {
       setSubmitting: (value: boolean) => void;
-      setStatus: (status?: string) => void;
+      setStatus: (status: string | null) => void;
     },
   ) => {
-    setStatus(undefined);
+    setStatus(null);
+
     try {
       await login({
         email: values.email,
         password: values.password,
-        rememberMe: values.rememberMe,
       });
       router.push("/marketplace");
     } catch (err: unknown) {
       const message =
-        err instanceof Error ? err.message : "Unable to log in. Please try again.";
+        err instanceof Error
+          ? err.message
+          : "An unexpected error occurred. Please try again.";
       setStatus(message);
     } finally {
       setSubmitting(false);
     }
   };
+ 
 
   return (
     <AuthLayout>
@@ -121,16 +117,6 @@ export default function LoginPage() {
                   className="font-medium text-[#226049]"
                 >
                   Reset it here
-                </Link>
-              </div>
-              {/* Partner login crosslink */}
-              <div className="text-center text-xs text-gray-400 pt-1">
-                Are you a partner?{" "}
-                <Link
-                  href="/aggregator-login"
-                  className="text-[#226049] font-medium"
-                >
-                  Partner Login
                 </Link>
               </div>
             </Form>

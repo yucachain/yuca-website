@@ -14,11 +14,11 @@ import {
 } from "@/app/components/validation/schema";
 import AuthCard from "@/app/components/ui/Authcard";
 import AuthLayout from "@/app/components/ui/AuthLayout";
-import { useAuth } from "@/app/Context/AuthContext";
+import { registerUser } from "@/app/Services/authService";
+import { RegisterRequest } from "@/app/types/auth";
 
-export default function SignUpPage() {
+export default function RegisterPage() {
   const router = useRouter();
-  const { register } = useAuth();
 
   const handleSubmit = async (
     values: SignUpValues,
@@ -26,30 +26,34 @@ export default function SignUpPage() {
       setSubmitting,
       setStatus,
     }: {
-      setSubmitting: (v: boolean) => void;
-      setStatus: (v: string | null) => void;
+      setSubmitting: (value: boolean) => void;
+      setStatus: (status: string | null) => void;
     },
   ) => {
     setStatus(null);
+
+    const payload: RegisterRequest = {
+      firstName: values.firstName,
+      lastName: values.lastName,
+      email: values.email,
+      password: values.password,
+      role: "Buyer",
+    };
+
     try {
-      await register({
-        fullName: `${values.firstName} ${values.lastName}`.trim(),
-        name: `${values.firstName} ${values.lastName}`.trim(),
-        email: values.email,
-        password: values.password,
-      });
-      router.push("/marketplace");
+      await registerUser(payload);
+      router.push(`/verify-otp?email=${encodeURIComponent(values.email)}`);
     } catch (err: unknown) {
       const message =
-        err instanceof Error ? err.message : "We couldn't create your account. Please try again.";
+        err instanceof Error
+          ? err.message
+          : "An unexpected error occurred. Please try again.";
       setStatus(message);
     } finally {
       setSubmitting(false);
     }
   };
-
   return (
-    // <div className="relative min-h-screen w-full bg-[#f8f9f8] overflow-hidden flex flex-col font-sans text-[#171717]">
     <AuthLayout>
       <AuthCard title="SIGN UP">
         <Formik
@@ -107,7 +111,7 @@ export default function SignUpPage() {
                   className="w-40 sm:w-48"
                   disabled={isSubmitting}
                 >
-                  Sign Up
+                  {isSubmitting ? "Creating account..." : "Sign Up"}
                 </Button>
               </div>
 
@@ -134,6 +138,5 @@ export default function SignUpPage() {
         </Formik>
       </AuthCard>
     </AuthLayout>
-    //  </div>
   );
 }
