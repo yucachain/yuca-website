@@ -42,7 +42,7 @@ export default function RegisterPage() {
 
     try {
       await registerUser(payload);
-      router.push(`/verify-otp?email=${encodeURIComponent(values.email)}`);
+      router.push("/marketplace");
     } catch (err: unknown) {
       const message =
         err instanceof Error
