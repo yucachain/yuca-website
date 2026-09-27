@@ -10,7 +10,7 @@ import { StorageKey } from "@/app/enums";
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL ||
   process.env.NEXT_PUBLIC_BACKEND_URL ||
-  "https://api.yucachain.com/api";
+  "https://api.yucachain.com";
 
 
 const apiClient: AxiosInstance = axios.create({
