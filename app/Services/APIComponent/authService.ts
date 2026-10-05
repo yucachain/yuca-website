@@ -12,11 +12,25 @@ import type {
 export const authService = {
 
   async login(payload: LoginPayload): Promise<AuthResponse> {
-    return http.post<AuthResponse>(ApiEndpoints.LOGIN, payload);
+    const phoneOrIdentifier = (payload.phoneNumber || payload.identifier || payload.email || "").trim();
+    return http.post<AuthResponse>(ApiEndpoints.LOGIN, {
+      identifier: phoneOrIdentifier,
+      Identifier: phoneOrIdentifier,
+      phoneNumber: phoneOrIdentifier,
+      password: payload.password,
+      Password: payload.password,
+    });
   },
 
-  async aggregatorLogin(payload: LoginPayload): Promise<AuthResponse> {
-    return http.post<AuthResponse>(ApiEndpoints.AGGREGATOR_LOGIN, payload);
+  async adminLogin(payload: LoginPayload): Promise<AuthResponse> {
+    const phoneOrIdentifier = (payload.phoneNumber || payload.identifier || payload.email || "").trim();
+    return http.post<AuthResponse>(ApiEndpoints.ADMIN_LOGIN, {
+      identifier: phoneOrIdentifier,
+      Identifier: phoneOrIdentifier,
+      phoneNumber: phoneOrIdentifier,
+      password: payload.password,
+      Password: payload.password,
+    });
   },
 
   async register(payload: RegisterPayload): Promise<AuthResponse> {

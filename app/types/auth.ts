@@ -9,6 +9,7 @@ export interface User {
   companyName?: string;
   phoneNumber?: string;
   avatarUrl?: string;
+  profileImage?: string;
   isVerified?: boolean;
   firstName?: string;
   lastName?: string;
@@ -17,23 +18,45 @@ export interface User {
   hubState?: string;
   hubLga?: string;
   accountType?: string;
+  farmAddress?: string;
+  facilityAddress?: string;
+  deliveryAddress?: string;
+  businessAddress?: string;
+  bankName?: string;
+  accountNumber?: string;
+  accountName?: string;
+  serviceCategory?: string;
+  processingType?: string;
   createdAt?: string;
   updatedAt?: string;
 }
 
 export interface LoginPayload {
-  email: string;
+  phoneNumber?: string;
+  identifier?: string;
+  email?: string;
   password: string;
 }
 
 export interface RegisterPayload {
-  email: string;
+  email?: string;
   password: string;
   fullName?: string;
   name?: string;
   role?: UserRole | string;
   firstName?: string;
   lastName?: string;
+  phoneNumber?: string;
+  businessName?: string;
+  farmAddress?: string;
+  facilityAddress?: string;
+  deliveryAddress?: string;
+  businessAddress?: string;
+  bankName?: string;
+  accountNumber?: string;
+  accountName?: string;
+  serviceCategory?: string;
+  processingType?: string;
 }
 
 export interface AuthResponse {
@@ -63,7 +86,7 @@ export interface AuthState {
 
 export interface AuthContextType extends AuthState {
   login: (payload: LoginPayload) => Promise<AuthResponse>;
-  aggregatorLogin: (payload: LoginPayload) => Promise<AuthResponse>;
+  adminLogin?: (payload: LoginPayload) => Promise<AuthResponse>;
   register: (payload: RegisterPayload) => Promise<AuthResponse>;
   logout: () => Promise<void>;
   updateUser: (userData: Partial<User>) => void;
@@ -74,9 +97,20 @@ export interface AuthContextType extends AuthState {
 export interface RegisterRequest {
   firstName: string;
   lastName: string;
-  email: string;
+  email?: string;
   password: string;
   role: string;
+  phoneNumber?: string;
+  businessName?: string;
+  farmAddress?: string;
+  facilityAddress?: string;
+  deliveryAddress?: string;
+  businessAddress?: string;
+  bankName?: string;
+  accountNumber?: string;
+  accountName?: string;
+  serviceCategory?: string;
+  processingType?: string;
 }
 
 export interface ApiResponse<T = unknown> {
@@ -90,6 +124,7 @@ export interface ApiResponse<T = unknown> {
 export interface LoginRequest {
   identifier: string;
   password: string;
+  phoneNumber?: string;
 }
 
 export interface AuthData {
@@ -105,25 +140,6 @@ export interface LoginResponse {
   successful: boolean;
   message: string;
   data: AuthData;
-}
-
-export interface AggregatorLoginRequest {
-  identifier: string;
-  password: string;
-}
-
-export interface AggregatorRegisterRequest {
-  firstName: string;
-  lastName: string;
-  email: string;
-  phoneNumber: string;
-  password: string;
-  businessName: string;
-  licenseNumber?: string;
-  hubName: string;
-  hubState: string;
-  hubLga: string;
-  accountType: string;
 }
 
 export interface MiscPayload {

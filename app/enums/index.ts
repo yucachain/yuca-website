@@ -1,10 +1,9 @@
-
-
 export enum UserRole {
   BUYER = "BUYER",
-  AGGREGATOR = "AGGREGATOR",
   FARMER = "FARMER",
   PROCESSOR = "PROCESSOR",
+  SERVICE_PROVIDER = "SERVICE_PROVIDER",
+  CONSUMER = "CONSUMER",
   ADMIN = "ADMIN",
   GUEST = "GUEST",
 }
@@ -25,10 +24,8 @@ export enum StorageKey {
 }
 
 export enum ApiEndpoints {
-
   LOGIN = "/auth/login",
-  AGGREGATOR_LOGIN = "/auth/aggregator/login",
-  AGGREGATOR_REGISTER = "/auth/aggregator/register",
+  ADMIN_LOGIN = "/auth/admin/login",
   REGISTER = "/auth/register",
   LOGOUT = "/auth/logout",
   REFRESH_TOKEN = "/auth/refresh-token",

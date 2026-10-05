@@ -5,6 +5,7 @@ const quickLinks = [
   { label: "About Us", href: "#" },
   { label: "Our Story", href: "#" },
   { label: "Join Us", href: "/register" },
+  { label: "Admin Console", href: "/admin-login" },
   { label: "News", href: "#" },
   { label: "Contact", href: "#" },
 ];

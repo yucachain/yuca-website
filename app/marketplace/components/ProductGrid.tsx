@@ -1,7 +1,9 @@
-﻿"use client";
+"use client";
 
+import React from "react";
 import type { CassavaBatch } from "./types";
 import ProductCard from "./ProductCard";
+import { PackageOpen } from "lucide-react";
 
 export interface ProductGridProps {
   batches: CassavaBatch[];
@@ -22,21 +24,25 @@ export default function ProductGrid({
 }: ProductGridProps) {
   if (batches.length === 0) {
     return (
-      <div className="mt-20 flex flex-col items-center text-center text-gray-400 bg-white rounded-2xl p-8 border border-gray-100 shadow-sm w-full">
-        <p className="text-sm font-medium">No products found</p>
-        <p className="mt-1 text-xs">Try adjusting your search or filters.</p>
+      <div className="flex flex-col items-center justify-center text-center bg-white rounded-2xl p-12 border border-gray-100 shadow-2xs w-full min-h-[300px]">
+        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gray-50 text-gray-400 mb-3">
+          <PackageOpen size={24} />
+        </div>
+        <p className="text-sm font-bold text-gray-900">No products found in this category</p>
+        <p className="mt-1 text-xs text-gray-500 max-w-sm">
+          Try adjusting your search keywords, quality grade filters, or select a different category from the sidebar.
+        </p>
       </div>
     );
   }
 
   return (
     <div
-      className={[
-        "mt-5 grid gap-3 transition-all duration-300 w-full",
+      className={`grid gap-4 sm:gap-5 transition-all duration-300 w-full ${
         panelOpen
-          ? "grid-cols-1 sm:grid-cols-2"
-          : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4",
-      ].join(" ")}
+          ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3"
+          : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+      }`}
     >
       {batches.map((batch) => (
         <ProductCard

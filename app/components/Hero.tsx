@@ -24,7 +24,7 @@ export default function Hero() {
         <h1 className="text-xl sm:text-4xl md:text-5xl lg:text-[3.25rem] font-bold text-[#1a3a2a] leading-[1.2] sm:leading-[1.15] mb-2.5 sm:mb-5 tracking-tight">
           Connecting Farmers,
           <br className="hidden sm:inline" />{" "}
-          Aggregators, Processors &amp; Buyers
+          Processors &amp; Enterprise Buyers
         </h1>
 
 

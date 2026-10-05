@@ -1,8 +1,7 @@
-
 "use client";
 
-import Button from "@/app/components/ui/Button";
 import { useState } from "react";
+import { SlidersHorizontal, RotateCcw, Check } from "lucide-react";
 
 export type QualityGrade = "A" | "B";
 
@@ -22,17 +21,6 @@ export interface FilterPanelProps {
   onApplyFilters?: (filters: MarketplaceFilters) => void;
 }
 
-const gradeStyles: Record<QualityGrade, { active: string; inactive: string }> = {
-  A: {
-    active: "border-emerald-700 bg-white text-emerald-800",
-    inactive: "border-gray-300 bg-white text-gray-500 hover:border-emerald-700 hover:text-emerald-800",
-  },
-  B: {
-    active: "border-amber-500 bg-white text-amber-700",
-    inactive: "border-gray-300 bg-white text-gray-500 hover:border-amber-500 hover:text-amber-700",
-  },
-};
-
 export default function FilterPanel({
   weightRange = { min: 1, max: 500 },
   defaultGrades = ["A", "B"],
@@ -47,7 +35,10 @@ export default function FilterPanel({
     setSelectedGrades((prev) => {
       const next = new Set(prev);
       if (next.has(grade)) {
-        next.delete(grade);
+        // Prevent deselecting both so user always has at least one active grade
+        if (next.size > 1) {
+          next.delete(grade);
+        }
       } else {
         next.add(grade);
       }
@@ -59,69 +50,107 @@ export default function FilterPanel({
     onApplyFilters?.({ grades: Array.from(selectedGrades), weight });
   };
 
+  const handleReset = () => {
+    const fullGrades = new Set<QualityGrade>(["A", "B"]);
+    setSelectedGrades(fullGrades);
+    setWeight(weightRange.min);
+    onApplyFilters?.({ grades: ["A", "B"], weight: weightRange.min });
+  };
+
   const weightProgress =
     weightRange.max > weightRange.min
       ? ((weight - weightRange.min) / (weightRange.max - weightRange.min)) * 100
       : 0;
 
   return (
-    <div>
-      <div className="border-t border-gray-100 pt-6">
-        <p className="mb-3 text-sm font-semibold text-gray-800">Quality Grade</p>
-        <div className="flex gap-3">
+    <div className="space-y-6 pt-4 border-t border-gray-100">
+      {/* Quality Grade */}
+      <div>
+        <div className="flex items-center justify-between mb-2.5">
+          <p className="text-xs font-bold uppercase tracking-wider text-gray-700">
+            Quality Grade
+          </p>
+          <span className="text-[10px] text-gray-400">YucaCertified</span>
+        </div>
+
+        <div className="grid grid-cols-2 gap-2">
+          {/* Grade A */}
           <button
             type="button"
             onClick={() => toggleGrade("A")}
-            className={[
-              "rounded-full border px-2 py-2 text-sm font-medium transition-colors",
-              selectedGrades.has("A") ? gradeStyles.A.active : gradeStyles.A.inactive,
-            ].join(" ")}
+            className={`flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
+              selectedGrades.has("A")
+                ? "bg-emerald-50 text-[#226049] border-emerald-300 shadow-2xs font-bold"
+                : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"
+            }`}
           >
-            A (Premium)
+            <span>Grade A (Premium)</span>
+            {selectedGrades.has("A") && <Check size={13} strokeWidth={2.5} />}
           </button>
+
+          {/* Grade B */}
           <button
             type="button"
             onClick={() => toggleGrade("B")}
-            className={[
-              "rounded-full border px-2 py-2 text-sm font-medium transition-colors",
-              selectedGrades.has("B") ? gradeStyles.B.active : gradeStyles.B.inactive,
-            ].join(" ")}
+            className={`flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
+              selectedGrades.has("B")
+                ? "bg-amber-50 text-amber-900 border-amber-300 shadow-2xs font-bold"
+                : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"
+            }`}
           >
-            B (Standard)
+            <span>Grade B (Standard)</span>
+            {selectedGrades.has("B") && <Check size={13} strokeWidth={2.5} />}
           </button>
         </div>
       </div>
 
-      <div className="mt-8">
-        <p className="mb-3 text-sm font-semibold text-gray-800">Weight</p>
-        <div className="mb-2 flex items-center justify-between text-xs text-gray-500">
-          <span>{weightRange.min} Tonnes</span>
-          <span className="text-sm font-semibold text-emerald-700">{weight} Tonnes</span>
-          <span>{weightRange.max} Tonnes</span>
+      {/* Min Quantity / Weight */}
+      <div>
+        <div className="flex items-center justify-between mb-2">
+          <p className="text-xs font-bold uppercase tracking-wider text-gray-700">
+            Min Batch Size
+          </p>
+          <span className="inline-flex items-center rounded-lg bg-emerald-50 px-2 py-0.5 text-xs font-bold text-[#226049] border border-emerald-200/50">
+            {weight} {weight === 1 ? "Tonne" : "Tonnes"}
+          </span>
         </div>
+
+        <div className="flex items-center justify-between text-[11px] text-gray-400 mb-1.5 font-medium">
+          <span>{weightRange.min} T</span>
+          <span>{weightRange.max} T</span>
+        </div>
+
         <input
           type="range"
           min={weightRange.min}
           max={weightRange.max}
           value={weight}
           onChange={(e) => setWeight(Number(e.target.value))}
-          onInput={(e) => setWeight(Number((e.target as HTMLInputElement).value))}
-          className="w-full h-px appearance-none green-range"
-          style={{
-            background: `linear-gradient(90deg, #215243 ${weightProgress}%, #d1d5db ${weightProgress}%)`,
-          }}
-          aria-label="Weight in tonnes"
+          className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#226049]"
+          aria-label="Min Batch Volume"
         />
       </div>
 
-      <Button
-        type="button"
-        fullWidth={false}
-        className="w-40 sm:w-48 mt-3"
-        onClick={handleApply}
-      >
-        Apply Filters
-      </Button>
+      {/* Filter Actions */}
+      <div className="flex items-center gap-2 pt-2">
+        <button
+          type="button"
+          onClick={handleApply}
+          className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl bg-[#226049] px-4 py-2.5 text-xs font-bold text-white hover:bg-[#1a4336] transition-colors shadow-xs cursor-pointer active:scale-98"
+        >
+          <SlidersHorizontal size={13} />
+          <span>Apply Filters</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={handleReset}
+          className="inline-flex items-center justify-center rounded-xl border border-gray-200 bg-white p-2.5 text-gray-500 hover:bg-gray-50 hover:text-gray-800 transition-colors cursor-pointer"
+          title="Reset filters"
+        >
+          <RotateCcw size={14} />
+        </button>
+      </div>
     </div>
   );
 }

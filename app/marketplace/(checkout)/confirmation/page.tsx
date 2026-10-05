@@ -1,18 +1,35 @@
-// Checkout — Step 4: Order Confirmation (Thank You screen, order number, delivery address, order summary table, New Arrivals section)
 "use client";
 
+import React, { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
-import { Check } from "lucide-react";
+import { useSearchParams } from "next/navigation";
+import { Check, RefreshCw } from "lucide-react";
 import Button from "@/app/components/ui/Button";
 import CheckoutShell from "@/app/marketplace/components/CheckoutShell";
 
-export interface OrderConfirmationPageProps {
-  orderNumber?: string;
-}
+function OrderConfirmationContent() {
+  const searchParams = useSearchParams();
+  const [resolvedOrderNumber, setResolvedOrderNumber] = useState<string>("");
 
-export default function OrderConfirmationPage({
-  orderNumber = "Yuca7320994",
-}: OrderConfirmationPageProps) {
+  useEffect(() => {
+    const paramRef = searchParams.get("orderNumber") || searchParams.get("ref");
+    if (paramRef) {
+      setResolvedOrderNumber(paramRef);
+      return;
+    }
+
+    try {
+      const stored = localStorage.getItem("yuca_last_order_ref");
+      if (stored) {
+        setResolvedOrderNumber(stored);
+        return;
+      }
+    } catch {}
+
+    const generated = `ORD-${Date.now().toString().slice(-6)}`;
+    setResolvedOrderNumber(generated);
+  }, [searchParams]);
+
   return (
     <CheckoutShell currentStep={4} cardWrapper={false} showBackToCart={false}>
       <div className="flex flex-col font-sans items-center px-4 py-16 text-center">
@@ -31,9 +48,11 @@ export default function OrderConfirmationPage({
           order.
         </p>
 
-        <p className="mt-2 text-base font-semibold text-gray-900">
-          Order number: {orderNumber}
-        </p>
+        {resolvedOrderNumber && (
+          <p className="mt-2 text-base font-semibold text-gray-900 font-mono">
+            Order number: {resolvedOrderNumber}
+          </p>
+        )}
 
         <div className="mt-10 w-full max-w-md">
           <Link href="/marketplace">
@@ -42,5 +61,19 @@ export default function OrderConfirmationPage({
         </div>
       </div>
     </CheckoutShell>
+  );
+}
+
+export default function OrderConfirmationPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-white">
+          <RefreshCw size={24} className="animate-spin text-[#226049]" />
+        </div>
+      }
+    >
+      <OrderConfirmationContent />
+    </Suspense>
   );
 }

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Formik, Form } from "formik";
 import FormInput from "@/app/components/ui/FormInput";
+import NumericFormInput from "@/app/components/ui/NumericFormInput";
 import PasswordInput from "@/app/components/ui/PasswordInput";
 import Button from "@/app/components/ui/Button";
 import { LoginSchema } from "@/app/components/validation/schema";
@@ -16,7 +17,7 @@ export default function LoginPage() {
   const { login } = useAuth();
 
   const initialValues = {
-    email: "",
+    phoneNumber: "",
     password: "",
     rememberMe: false,
   };
@@ -35,7 +36,7 @@ export default function LoginPage() {
 
     try {
       await login({
-        email: values.email,
+        phoneNumber: values.phoneNumber.trim(),
         password: values.password,
       });
       router.push("/marketplace");
@@ -66,11 +67,13 @@ export default function LoginPage() {
         >
           {({ isSubmitting, status, values, handleChange }) => (
             <Form className="space-y-5">
-              <FormInput
-                name="email"
-                label="Email Address"
-                type="email"
-                placeholder="you@example.com"
+              <NumericFormInput
+                name="phoneNumber"
+                label="Phone Number"
+                placeholder="08012345678"
+                allowLeadingPlus={true}
+                maxLength={15}
+                autoComplete="tel"
               />
 
               <PasswordInput
@@ -109,15 +112,26 @@ export default function LoginPage() {
                 </Button>
               </div>
 
-              {/* Forgot Password */}
-              <div className="text-center text-sm text-gray-600">
-                Forgot your password?{" "}
-                <Link
-                  href="/forgetpassword"
-                  className="font-medium text-[#226049]"
-                >
-                  Reset it here
-                </Link>
+              {/* Forgot Password & Sign Up */}
+              <div className="space-y-2 text-center text-sm text-gray-600">
+                <div>
+                  Forgot your password?{" "}
+                  <Link
+                    href="/forgetpassword"
+                    className="font-medium text-[#226049] hover:underline"
+                  >
+                    Reset it here
+                  </Link>
+                </div>
+                <div>
+                  Don&apos;t have an account?{" "}
+                  <Link
+                    href="/register"
+                    className="font-semibold text-[#226049] hover:underline"
+                  >
+                    Register here
+                  </Link>
+                </div>
               </div>
             </Form>
           )}

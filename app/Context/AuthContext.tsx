@@ -17,7 +17,12 @@ import type {
   RegisterPayload,
   User,
 } from "@/app/types/auth";
-import authService from "@/app/Services/authService";
+import authService, {
+  resolveDisplayName,
+  getInitials,
+  isPhoneNumber,
+} from "@/app/Services/authService";
+import { clearAuthTokens } from "@/app/Services/tokenHelper";
 
 const initialAuthState: AuthState = {
   user: null,
@@ -29,13 +34,6 @@ const initialAuthState: AuthState = {
 };
 
 const AuthContext = createContext<AuthContextType | null>(null);
-
-function getInitials(name?: string): string {
-  if (!name) return "YU";
-  const parts = name.trim().split(/\s+/);
-  if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
-  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-}
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -53,7 +51,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       localStorage.setItem(StorageKey.TOKEN, authToken);
       localStorage.setItem("accessToken", authToken);
+      localStorage.setItem("yuca_access_token", authToken);
       localStorage.setItem(StorageKey.USER, JSON.stringify(userData));
+      localStorage.setItem("yuca_user_data", JSON.stringify(userData));
+      localStorage.setItem("user", JSON.stringify(userData));
       if (userData.role) {
         localStorage.setItem("userRole", String(userData.role));
       }
@@ -67,13 +68,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       localStorage.removeItem(StorageKey.TOKEN);
       localStorage.removeItem("accessToken");
+      localStorage.removeItem("yuca_access_token");
       localStorage.removeItem(StorageKey.REFRESH_TOKEN);
       localStorage.removeItem("refreshToken");
+      localStorage.removeItem("yuca_refresh_token");
       localStorage.removeItem(StorageKey.USER);
+      localStorage.removeItem("yuca_user_data");
+      localStorage.removeItem("user");
       localStorage.removeItem("userRole");
-    } catch {
-
-    }
+      clearAuthTokens();
+    } catch {}
   }, []);
 
 
@@ -87,17 +91,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         const savedToken =
           localStorage.getItem(StorageKey.TOKEN) ||
-          localStorage.getItem("accessToken");
-        const savedUserJson = localStorage.getItem(StorageKey.USER);
+          localStorage.getItem("accessToken") ||
+          localStorage.getItem("yuca_access_token");
+        const savedUserJson =
+          localStorage.getItem(StorageKey.USER) ||
+          localStorage.getItem("yuca_user_data") ||
+          localStorage.getItem("user");
 
         if (savedToken) {
           setToken(savedToken);
           if (savedUserJson) {
             try {
               const parsedUser: User = JSON.parse(savedUserJson);
-              if (!parsedUser.initials && parsedUser.name) {
-                parsedUser.initials = getInitials(parsedUser.name);
-              }
+              const safeName = resolveDisplayName(parsedUser, "Marketplace User");
+              parsedUser.name = safeName;
+              parsedUser.initials = getInitials(safeName);
               setUser(parsedUser);
               setStatus(AuthStatus.AUTHENTICATED);
             } catch {
@@ -105,9 +113,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             }
           }
 
-          // Fetch fresh user profile from /api/v1/auth/me
+          // Fetch fresh user profile from /api/v1/auth/me and /api/v1/users/profile
           try {
-            const freshUser = await authService.getCurrentUser();
+            const freshUser = await authService.getCurrentUser(savedToken);
             setUser(freshUser);
             setStatus(AuthStatus.AUTHENTICATED);
             persistSession(savedToken, freshUser);
@@ -142,7 +150,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => {
       window.removeEventListener("yuca:auth:unauthorized", handleUnauthorized);
     };
-  }, [clearSession]);
+  }, [clearSession, persistSession]);
 
   /**
    * Handle user login
@@ -163,13 +171,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           throw new Error("Authentication response was missing user data or token.");
         }
 
+        const idVal = (payload.phoneNumber || payload.identifier || payload.email || "").trim();
+        const resolvedName = resolveDisplayName(userData, "Marketplace User");
         const formattedUser: User = {
-          id: userData.id || "",
-          email: userData.email || payload.email,
-          name: userData.name || payload.email,
-          role: userData.role || UserRole.GUEST,
-          initials: userData.initials || getInitials(userData.name || payload.email),
           ...userData,
+          id: userData.id || "",
+          email: userData.email || (idVal.includes("@") ? idVal : ""),
+          phoneNumber: userData.phoneNumber || payload.phoneNumber || (!idVal.includes("@") ? idVal : undefined),
+          name: resolvedName,
+          role: userData.role || UserRole.BUYER,
+          initials: getInitials(resolvedName),
         };
 
         setToken(tokenValue);
@@ -191,14 +202,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [persistSession]
   );
 
-  const aggregatorLogin = useCallback(
+  const adminLogin = useCallback(
     async (payload: LoginPayload): Promise<AuthResponse> => {
       setIsLoading(true);
       setError(null);
       setStatus(AuthStatus.LOADING);
 
       try {
-        const response = await authService.aggregatorLogin(payload);
+        const response = await authService.adminLogin(payload);
         const payloadData = (response as Partial<AuthResponse> & { data?: Partial<AuthResponse> })?.data ?? response;
         const userData = payloadData.user as Partial<User> | undefined;
         const tokenValue = payloadData.token;
@@ -207,13 +218,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           throw new Error("Authentication response was missing user data or token.");
         }
 
+        const idVal = (payload.identifier || payload.phoneNumber || payload.email || "").trim();
+        const resolvedName = resolveDisplayName(userData, "System Administrator");
         const formattedUser: User = {
-          id: userData.id || "",
-          email: userData.email || payload.email,
-          name: userData.name || payload.email,
-          role: userData.role || UserRole.AGGREGATOR,
-          initials: userData.initials || getInitials(userData.name || payload.email),
           ...userData,
+          id: userData.id || "",
+          email: userData.email || (idVal.includes("@") ? idVal : ""),
+          phoneNumber: userData.phoneNumber || payload.phoneNumber || (!idVal.includes("@") ? idVal : undefined),
+          name: resolvedName,
+          role: userData.role || UserRole.ADMIN,
+          initials: getInitials(resolvedName),
         };
 
         setToken(tokenValue);
@@ -224,7 +238,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return { ...payloadData, token: tokenValue, user: formattedUser } as AuthResponse;
       } catch (err: unknown) {
         const errMessage =
-          err instanceof Error ? err.message : "Failed to log in as Aggregator";
+          err instanceof Error ? err.message : "Failed to log in as Administrator";
         setError(errMessage);
         setStatus(AuthStatus.ERROR);
         throw err;
@@ -252,13 +266,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           throw new Error("Registration response was missing user data or token.");
         }
 
+        const fallbackName =
+          payload.fullName ||
+          `${payload.firstName || ""} ${payload.lastName || ""}`.trim() ||
+          "Marketplace User";
+        const resolvedName = resolveDisplayName(userData, fallbackName);
+
         const formattedUser: User = {
-          id: userData.id || "",
-          email: userData.email || payload.email,
-          name: userData.name || payload.fullName || payload.name || payload.email,
-          role: userData.role || payload.role || UserRole.GUEST,
-          initials: userData.initials || getInitials(userData.name || payload.fullName || payload.name || payload.email),
           ...userData,
+          id: userData.id || "",
+          email:
+            userData.email ||
+            payload.email ||
+            (payload.phoneNumber
+              ? `${payload.phoneNumber.replace(/[^0-9]/g, "")}@yucachain.com`
+              : "user@yucachain.com"),
+          name: resolvedName,
+          role: userData.role || payload.role || UserRole.GUEST,
+          initials: getInitials(resolvedName),
         };
 
         setToken(tokenValue);
@@ -318,20 +343,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const refreshUser = useCallback(async (): Promise<User | null> => {
     if (!token) return null;
     try {
-      const freshUser = await authService.getCurrentUser();
+      const freshUser = await authService.getCurrentUser(token);
+      const safeName = resolveDisplayName(freshUser, "Marketplace User");
       const formatted: User = {
         ...freshUser,
-        initials: freshUser.initials || getInitials(freshUser.name),
+        name: safeName,
+        initials: freshUser.initials || getInitials(safeName),
       };
       setUser(formatted);
-      if (typeof window !== "undefined") {
-        localStorage.setItem(StorageKey.USER, JSON.stringify(formatted));
-      }
+      persistSession(token, formatted);
       return formatted;
     } catch {
       return null;
     }
-  }, [token]);
+  }, [token, persistSession]);
 
 
   const clearError = useCallback(() => {
@@ -347,7 +372,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       isAuthenticated,
       error,
       login,
-      aggregatorLogin,
+      adminLogin,
       register,
       logout,
       updateUser,
@@ -362,7 +387,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       isAuthenticated,
       error,
       login,
-      aggregatorLogin,
+      adminLogin,
       register,
       logout,
       updateUser,

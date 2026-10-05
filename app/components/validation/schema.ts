@@ -32,24 +32,29 @@ export const confirmPasswordRule = Yup.string()
   .required("Please re-type your password")
   .oneOf([Yup.ref("password")], "Passwords do not match");
 
+export const phoneRule = Yup.string()
+  .trim()
+  .required("Phone number is required")
+  .min(7, "Phone number must be at least 7 characters");
+
 /* ------------------------------------------------------------------ */
 /*  Log In                                                             */
 /* ------------------------------------------------------------------ */
 
 export interface LoginValues {
-  email: string;
+  phoneNumber: string;
   password: string;
   remember: boolean;
 }
 
 export const loginInitialValues: LoginValues = {
-  email: "",
+  phoneNumber: "",
   password: "",
   remember: false,
 };
 
 export const LoginSchema: Yup.ObjectSchema<LoginValues> = Yup.object({
-  email: emailRule,
+  phoneNumber: phoneRule,
   // Login only needs "is it non-empty" — don't enforce the full strength
   // policy here, since an existing user's password may predate the policy.
   password: Yup.string().required("Password is required"),
@@ -82,6 +87,80 @@ export const SignUpSchema: Yup.ObjectSchema<SignUpValues> = Yup.object({
   email: emailRule,
   password: passwordRule,
   confirmPassword: confirmPasswordRule,
+});
+
+/* ------------------------------------------------------------------ */
+/*  Marketplace User Registration (Farmer, Processor, Service Provider, Consumer) */
+/* ------------------------------------------------------------------ */
+
+export type MarketplaceRoleType = "farmer" | "processor" | "service-provider" | "consumer";
+
+export interface MarketplaceRegisterValues {
+  role: MarketplaceRoleType;
+  fullName: string;
+  phoneNumber: string;
+  password: string;
+  confirmPassword: string;
+  farmAddress: string;
+  companyName: string;
+  facilityAddress: string;
+  businessAddress: string;
+  deliveryAddress: string;
+}
+
+export const marketplaceRegisterInitialValues: MarketplaceRegisterValues = {
+  role: "farmer",
+  fullName: "",
+  phoneNumber: "",
+  password: "",
+  confirmPassword: "",
+  farmAddress: "",
+  companyName: "",
+  facilityAddress: "",
+  businessAddress: "",
+  deliveryAddress: "",
+};
+
+export const MarketplaceRegisterSchema = Yup.object({
+  role: Yup.mixed<MarketplaceRoleType>()
+    .oneOf(["farmer", "processor", "service-provider", "consumer"], "Please select a valid role")
+    .required("Role is required") as Yup.StringSchema<MarketplaceRoleType>,
+  fullName: Yup.string()
+    .trim()
+    .required("Full name is required")
+    .min(2, "Name must be at least 2 characters"),
+  phoneNumber: Yup.string()
+    .trim()
+    .required("Phone number is required")
+    .test("no-letters", "Number is required here. Text is not allowed.", (val) => !val || !/[a-zA-Z]/.test(val))
+    .matches(/^\+?[0-9]{7,15}$/, "Number is required here. Text is not allowed."),
+  password: passwordRule,
+  confirmPassword: confirmPasswordRule,
+  farmAddress: Yup.string().when("role", {
+    is: "farmer",
+    then: (schema) => schema.trim().required("Farm address is required"),
+    otherwise: (schema) => schema.default(""),
+  }),
+  companyName: Yup.string().when("role", {
+    is: (val: string) => val === "processor" || val === "service-provider",
+    then: (schema) => schema.trim().required("Business / company name is required"),
+    otherwise: (schema) => schema.default(""),
+  }),
+  facilityAddress: Yup.string().when("role", {
+    is: "processor",
+    then: (schema) => schema.trim().required("Facility address is required"),
+    otherwise: (schema) => schema.default(""),
+  }),
+  businessAddress: Yup.string().when("role", {
+    is: "service-provider",
+    then: (schema) => schema.trim().required("Workshop / business address is required"),
+    otherwise: (schema) => schema.default(""),
+  }),
+  deliveryAddress: Yup.string().when("role", {
+    is: "consumer",
+    then: (schema) => schema.trim().required("Delivery address is required"),
+    otherwise: (schema) => schema.default(""),
+  }),
 });
 
 /* ------------------------------------------------------------------ */
@@ -262,7 +341,8 @@ export const CardPaymentSchema: Yup.ObjectSchema<CardPaymentValues> = Yup.object
 });
 
 /* ------------------------------------------------------------------ */
-/*  Aggregator — Receive Batch inspection form                         */
+/* ------------------------------------------------------------------ */
+/*  Admin — Receive Batch inspection form                             */
 /* ------------------------------------------------------------------ */
 
 export type QualityGradeOption = "A" | "B" | "C" | "reject";
@@ -299,7 +379,7 @@ export const ReceiveBatchSchema: Yup.ObjectSchema<ReceiveBatchValues> = Yup.obje
 });
 
 /* ------------------------------------------------------------------ */
-/*  Aggregator — Dispatch Order logistics form                         */
+/*  Admin — Dispatch Order logistics form                             */
 /* ------------------------------------------------------------------ */
  
 export interface DispatchLogisticsValues {
@@ -330,74 +410,23 @@ export const DispatchLogisticsSchema: Yup.ObjectSchema<DispatchLogisticsValues> 
 });
 
 /* ------------------------------------------------------------------ */
-/*  Aggregator / Partner — Login                                       */
+/*  Admin — Login                                                     */
 /* ------------------------------------------------------------------ */
 
-export interface AggregatorLoginValues {
-  identifier: string;
-  password: string;
-}
-
-export const aggregatorLoginInitialValues: AggregatorLoginValues = {
-  identifier: "",
-  password: "",
-};
-
-export const AggregatorLoginSchema: Yup.ObjectSchema<AggregatorLoginValues> = Yup.object({
-  identifier: Yup.string()
-    .trim()
-    .required("Email or username is required"),
-  password: Yup.string().required("Password is required"),
-});
-
-/* ------------------------------------------------------------------ */
-/*  Aggregator / Partner — Register                                    */
-/* ------------------------------------------------------------------ */
-
-export interface AggregatorRegisterValues {
-  firstName: string;
-  lastName: string;
+export interface AdminLoginValues {
   email: string;
-  phoneNumber: string;
   password: string;
-  confirmPassword: string;
-  // licenseNumber is optional per the API spec
-  licenseNumber: string;
-  hubName: string;
-  hubState: string;
-  hubLga: string;
-  // businessName & accountType are auto-filled — not shown in UI
 }
 
-export const aggregatorRegisterInitialValues: AggregatorRegisterValues = {
-  firstName: "",
-  lastName: "",
+export const adminLoginInitialValues: AdminLoginValues = {
   email: "",
-  phoneNumber: "",
   password: "",
-  confirmPassword: "",
-  licenseNumber: "",
-  hubName: "",
-  hubState: "",
-  hubLga: "",
 };
 
-export const AggregatorRegisterSchema: Yup.ObjectSchema<AggregatorRegisterValues> = Yup.object({
-  firstName: nameRule("First name"),
-  lastName: nameRule("Last name"),
-  email: emailRule,
-  phoneNumber: Yup.string()
+export const AdminLoginSchema: Yup.ObjectSchema<AdminLoginValues> = Yup.object({
+  email: Yup.string()
     .trim()
-    .required("Phone number is required")
-    .matches(/^\+?[0-9\s\-()]{7,20}$/, "Enter a valid phone number"),
-  password: passwordRule,
-  confirmPassword: confirmPasswordRule,
-  // Optional — sent only if provided
-  licenseNumber: Yup.string().trim().optional().default(""),
-  hubName: Yup.string()
-    .trim()
-    .required("Hub name is required")
-    .min(2, "Hub name must be at least 2 characters"),
-  hubState: Yup.string().trim().required("Hub state is required"),
-  hubLga: Yup.string().trim().required("Hub LGA is required"),
+    .email("Please enter a valid administrator email address")
+    .required("Email address is required"),
+  password: Yup.string().required("Password is required"),
 });

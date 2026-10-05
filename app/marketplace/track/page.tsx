@@ -5,17 +5,14 @@ import { useRouter, useSearchParams } from "next/navigation";
 import {
   Truck,
   Search,
-  CheckCircle2,
-  Clock,
   MapPin,
   Scale,
-  FileCheck,
   ShieldCheck,
-  AlertCircle,
-  ArrowRight,
   RefreshCw,
   Loader2,
   Check,
+  AlertCircle,
+  Clock,
 } from "lucide-react";
 import MarketplaceNavbar from "../components/MarketplaceNavbar";
 import Footer from "@/app/components/Footer";
@@ -25,11 +22,12 @@ import { dispatchService } from "@/app/Services/dispatchService";
 function TrackingContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const initialCode = searchParams.get("code") || searchParams.get("tracking") || "TRK-9921-KD";
+  const initialCode = searchParams.get("code") || searchParams.get("tracking") || "";
 
   const [searchCode, setSearchCode] = useState(initialCode);
   const [trackResult, setTrackResult] = useState<TrackDispatchResult | null>(null);
   const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [confirmModalOpen, setConfirmModalOpen] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [escrowReleased, setEscrowReleased] = useState(false);
@@ -37,43 +35,17 @@ function TrackingContent() {
   const fetchTracking = async (code: string) => {
     if (!code.trim()) return;
     setLoading(true);
+    setErrorMsg(null);
     try {
       const res = await dispatchService.trackShipment(code.trim());
       setTrackResult(res);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Tracking lookup error:", err);
-      // Clean fallback object so buyer can visualize the tracking workflow
-      setTrackResult({
-        dispatch: {
-          id: code.trim(),
-          trackingNumber: code.trim(),
-          trackingCode: code.trim(),
-          pickupHub: "YucaVault #1, Ilorin Storage Hub",
-          carrierName: "Kobo360 Freight Logistics",
-          weighbridgeTicket: "WB-98214-ILR",
-          buyerDeliveryAddress: "Ibadan Processing Mill, Plot 14 Ring Road, Ibadan",
-          weightKg: 12000,
-          status: "in-transit",
-          estimatedDelivery: "Tomorrow, 02:00 PM",
-          dispatchedAt: "Yesterday, 09:30 AM",
-        },
-        currentLocation: "Ogbomoso Express Corridor",
-        timeline: [
-          {
-            status: "Weighed & Dispatched",
-            time: "Yesterday, 09:30 AM",
-            location: "YucaVault #1 Ilorin",
-            description: "12,000 kg cassava lot verified by weighbridge and released to freight carrier.",
-          },
-          {
-            status: "In Transit",
-            time: "Current Status",
-            location: "Ogbomoso Express Corridor",
-            description: "Haulage truck en route to buyer delivery address with live telematics.",
-          },
-        ],
-        canConfirmReceipt: true,
-      });
+      setTrackResult(null);
+      setErrorMsg(
+        err?.message ||
+          `No shipment found for tracking code "${code.trim()}". Please verify your tracking number and try again.`
+      );
     } finally {
       setLoading(false);
     }
@@ -110,16 +82,16 @@ function TrackingContent() {
                   status: "Delivery Confirmed & Escrow Released",
                   time: "Just now",
                   location: trackResult.dispatch.buyerDeliveryAddress,
-                  description: "Buyer confirmed produce receipt. Escrow funds released to farmer & aggregator.",
+                  description: "Buyer confirmed produce receipt. Escrow funds released to seller.",
                 },
               ],
             }
           : prev
       );
-    } catch (err) {
+    } catch (err: any) {
       console.error("Receipt confirmation error:", err);
+      setErrorMsg(err?.message || "Failed to confirm produce receipt on server. Please try again.");
       setConfirmModalOpen(false);
-      setEscrowReleased(true);
     } finally {
       setConfirming(false);
     }
@@ -167,13 +139,20 @@ function TrackingContent() {
             </div>
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || !searchCode.trim()}
               className="rounded-2xl bg-[#226049] px-6 py-3 text-xs sm:text-sm font-semibold text-white hover:bg-[#1a4336] transition-colors shadow-xs cursor-pointer disabled:opacity-60"
             >
               {loading ? <RefreshCw size={16} className="animate-spin" /> : "Track"}
             </button>
           </form>
         </div>
+
+        {errorMsg && (
+          <div className="mb-6 rounded-2xl border border-red-200 bg-red-50/80 p-4 text-xs text-red-700 flex items-center gap-2.5 animate-in fade-in">
+            <AlertCircle size={16} className="shrink-0 text-red-600" />
+            <span>{errorMsg}</span>
+          </div>
+        )}
 
         {escrowReleased && (
           <div className="mb-6 rounded-2xl bg-emerald-50 border border-emerald-200 p-4 sm:p-5 flex items-start gap-3 text-emerald-900 animate-in fade-in">
@@ -184,6 +163,16 @@ function TrackingContent() {
                 Thank you for confirming receipt of your order. The smart contract has validated the delivery and released the held escrow payment to the suppliers.
               </p>
             </div>
+          </div>
+        )}
+
+        {!trackResult && !loading && !errorMsg && (
+          <div className="rounded-3xl border border-gray-100 bg-white p-12 text-center text-xs text-gray-500 shadow-xs">
+            <Truck size={36} className="mx-auto text-gray-300 mb-3" />
+            <p className="font-semibold text-gray-700 text-sm">No Shipment Looked Up Yet</p>
+            <p className="mt-1 text-gray-400 max-w-sm mx-auto">
+              Please enter your freight tracking code in the field above to retrieve live telematics and dispatch waybill information.
+            </p>
           </div>
         )}
 
@@ -261,7 +250,7 @@ function TrackingContent() {
                   </span>
                 </div>
                 <div className="flex justify-between text-gray-600">
-                  <span>Pickup YucaVault:</span>
+                  <span>Pickup Location:</span>
                   <span className="font-semibold text-gray-900">
                     {trackResult.dispatch.pickupHub}
                   </span>

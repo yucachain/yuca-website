@@ -12,7 +12,7 @@ const trustedItems = [
   },
   {
     icon: ShoppingBasket,
-    title: "Aggregators",
+    title: "Processors & Buyers",
   },
   {
     icon: Landmark,

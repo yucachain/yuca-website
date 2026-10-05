@@ -1,4 +1,5 @@
 import { refreshAccessToken } from "@/app/Services/authService";
+import { getAuthToken } from "@/app/Services/tokenHelper";
 import type {
   VaultUnit,
   CreateVaultUnitRequest,
@@ -23,24 +24,6 @@ function buildApiUrl(endpoint: string): string {
   }
 
   return `${base}${hasApiPrefix ? "" : API_PREFIX}${normalizedEndpoint}`;
-}
-
-function getAuthToken(): string {
-  if (typeof window === "undefined") return "";
-  const candidateKeys = ["accessToken", "yuca_access_token", "token", "authToken"];
-  for (const key of candidateKeys) {
-    const raw = localStorage.getItem(key);
-    if (!raw) continue;
-    let clean = raw.trim();
-    if (clean.startsWith('"') && clean.endsWith('"')) {
-      clean = clean.slice(1, -1).trim();
-    }
-    if (clean.startsWith("Bearer ")) {
-      clean = clean.slice(7).trim();
-    }
-    if (clean) return clean;
-  }
-  return "";
 }
 
 async function apiFetch<T = any>(
@@ -79,12 +62,19 @@ async function apiFetch<T = any>(
 
   if (!response.ok) {
     const errJson = await response.json().catch(() => ({}));
-    const message =
+    const backendMessage =
       errJson.message ||
       errJson.error ||
-      (typeof errJson.data === "string" ? errJson.data : errJson.data?.message) ||
-      `Request failed with status ${response.status}`;
-    throw new Error(message);
+      (typeof errJson.data === "string" ? errJson.data : errJson.data?.message);
+
+    if (response.status === 401) {
+      throw new Error(
+        backendMessage ||
+          "Your session has expired or your account is unauthorized. Please log in again."
+      );
+    }
+
+    throw new Error(backendMessage || `Request failed with status ${response.status}`);
   }
 
   if (response.status === 204) {
@@ -162,10 +152,25 @@ export const vaultService = {
    * Lists all consolidated vault lots ready for market sale or dispatch
    */
   async getVaultLots(): Promise<VaultLot[]> {
-    const res = await apiFetch<VaultLot[]>("/vaults/lots", {
+    const res = await apiFetch<any>("/vaults/lots", {
       method: "GET",
     });
-    return Array.isArray(res) ? res : [];
+    let rawList: any[] = [];
+    if (Array.isArray(res)) rawList = res;
+    else if (res && typeof res === "object") {
+      if (Array.isArray(res.items)) rawList = res.items;
+      else if (Array.isArray(res.lots)) rawList = res.lots;
+      else if (Array.isArray(res.data)) rawList = res.data;
+      else if (Array.isArray(res.data?.items)) rawList = res.data.items;
+      else if (Array.isArray(res.data?.lots)) rawList = res.data.lots;
+      else {
+        const targetObj = res.data && typeof res.data === "object" ? res.data : res;
+        for (const val of Object.values(targetObj)) {
+          if (Array.isArray(val)) { rawList = val; break; }
+        }
+      }
+    }
+    return rawList as VaultLot[];
   },
 
   /**
