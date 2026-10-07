@@ -16,6 +16,7 @@ import type { DispatchRecord, DispatchStatus } from "@/app/types/batchVaultDispa
 import { dispatchService } from "@/app/Services/dispatchService";
 import CreateDispatchModal from "./CreateDispatchModal";
 import DispatchReceiptModal from "./DispatchReceiptModal";
+import { toast } from "sonner";
 
 export type DispatchOrderTab = "all" | "pending" | "dispatched" | "in-transit" | "delivered";
 
@@ -74,8 +75,10 @@ export default function DispatchOrderSection() {
 
     try {
       await dispatchService.updateStatus(dispatch.id, { status: nextStatus });
+      toast.success(`Dispatch status advanced to ${nextStatus.toUpperCase()}`);
     } catch (err) {
       console.error("Failed to advance dispatch status:", err);
+      toast.error("Failed to advance dispatch status on server");
     }
   };
 

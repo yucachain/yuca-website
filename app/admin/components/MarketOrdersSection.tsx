@@ -8,6 +8,7 @@ import Pagination from "./Pagination";
 import type { MarketOrder, MarketOrderTab } from "./types";
 import { adminService } from "@/app/Services/adminService";
 import { Check, RefreshCw, ShoppingCart } from "lucide-react";
+import { toast } from "sonner";
 
 export default function MarketOrdersSection() {
   const [orders, setOrders] = useState<MarketOrder[]>([]);
@@ -86,11 +87,15 @@ export default function MarketOrdersSection() {
         )
       );
 
-      setActionMessage(`Order ${consolidateOrder.orderNumber} successfully assigned to Vault Lot ${vaultLotId}!`);
+      const msg = `Order ${consolidateOrder.orderNumber} successfully assigned to Vault Lot ${vaultLotId}!`;
+      setActionMessage(msg);
+      toast.success(msg);
       setTimeout(() => setActionMessage(null), 4000);
     } catch (err: any) {
       console.error("Failed to assign batches:", err);
-      setActionMessage(`Failed to assign batches: ${err?.message || "Server error"}`);
+      const errMsg = `Failed to assign batches: ${err?.message || "Server error"}`;
+      setActionMessage(errMsg);
+      toast.error(errMsg);
       setTimeout(() => setActionMessage(null), 5000);
     } finally {
       setIsProcessing(false);

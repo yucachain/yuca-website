@@ -10,6 +10,7 @@ import React, {
 } from "react";
 import type { CassavaBatch } from "../components/types";
 import { cartApi } from "@/app/Services/cartService";
+import { toast } from "sonner";
 
 export interface CartEntry {
   id: string;
@@ -156,6 +157,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       image: batch.images?.[0],
     };
     dispatch({ type: "ADD", entry });
+    toast.success(`Added "${batch.title}" to cart`);
 
     // Sync to backend API in background
     cartApi
@@ -178,6 +180,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   const removeFromCart = useCallback((id: string) => {
     dispatch({ type: "REMOVE", id });
+    toast.info("Item removed from cart");
 
     // Sync removal to backend API
     cartApi.removeItem(id).catch(() => {

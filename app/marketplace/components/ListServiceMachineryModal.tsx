@@ -12,6 +12,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { useMarketplaceRole } from "../context/MarketplaceRoleContext";
+import { toast } from "sonner";
 
 interface ListServiceMachineryModalProps {
   isOpen: boolean;
@@ -75,6 +76,7 @@ export default function ListServiceMachineryModal({
 
       addListing(newListing);
       onSuccess?.(newListing);
+      toast.success(`Service/Equipment "${formData.title}" listed successfully!`);
 
       setLoading(false);
       setSuccess(true);

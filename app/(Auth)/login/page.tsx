@@ -11,6 +11,7 @@ import { LoginSchema } from "@/app/components/validation/schema";
 import AuthCard from "@/app/components/ui/Authcard";
 import AuthLayout from "@/app/components/ui/AuthLayout";
 import { useAuth } from "@/app/Context/AuthContext";
+import { toast } from "sonner";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -39,6 +40,7 @@ export default function LoginPage() {
         phoneNumber: values.phoneNumber.trim(),
         password: values.password,
       });
+      toast.success("Logged in successfully! Welcome back.");
       router.push("/marketplace");
     } catch (err: unknown) {
       const message =
@@ -46,6 +48,7 @@ export default function LoginPage() {
           ? err.message
           : "An unexpected error occurred. Please try again.";
       setStatus(message);
+      toast.error(message);
     } finally {
       setSubmitting(false);
     }

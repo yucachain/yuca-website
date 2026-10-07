@@ -16,6 +16,7 @@ import type { AdminSettings } from "./types";
 import { adminService } from "@/app/Services/adminService";
 import { useAuth } from "@/app/Context/AuthContext";
 import { resolveDisplayName } from "@/app/Services/authService";
+import { toast } from "sonner";
 
 const BLANK_SETTINGS: AdminSettings = {
   businessName: "",
@@ -120,9 +121,11 @@ export default function SettingsSection() {
         settlementFrequency: settings.settlementFrequency || "Daily",
       });
       setSavedSuccess(true);
+      toast.success("Platform and facility settings saved successfully!");
       setTimeout(() => setSavedSuccess(false), 3500);
     } catch (err: any) {
       console.error("Failed to update settings on server:", err);
+      toast.error(err?.message || "Failed to update settings on server. Please try again.");
     } finally {
       setIsSaving(false);
     }

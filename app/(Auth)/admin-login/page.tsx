@@ -11,6 +11,7 @@ import AuthCard from "@/app/components/ui/Authcard";
 import AuthLayout from "@/app/components/ui/AuthLayout";
 import { useAuth } from "@/app/Context/AuthContext";
 import { ShieldCheck } from "lucide-react";
+import { toast } from "sonner";
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -35,6 +36,7 @@ export default function AdminLoginPage() {
         identifier: values.email.trim(),
         password: values.password,
       });
+      toast.success("Admin authenticated successfully. Welcome to the Console.");
       router.push("/admin");
     } catch (err: unknown) {
       const message =
@@ -42,6 +44,7 @@ export default function AdminLoginPage() {
           ? err.message
           : "An unexpected error occurred. Please verify your admin credentials.";
       setStatus(message);
+      toast.error(message);
     } finally {
       setSubmitting(false);
     }

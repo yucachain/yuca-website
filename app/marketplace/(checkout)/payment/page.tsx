@@ -15,6 +15,7 @@ import {
   ArrowRight,
   Loader2,
 } from "lucide-react";
+import { toast } from "sonner";
 
 export default function PaymentPage() {
   const router = useRouter();
@@ -35,6 +36,7 @@ export default function PaymentPage() {
   const copyToClipboard = (text: string, fieldName: string) => {
     navigator.clipboard.writeText(text);
     setCopiedField(fieldName);
+    toast.success(`${fieldName === "account" ? "Account number" : fieldName === "ref" ? "Order reference" : "Text"} copied to clipboard!`);
     setTimeout(() => setCopiedField(null), 2000);
   };
 
@@ -74,6 +76,7 @@ export default function PaymentPage() {
 
       replaceCart([]);
       setSubmitting(false);
+      toast.success("Payment submitted to YucaChain Escrow!");
       router.push(`/marketplace/confirmation?orderNumber=${createdOrderNumber || orderRef}`);
     }, 1000);
   };

@@ -5,55 +5,33 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Formik, Form } from "formik";
 import FormInput from "@/app/components/ui/FormInput";
+import NumericFormInput from "@/app/components/ui/NumericFormInput";
 import Button from "@/app/components/ui/Button";
 import {
   ForgotPasswordSchema,
   forgotPasswordInitialValues,
   ForgotPasswordValues,
-  VerifyResetLinkSchema,
-  verifyResetLinkInitialValues,
-  VerifyResetLinkValues,
+  VerifyOtpSchema,
+  verifyOtpInitialValues,
+  VerifyOtpValues,
 } from "@/app/components/validation/schema";
 import AuthLayout from "@/app/components/ui/AuthLayout";
 import AuthCard from "@/app/components/ui/Authcard";
-import { forgotPassword } from "@/app/Services/authService";
-
-function EnvelopeIcon() {
-  return (
-    <svg
-      width="22"
-      height="22"
-      viewBox="0 0 24 24"
-      fill="none"
-      aria-hidden="true"
-    >
-      <rect
-        x="3"
-        y="5"
-        width="18"
-        height="14"
-        rx="2"
-        stroke="currentColor"
-        strokeWidth="1.6"
-      />
-      <path
-        d="m3.5 6 8.5 7 8.5-7"
-        stroke="currentColor"
-        strokeWidth="1.6"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
+import { useAuth } from "@/app/Context/AuthContext";
+import { Mail, KeyRound, ArrowLeft, RefreshCw } from "lucide-react";
+import { toast } from "sonner";
 
 export default function ForgotPasswordPage() {
   const router = useRouter();
-  const [sent, setSent] = useState(false);
-  const [sentEmail, setSentEmail] = useState("");
-  const [apiError, setApiError] = useState("");
+  const { forgotPassword, verifyOtp } = useAuth();
 
-  const handleSendLink = async (
+  const [step, setStep] = useState<"request" | "verify">("request");
+  const [sentEmail, setSentEmail] = useState("");
+  const [sentPhone, setSentPhone] = useState("");
+  const [isResending, setIsResending] = useState(false);
+
+  // Step 1: Request OTP code
+  const handleRequestOtp = async (
     values: ForgotPasswordValues,
     {
       setSubmitting,
@@ -63,42 +41,36 @@ export default function ForgotPasswordPage() {
       setStatus: (status: string | null) => void;
     },
   ) => {
-    setApiError("");
     setStatus(null);
 
     try {
-      await forgotPassword({ email: values.email });
-      setSentEmail(values.email);
-      setSent(true);
+      const email = values.email.trim();
+      const phoneNumber = values.phoneNumber?.trim() || "";
+
+      await forgotPassword({
+        email,
+        phoneNumber,
+      });
+
+      setSentEmail(email);
+      setSentPhone(phoneNumber);
+      setStep("verify");
+      toast.success("Verification code sent! Please check your email or phone.");
     } catch (error: unknown) {
       const message =
         error instanceof Error
           ? error.message
-          : "We couldn't send the reset link. Please try again.";
+          : "We couldn't send the verification code. Please try again.";
       setStatus(message);
-      setApiError(message);
+      toast.error(message);
     } finally {
       setSubmitting(false);
     }
   };
 
-  const handleResend = async () => {
-    if (!sentEmail) return;
-
-    try {
-      setApiError("");
-      await forgotPassword({ email: sentEmail });
-    } catch (error: unknown) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : "We couldn't resend the reset link.";
-      setApiError(message);
-    }
-  };
-
-  const handleVerifyLink = async (
-    values: VerifyResetLinkValues,
+  // Step 2: Verify OTP code
+  const handleVerifyOtp = async (
+    values: VerifyOtpValues,
     {
       setSubmitting,
       setStatus,
@@ -110,138 +82,197 @@ export default function ForgotPasswordPage() {
     setStatus(null);
 
     try {
-      const parsedUrl = new URL(values.resetLink);
-      const token = parsedUrl.searchParams.get("token");
+      const code = values.code.trim();
+      const res = await verifyOtp({
+        email: sentEmail,
+        phoneNumber: sentPhone,
+        code,
+      });
 
-      if (!token) {
-        throw new Error("This link is missing a reset token.");
-      }
+      const token =
+        res.resetToken ||
+        (res.data as any)?.resetToken ||
+        (res.data as any)?.token ||
+        (res as any)?.token ||
+        "";
 
-      router.push(`/resetpassword?token=${encodeURIComponent(token)}`);
+      toast.success("Verification successful!");
+
+      // Route to reset password with verified query parameters
+      const params = new URLSearchParams();
+      if (sentEmail) params.set("email", sentEmail);
+      if (sentPhone) params.set("phoneNumber", sentPhone);
+      params.set("otp", code);
+      if (token) params.set("token", token);
+
+      router.push(`/resetpassword?${params.toString()}`);
     } catch (error: unknown) {
       const message =
         error instanceof Error
           ? error.message
-          : "This reset link is invalid. Please paste a valid link.";
+          : "Invalid or expired verification code. Please try again.";
       setStatus(message);
+      toast.error(message);
     } finally {
       setSubmitting(false);
     }
   };
 
+  // Resend OTP
+  const handleResend = async () => {
+    if (!sentEmail && !sentPhone) return;
+
+    setIsResending(true);
+    try {
+      await forgotPassword({
+        email: sentEmail,
+        phoneNumber: sentPhone,
+      });
+      toast.success("A new verification code has been sent!");
+    } catch (error: unknown) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Unable to resend code right now. Please try again shortly.";
+      toast.error(message);
+    } finally {
+      setIsResending(false);
+    }
+  };
+
   return (
     <AuthLayout>
-      <AuthCard title="Forgot Password">
-        <p className="-mt-4 pt-0 mb-8 text-center text-base leading-relaxed text-gray-600">
-          No worries! Enter your email and we&apos;ll send you a link to reset
-          password.
-        </p>
+      <AuthCard title={step === "request" ? "Forgot Password" : "Enter Verification Code"}>
+        {step === "request" ? (
+          <div>
+            <p className="-mt-4 mb-6 text-center text-sm leading-relaxed text-gray-600">
+              Enter your email address and registered phone number. We&apos;ll send you an OTP to reset your password.
+            </p>
 
-        {!sent && (
-          <Formik
-            initialValues={forgotPasswordInitialValues}
-            validationSchema={ForgotPasswordSchema}
-            onSubmit={handleSendLink}
-          >
-            {({ isSubmitting, status }) => (
-              <Form className="space-y-8" noValidate>
-                {status && (
-                  <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
-                    {status}
-                  </div>
-                )}
-
-                <FormInput
-                  name="email"
-                  label="Email Address"
-                  type="email"
-                  placeholder="you@example.com"
-                  autoComplete="email"
-                />
-
-                <Button type="submit" disabled={isSubmitting}>
-                  {isSubmitting ? "Sending..." : "Send Reset Link"}
-                </Button>
-
-                <Link
-                  href="/login"
-                  className="block text-center text-base font-medium text-gray-900"
-                >
-                  Back to Login
-                </Link>
-              </Form>
-            )}
-          </Formik>
-        )}
-
-        {sent && (
-          <div className="space-y-8">
             <Formik
-              initialValues={verifyResetLinkInitialValues}
-              validationSchema={VerifyResetLinkSchema}
-              onSubmit={handleVerifyLink}
+              initialValues={forgotPasswordInitialValues}
+              validationSchema={ForgotPasswordSchema}
+              onSubmit={handleRequestOtp}
             >
-              {({ isSubmitting, values, status }) => (
-                <Form className="space-y-8" noValidate>
+              {({ isSubmitting, status }) => (
+                <Form className="space-y-5" noValidate>
                   {status && (
-                    <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
+                    <div className="rounded-lg bg-red-50 p-3 text-xs sm:text-sm text-red-700 border border-red-200">
                       {status}
                     </div>
                   )}
 
                   <FormInput
-                    name="resetLink"
-                    label="Reset Link"
-                    placeholder="Paste reset link"
+                    name="email"
+                    label="Email Address *"
+                    type="email"
+                    placeholder="you@example.com"
+                    autoComplete="email"
                   />
 
-                  <Button
-                    type="submit"
-                    disabled={!values.resetLink.trim() || isSubmitting}
-                  >
-                    {isSubmitting ? "Verifying..." : "Verify Link"}
-                  </Button>
+                  <NumericFormInput
+                    name="phoneNumber"
+                    label="Phone Number (Optional)"
+                    placeholder="e.g. 08012345678"
+                    allowLeadingPlus={true}
+                    maxLength={15}
+                    helperText="Required if your account was registered with phone number."
+                  />
+
+                  <div className="pt-2">
+                    <Button fullWidth type="submit" disabled={isSubmitting}>
+                      {isSubmitting ? "Sending Code..." : "Send Verification Code"}
+                    </Button>
+                  </div>
 
                   <Link
                     href="/login"
-                    className="block text-center text-base font-medium text-gray-900"
+                    className="flex items-center justify-center gap-1.5 text-center text-sm font-medium text-gray-600 hover:text-[#226049] transition-colors"
                   >
-                    Back to Login
+                    <ArrowLeft size={16} />
+                    <span>Back to Login</span>
                   </Link>
                 </Form>
               )}
             </Formik>
-
-            <div className="flex gap-4 rounded-2xl border border-emerald-950/25 p-5">
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-800">
-                <EnvelopeIcon />
-              </span>
-              <div>
-                <p className="font-semibold text-emerald-900">
-                  Check your email
-                </p>
-                <p className="mt-1 text-sm leading-relaxed text-emerald-900">
-                  We&apos;ve sent a password reset link to {sentEmail || "your email"}. The link will expire in 15 minutes.
-                </p>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            <div className="rounded-xl border border-emerald-950/15 bg-emerald-50/50 p-4 text-center">
+              <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-[#226049] text-white">
+                <KeyRound size={20} />
               </div>
+              <p className="font-semibold text-sm text-emerald-950">
+                Check Your Inbox
+              </p>
+              <p className="mt-1 text-xs text-gray-600">
+                We sent a verification code to{" "}
+                <span className="font-medium text-gray-900">{sentEmail || sentPhone}</span>
+              </p>
             </div>
 
-            {apiError && (
-              <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
-                {apiError}
-              </div>
-            )}
+            <Formik
+              initialValues={verifyOtpInitialValues}
+              validationSchema={VerifyOtpSchema}
+              onSubmit={handleVerifyOtp}
+            >
+              {({ isSubmitting, status, values }) => (
+                <Form className="space-y-5" noValidate>
+                  {status && (
+                    <div className="rounded-lg bg-red-50 p-3 text-xs sm:text-sm text-red-700 border border-red-200">
+                      {status}
+                    </div>
+                  )}
 
-            <p className="text-center text-sm text-gray-600">
-              Didn&apos;t receive email? Check your spam folder, or{" "}
-              <button
-                type="button"
-                onClick={handleResend}
-                className="font-bold text-emerald-800"
-              >
-                Resend reset link
-              </button>
-            </p>
+                  <FormInput
+                    name="code"
+                    label="Verification Code (OTP) *"
+                    placeholder="e.g. 9802"
+                    autoComplete="one-time-code"
+                  />
+
+                  <div className="pt-2">
+                    <Button
+                      fullWidth
+                      type="submit"
+                      disabled={!values.code.trim() || isSubmitting}
+                    >
+                      {isSubmitting ? "Verifying..." : "Verify & Continue"}
+                    </Button>
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2 text-xs text-gray-600">
+                    <button
+                      type="button"
+                      onClick={handleResend}
+                      disabled={isResending}
+                      className="inline-flex items-center gap-1 font-semibold text-[#226049] hover:underline disabled:opacity-50"
+                    >
+                      <RefreshCw size={13} className={isResending ? "animate-spin" : ""} />
+                      {isResending ? "Resending..." : "Resend Code"}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setStep("request")}
+                      className="text-gray-500 hover:text-gray-800"
+                    >
+                      Change email / phone
+                    </button>
+                  </div>
+
+                  <div className="pt-2 text-center">
+                    <Link
+                      href="/login"
+                      className="inline-flex items-center gap-1 text-sm font-medium text-gray-600 hover:text-[#226049] transition-colors"
+                    >
+                      <ArrowLeft size={16} />
+                      <span>Back to Login</span>
+                    </Link>
+                  </div>
+                </Form>
+              )}
+            </Formik>
           </div>
         )}
       </AuthCard>

@@ -18,6 +18,7 @@ import MarketplaceNavbar from "../components/MarketplaceNavbar";
 import Footer from "@/app/components/Footer";
 import type { TrackDispatchResult } from "@/app/types/batchVaultDispatch";
 import { dispatchService } from "@/app/Services/dispatchService";
+import { toast } from "sonner";
 
 function TrackingContent() {
   const router = useRouter();
@@ -42,10 +43,11 @@ function TrackingContent() {
     } catch (err: any) {
       console.error("Tracking lookup error:", err);
       setTrackResult(null);
-      setErrorMsg(
+      const msg =
         err?.message ||
-          `No shipment found for tracking code "${code.trim()}". Please verify your tracking number and try again.`
-      );
+        `No shipment found for tracking code "${code.trim()}". Please verify your tracking number and try again.`;
+      setErrorMsg(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
@@ -71,6 +73,7 @@ function TrackingContent() {
       await dispatchService.confirmReceipt(trackResult.dispatch.id);
       setEscrowReleased(true);
       setConfirmModalOpen(false);
+      toast.success("Delivery confirmed! Escrow funds released to seller.");
       setTrackResult((prev) =>
         prev
           ? {
@@ -90,7 +93,9 @@ function TrackingContent() {
       );
     } catch (err: any) {
       console.error("Receipt confirmation error:", err);
-      setErrorMsg(err?.message || "Failed to confirm produce receipt on server. Please try again.");
+      const msg = err?.message || "Failed to confirm produce receipt on server. Please try again.";
+      setErrorMsg(msg);
+      toast.error(msg);
       setConfirmModalOpen(false);
     } finally {
       setConfirming(false);

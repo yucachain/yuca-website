@@ -11,6 +11,7 @@ import NotificationDropdown from "./NotificationDropdown";
 import { notificationService } from "@/app/Services/notificationService";
 import type { MarketplaceNotification } from "@/app/types/notification";
 import { resolveDisplayName, getInitials } from "@/app/Services/authService";
+import { toast } from "sonner";
 
 export interface AdminNavbarProps {
   hasNotifications?: boolean;
@@ -122,6 +123,7 @@ export default function AdminNavbar({
 
   const handleMarkAllRead = async () => {
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    toast.success("All notifications marked as read");
     try {
       await notificationService.markAllAsRead();
     } catch (err) {
@@ -131,6 +133,7 @@ export default function AdminNavbar({
 
   const handleSignOut = async () => {
     setMenuOpen(false);
+    toast.success("Admin signed out successfully");
     await logout();
     router.push("/admin-login");
   };

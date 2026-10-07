@@ -9,7 +9,10 @@ export async function fetchWithAuth<T>(
   options: RequestInit = {}
 ): Promise<T> {
   let accessToken =
-    typeof window !== "undefined" ? localStorage.getItem("accessToken") : null;
+    typeof window !== "undefined"
+      ? localStorage.getItem("accessToken") ||
+        localStorage.getItem("yuca_access_token")
+      : null;
 
   const getHeaders = (token: string | null) => ({
     "Content-Type": "application/json",
@@ -23,22 +26,21 @@ export async function fetchWithAuth<T>(
     headers: getHeaders(accessToken),
   });
 
-  if (response.status === 401) {
+  if (response.status === 401 && accessToken) {
     try {
-      accessToken = await refreshAccessToken();
-      response = await fetch(`${API_BASE_URL}${endpoint}`, {
-        ...options,
-        headers: getHeaders(accessToken),
-      });
-    } catch (error) {
-      if (typeof window !== "undefined") {
-        window.location.href = "/login";
+      const refreshedToken = await refreshAccessToken();
+      if (refreshedToken) {
+        response = await fetch(`${API_BASE_URL}${endpoint}`, {
+          ...options,
+          headers: getHeaders(refreshedToken),
+        });
       }
-      throw error;
+    } catch {
+      throw new Error("Session expired. Please sign in again.");
     }
   }
 
-  const data = await response.json();
+  const data = await response.json().catch(() => ({}));
 
   if (!response.ok) {
     throw new Error(data.message || `Request failed with status ${response.status}`);
@@ -48,5 +50,5 @@ export async function fetchWithAuth<T>(
 }
 
 export async function getUserProfile() {
-  return await fetchWithAuth("/api/v1/users/profile");
+  return await fetchWithAuth("/api/v1/user/profile");
 }

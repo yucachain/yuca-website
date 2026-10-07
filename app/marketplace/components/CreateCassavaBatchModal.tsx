@@ -12,6 +12,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { useMarketplaceRole } from "../context/MarketplaceRoleContext";
+import { toast } from "sonner";
 
 interface CreateCassavaBatchModalProps {
   isOpen: boolean;
@@ -72,6 +73,7 @@ export default function CreateCassavaBatchModal({
 
       addListing(newListing);
       onSuccess?.(newListing);
+      toast.success(`Batch "${formData.title}" listed successfully!`);
 
       setLoading(false);
       setSuccess(true);

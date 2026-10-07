@@ -19,6 +19,7 @@ import MarketplaceNavbar from "../components/MarketplaceNavbar";
 import Footer from "@/app/components/Footer";
 import { notificationService } from "@/app/Services/notificationService";
 import type { MarketplaceNotification } from "@/app/types/notification";
+import { toast } from "sonner";
 
 const categoryIcons = {
   shipping: <Truck size={18} className="text-[#226049]" />,
@@ -64,6 +65,7 @@ export default function MarketplaceNotificationsPage() {
 
   const handleMarkAllRead = async () => {
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    toast.success("All notifications marked as read");
     try {
       await notificationService.markAllAsRead();
     } catch (err) {
@@ -91,6 +93,7 @@ export default function MarketplaceNotificationsPage() {
 
   const handleDelete = (id: string) => {
     setNotifications((prev) => prev.filter((n) => n.id !== id));
+    toast.info("Notification removed");
   };
 
   const filteredNotifications = notifications.filter((n) => {

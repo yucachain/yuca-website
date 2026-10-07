@@ -13,9 +13,12 @@ import type {
   AuthContextType,
   AuthResponse,
   AuthState,
+  ForgotPasswordPayload,
   LoginPayload,
   RegisterPayload,
+  ResetPasswordPayload,
   User,
+  VerifyOtpPayload,
 } from "@/app/types/auth";
 import authService, {
   resolveDisplayName,
@@ -259,12 +262,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         const response = await authService.register(payload);
         const payloadData = (response as Partial<AuthResponse> & { data?: Partial<AuthResponse> })?.data ?? response;
-        const userData = payloadData.user as Partial<User> | undefined;
-        const tokenValue = payloadData.token;
-
-        if (!userData || !tokenValue) {
-          throw new Error("Registration response was missing user data or token.");
-        }
+        const userData = (payloadData.user as Partial<User> | undefined) || {};
+        const tokenValue = payloadData.token || "";
 
         const fallbackName =
           payload.fullName ||
@@ -286,12 +285,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           initials: getInitials(resolvedName),
         };
 
-        setToken(tokenValue);
-        setUser(formattedUser);
-        setStatus(AuthStatus.AUTHENTICATED);
-        persistSession(tokenValue, formattedUser);
+        if (tokenValue) {
+          setToken(tokenValue);
+          setUser(formattedUser);
+          setStatus(AuthStatus.AUTHENTICATED);
+          persistSession(tokenValue, formattedUser);
+        } else {
+          setStatus(AuthStatus.UNAUTHENTICATED);
+        }
 
-        return { ...payloadData, token: tokenValue, user: formattedUser } as AuthResponse;
+        return {
+          ...payloadData,
+          token: tokenValue,
+          user: formattedUser,
+          message: payloadData.message || response.message || "Registration successful",
+        } as AuthResponse;
       } catch (err: unknown) {
         const errMessage =
           err instanceof Error ? err.message : "Registration failed";
@@ -363,6 +371,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setError(null);
   }, []);
 
+  const forgotPassword = useCallback(
+    async (payload: ForgotPasswordPayload): Promise<{ message: string }> => {
+      return await authService.forgotPassword(payload);
+    },
+    []
+  );
+
+  const verifyOtp = useCallback(
+    async (payload: VerifyOtpPayload): Promise<{ message: string; resetToken?: string; data?: any }> => {
+      return await authService.verifyOtp(payload);
+    },
+    []
+  );
+
+  const resetPassword = useCallback(
+    async (payload: ResetPasswordPayload): Promise<{ message: string }> => {
+      return await authService.resetPassword(payload);
+    },
+    []
+  );
+
   const value: AuthContextType = useMemo(
     () => ({
       user,
@@ -374,6 +403,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       login,
       adminLogin,
       register,
+      forgotPassword,
+      verifyOtp,
+      resetPassword,
       logout,
       updateUser,
       refreshUser,
@@ -389,6 +421,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       login,
       adminLogin,
       register,
+      forgotPassword,
+      verifyOtp,
+      resetPassword,
       logout,
       updateUser,
       refreshUser,

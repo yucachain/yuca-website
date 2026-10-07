@@ -99,6 +99,7 @@ export interface MarketplaceRegisterValues {
   role: MarketplaceRoleType;
   fullName: string;
   phoneNumber: string;
+  email: string;
   password: string;
   confirmPassword: string;
   farmAddress: string;
@@ -106,12 +107,17 @@ export interface MarketplaceRegisterValues {
   facilityAddress: string;
   businessAddress: string;
   deliveryAddress: string;
+  state: string;
+  lga: string;
+  farmName: string;
+  businessName: string;
 }
 
 export const marketplaceRegisterInitialValues: MarketplaceRegisterValues = {
   role: "farmer",
   fullName: "",
   phoneNumber: "",
+  email: "",
   password: "",
   confirmPassword: "",
   farmAddress: "",
@@ -119,6 +125,10 @@ export const marketplaceRegisterInitialValues: MarketplaceRegisterValues = {
   facilityAddress: "",
   businessAddress: "",
   deliveryAddress: "",
+  state: "Oyo",
+  lga: "",
+  farmName: "",
+  businessName: "",
 };
 
 export const MarketplaceRegisterSchema = Yup.object({
@@ -134,6 +144,13 @@ export const MarketplaceRegisterSchema = Yup.object({
     .required("Phone number is required")
     .test("no-letters", "Number is required here. Text is not allowed.", (val) => !val || !/[a-zA-Z]/.test(val))
     .matches(/^\+?[0-9]{7,15}$/, "Number is required here. Text is not allowed."),
+  email: Yup.string()
+    .trim()
+    .test("valid-email-if-provided", "Enter a valid email address", (val) => {
+      if (!val || val.trim() === "") return true;
+      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val.trim());
+    })
+    .default(""),
   password: passwordRule,
   confirmPassword: confirmPasswordRule,
   farmAddress: Yup.string().when("role", {
@@ -161,6 +178,10 @@ export const MarketplaceRegisterSchema = Yup.object({
     then: (schema) => schema.trim().required("Delivery address is required"),
     otherwise: (schema) => schema.default(""),
   }),
+  state: Yup.string().default("Oyo"),
+  lga: Yup.string().default(""),
+  farmName: Yup.string().default(""),
+  businessName: Yup.string().default(""),
 });
 
 /* ------------------------------------------------------------------ */
@@ -169,12 +190,35 @@ export const MarketplaceRegisterSchema = Yup.object({
 
 export interface ForgotPasswordValues {
   email: string;
+  phoneNumber?: string;
 }
 
-export const forgotPasswordInitialValues: ForgotPasswordValues = { email: "" };
+export const forgotPasswordInitialValues: ForgotPasswordValues = {
+  email: "",
+  phoneNumber: "",
+};
 
 export const ForgotPasswordSchema: Yup.ObjectSchema<ForgotPasswordValues> = Yup.object({
   email: emailRule,
+  phoneNumber: Yup.string().trim().default(""),
+});
+
+/* ------------------------------------------------------------------ */
+/*  Verify OTP Code                                                    */
+/* ------------------------------------------------------------------ */
+
+export interface VerifyOtpValues {
+  code: string;
+}
+
+export const verifyOtpInitialValues: VerifyOtpValues = { code: "" };
+
+export const VerifyOtpSchema: Yup.ObjectSchema<VerifyOtpValues> = Yup.object({
+  code: Yup.string()
+    .trim()
+    .required("Verification code is required")
+    .min(4, "Code must be at least 4 digits")
+    .max(8, "Code cannot exceed 8 digits"),
 });
 
 /* ------------------------------------------------------------------ */
@@ -197,22 +241,31 @@ export const VerifyResetLinkSchema: Yup.ObjectSchema<VerifyResetLinkValues> = Yu
 });
 
 /* ------------------------------------------------------------------ */
-/*  Reset Password (after clicking the email link)                     */
+/*  Reset Password                                                     */
 /* ------------------------------------------------------------------ */
 
 export interface ResetPasswordValues {
   password: string;
   confirmPassword: string;
+  email?: string;
+  phoneNumber?: string;
+  otp?: string;
 }
 
 export const resetPasswordInitialValues: ResetPasswordValues = {
   password: "",
   confirmPassword: "",
+  email: "",
+  phoneNumber: "",
+  otp: "",
 };
 
 export const ResetPasswordSchema: Yup.ObjectSchema<ResetPasswordValues> = Yup.object({
   password: passwordRule,
   confirmPassword: confirmPasswordRule,
+  email: Yup.string().trim().email("Enter a valid email").optional(),
+  phoneNumber: Yup.string().trim().optional(),
+  otp: Yup.string().trim().optional(),
 });
 
 /* ------------------------------------------------------------------ */

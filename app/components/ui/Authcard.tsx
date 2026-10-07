@@ -9,9 +9,10 @@ export default function AuthCard({
   children: React.ReactNode;
   className?: string;
 }) {
+  const hasCustomMaxWidth = className.includes("max-w-");
   return (
     <div
-      className={`w-full max-w-sm sm:max-w-md rounded-3xl p-6 sm:p-8 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.12)] border border-emerald-900/10 ${className}`}
+      className={`w-full ${hasCustomMaxWidth ? "" : "max-w-sm sm:max-w-md"} rounded-3xl p-6 sm:p-8 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.12)] border border-emerald-900/10 ${className}`}
       style={{
         background: "linear-gradient(to bottom, #ffffff 0%, #f0f5f2 100%)",
       }}

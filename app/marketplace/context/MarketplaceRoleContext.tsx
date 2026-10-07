@@ -1,24 +1,58 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
+import { useAuth } from "@/app/Context/AuthContext";
+import {
+  getUserProfile,
+  updateUserProfile as apiUpdateUserProfile,
+  getUserBankDetails,
+  updateUserBankDetails as apiUpdateUserBankDetails,
+} from "@/app/Services/userService";
 
 export type MarketplaceRole = "farmer" | "processor" | "service-provider" | "consumer";
+
+export function normalizeRole(rawRole?: string | null): MarketplaceRole {
+  if (!rawRole) return "farmer";
+  const lower = rawRole.toLowerCase();
+  if (lower.includes("farm")) return "farmer";
+  if (
+    lower.includes("process") ||
+    lower.includes("buyer") ||
+    lower.includes("mill") ||
+    lower.includes("off-taker")
+  ) {
+    return "processor";
+  }
+  if (
+    lower.includes("service") ||
+    lower.includes("transport") ||
+    lower.includes("machin")
+  ) {
+    return "service-provider";
+  }
+  if (lower.includes("consum")) return "consumer";
+  return "farmer";
+}
 
 export interface UserProfile {
   id: string;
   name: string;
+  firstName?: string;
+  lastName?: string;
   email: string;
   phone: string;
   role: MarketplaceRole;
   avatarUrl?: string;
   companyName?: string;
   businessName?: string;
-  // Role-specific addresses
+  farmName?: string;
+  address?: string;
   farmAddress?: string;
   facilityAddress?: string;
   businessAddress?: string;
   deliveryAddress?: string;
-  // Bank details for receiving disbursements / payouts
+  state?: string;
+  lga?: string;
   bankName?: string;
   accountNumber?: string;
   accountName?: string;
@@ -69,363 +103,202 @@ interface MarketplaceRoleContextType {
   activeRole: MarketplaceRole;
   setActiveRole: (role: MarketplaceRole) => void;
   currentUser: UserProfile;
-  updateCurrentUser: (updates: Partial<UserProfile>) => void;
+  updateCurrentUser: (updates: Partial<UserProfile>) => Promise<void>;
+  reloadUserProfile: () => Promise<void>;
   allUsers: UserRecordForAdmin[];
-  myOrders: MarketOrderItem[]; // orders bought
-  mySales: MarketOrderItem[]; // orders sold
-  allTransactions: MarketOrderItem[]; // for Admin
+  myOrders: MarketOrderItem[];
+  mySales: MarketOrderItem[];
+  allTransactions: MarketOrderItem[];
   addListing: (listing: any) => void;
   placeOrder: (order: Partial<MarketOrderItem>) => string;
   disbursePayout: (orderId: string) => void;
 }
 
-const INITIAL_USERS: UserRecordForAdmin[] = [
-  {
-    id: "usr-f01",
-    name: "Musa Ibrahim",
-    email: "musa.ibrahim@farms.ng",
-    phone: "+234 803 456 7890",
-    role: "farmer",
-    address: "Iseyin Agro Cluster, Farm Block 4B, Oyo State",
-    bankName: "First Bank of Nigeria",
-    accountNumber: "3084920194",
-    accountName: "Musa Ibrahim Farm Ent.",
-    joinedDate: "12 Jan 2026",
-    status: "Verified",
-    totalSalesCount: 14,
-    totalOrdersCount: 2,
-  },
-  {
-    id: "usr-f02",
-    name: "Grace Adeyemi",
-    email: "grace.adeyemi@yuca.farm",
-    phone: "+234 812 345 6789",
-    role: "farmer",
-    address: "Abeokuta North Cassava Outgrowers, Ogun State",
-    bankName: "Zenith Bank",
-    accountNumber: "2019485736",
-    accountName: "Grace Adeyemi",
-    joinedDate: "18 Jan 2026",
-    status: "Verified",
-    totalSalesCount: 8,
-    totalOrdersCount: 3,
-  },
-  {
-    id: "usr-p01",
-    name: "PrimeStarch & Flour Mills Ltd",
-    email: "procurement@primestarch.com",
-    phone: "+234 802 888 1234",
-    role: "processor",
-    address: "Plot 14 Industrial Layout, Agbara Industrial Zone, Ogun State",
-    bankName: "Access Bank",
-    accountNumber: "0094857382",
-    accountName: "PrimeStarch & Flour Mills Ltd",
-    joinedDate: "05 Jan 2026",
-    status: "Verified",
-    totalSalesCount: 22,
-    totalOrdersCount: 19,
-  },
-  {
-    id: "usr-p02",
-    name: "Supreme Garri Processors",
-    email: "sales@supremegarri.ng",
-    phone: "+234 809 111 4455",
-    role: "processor",
-    address: "Kilometer 8, Benin-Ore Expressway, Ondo State",
-    bankName: "United Bank for Africa (UBA)",
-    accountNumber: "1029384756",
-    accountName: "Supreme Agro Processors Nig",
-    joinedDate: "20 Feb 2026",
-    status: "Verified",
-    totalSalesCount: 19,
-    totalOrdersCount: 11,
-  },
-  {
-    id: "usr-s01",
-    name: "AgroMech Machinery & Tractor Lease",
-    email: "rentals@agromech.ng",
-    phone: "+234 805 777 9900",
-    role: "service-provider",
-    address: "Central Mechanization Hub, Iwo Road, Ibadan, Oyo State",
-    bankName: "Guaranty Trust Bank (GTBank)",
-    accountNumber: "0149586738",
-    accountName: "AgroMech Solutions Ltd",
-    joinedDate: "10 Feb 2026",
-    status: "Verified",
-    totalSalesCount: 31,
-    totalOrdersCount: 4,
-  },
-  {
-    id: "usr-s02",
-    name: "IITA Certified Seedling & Stems Hub",
-    email: "stems@iitahub.org",
-    phone: "+234 818 222 3344",
-    role: "service-provider",
-    address: "Research Outpost 2, Moor Plantation, Ibadan, Oyo State",
-    bankName: "Sterling Bank",
-    accountNumber: "0059382716",
-    accountName: "Cassava Stem Multiplication Co.",
-    joinedDate: "25 Jan 2026",
-    status: "Verified",
-    totalSalesCount: 16,
-    totalOrdersCount: 1,
-  },
-  {
-    id: "usr-c01",
-    name: "Chukwudi Okafor",
-    email: "chukwudi.okafor@gmail.com",
-    phone: "+234 803 999 1122",
-    role: "consumer",
-    address: "24 Admiralty Way, Lekki Phase 1, Lagos State",
-    bankName: "Standard Chartered",
-    accountNumber: "5002938471",
-    accountName: "Chukwudi Okafor",
-    joinedDate: "02 Mar 2026",
-    status: "Active",
-    totalSalesCount: 0,
-    totalOrdersCount: 6,
-  },
-  {
-    id: "usr-c02",
-    name: "Amina Yusuf",
-    email: "amina.yusuf@outlook.com",
-    phone: "+234 814 555 8899",
-    role: "consumer",
-    address: "15 Gana Street, Maitama, Abuja FCT",
-    bankName: "Stanbic IBTC Bank",
-    accountNumber: "9048372615",
-    accountName: "Amina Yusuf",
-    joinedDate: "14 Feb 2026",
-    status: "Active",
-    totalSalesCount: 0,
-    totalOrdersCount: 4,
-  },
-];
-
-const INITIAL_TRANSACTIONS: MarketOrderItem[] = [
-  {
-    id: "ord-101",
-    orderNumber: "ORD-948201",
-    productTitle: "Fresh TME 419 High-Starch Cassava (Grade A)",
-    category: "Raw Cassava Batches",
-    sellerName: "Musa Ibrahim Farm Ent.",
-    sellerRole: "farmer",
-    buyerName: "PrimeStarch & Flour Mills Ltd",
-    buyerRole: "processor",
-    quantity: 25,
-    unit: "Tonnes",
-    totalAmount: 3750000,
-    date: "28 Sep 2026",
-    deliveryMethod: "yucavault-pickup",
-    paymentMethod: "bank-transfer",
-    paymentStatus: "Paid to YucaChain Escrow",
-    payoutStatus: "Pending Admin Payout",
-    sellerBankDetails: {
-      bankName: "First Bank of Nigeria",
-      accountNumber: "3084920194",
-      accountName: "Musa Ibrahim Farm Ent.",
-    },
-  },
-  {
-    id: "ord-102",
-    orderNumber: "ORD-839120",
-    productTitle: "High Quality Cassava Flour (HQCF) 50kg Bags",
-    category: "Process Products",
-    sellerName: "PrimeStarch & Flour Mills Ltd",
-    sellerRole: "processor",
-    buyerName: "Chukwudi Okafor",
-    buyerRole: "consumer",
-    quantity: 10,
-    unit: "Bags",
-    totalAmount: 480000,
-    date: "29 Sep 2026",
-    deliveryMethod: "direct-delivery",
-    paymentMethod: "bank-transfer",
-    paymentStatus: "Paid to YucaChain Escrow",
-    payoutStatus: "Paid / Disbursed",
-    payoutDate: "30 Sep 2026",
-    sellerBankDetails: {
-      bankName: "Access Bank",
-      accountNumber: "0094857382",
-      accountName: "PrimeStarch & Flour Mills Ltd",
-    },
-  },
-  {
-    id: "ord-103",
-    orderNumber: "ORD-729481",
-    productTitle: "Heavy-Duty Cassava Ridge Tractor Lease (5 Days)",
-    category: "Machinery Lease",
-    sellerName: "AgroMech Solutions Ltd",
-    sellerRole: "service-provider",
-    buyerName: "Grace Adeyemi",
-    buyerRole: "farmer",
-    quantity: 5,
-    unit: "Days",
-    totalAmount: 625000,
-    date: "30 Sep 2026",
-    deliveryMethod: "direct-delivery",
-    paymentMethod: "bank-transfer",
-    paymentStatus: "Paid to YucaChain Escrow",
-    payoutStatus: "Pending Admin Payout",
-    sellerBankDetails: {
-      bankName: "Guaranty Trust Bank (GTBank)",
-      accountNumber: "0149586738",
-      accountName: "AgroMech Solutions Ltd",
-    },
-  },
-  {
-    id: "ord-104",
-    orderNumber: "ORD-618492",
-    productTitle: "Premium Yellow Cassava Garri (Ijebu White & Yellow)",
-    category: "Process Products",
-    sellerName: "Supreme Agro Processors Nig",
-    sellerRole: "processor",
-    buyerName: "Amina Yusuf",
-    buyerRole: "consumer",
-    quantity: 5,
-    unit: "Bags",
-    totalAmount: 175000,
-    date: "01 Oct 2026",
-    deliveryMethod: "direct-delivery",
-    paymentMethod: "bank-transfer",
-    paymentStatus: "Paid to YucaChain Escrow",
-    payoutStatus: "Pending Admin Payout",
-    sellerBankDetails: {
-      bankName: "United Bank for Africa (UBA)",
-      accountNumber: "1029384756",
-      accountName: "Supreme Agro Processors Nig",
-    },
-  },
-  {
-    id: "ord-105",
-    orderNumber: "ORD-509381",
-    productTitle: "Certified Pro-Vitamin A Cassava Stems (50 Bundles)",
-    category: "Inputs & Seeds",
-    sellerName: "Cassava Stem Multiplication Co.",
-    sellerRole: "service-provider",
-    buyerName: "Musa Ibrahim Farm Ent.",
-    buyerRole: "farmer",
-    quantity: 50,
-    unit: "Bundles",
-    totalAmount: 225000,
-    date: "25 Sep 2026",
-    deliveryMethod: "direct-delivery",
-    paymentMethod: "bank-transfer",
-    paymentStatus: "Paid to YucaChain Escrow",
-    payoutStatus: "Paid / Disbursed",
-    payoutDate: "27 Sep 2026",
-    sellerBankDetails: {
-      bankName: "Sterling Bank",
-      accountNumber: "0059382716",
-      accountName: "Cassava Stem Multiplication Co.",
-    },
-  },
-];
-
-const ROLE_PROFILES: Record<MarketplaceRole, UserProfile> = {
-  farmer: {
-    id: "usr-f01",
-    name: "Musa Ibrahim",
-    email: "musa.ibrahim@farms.ng",
-    phone: "+234 803 456 7890",
-    role: "farmer",
-    farmAddress: "Iseyin Agro Cluster, Farm Block 4B, Oyo State",
-    bankName: "First Bank of Nigeria",
-    accountNumber: "3084920194",
-    accountName: "Musa Ibrahim Farm Ent.",
-  },
-  processor: {
-    id: "usr-p01",
-    name: "PrimeStarch & Flour Mills Ltd",
-    email: "procurement@primestarch.com",
-    phone: "+234 802 888 1234",
-    role: "processor",
-    facilityAddress: "Plot 14 Industrial Layout, Agbara Industrial Zone, Ogun State",
-    bankName: "Access Bank",
-    accountNumber: "0094857382",
-    accountName: "PrimeStarch & Flour Mills Ltd",
-  },
-  "service-provider": {
-    id: "usr-s01",
-    name: "AgroMech Machinery & Tractor Lease",
-    email: "rentals@agromech.ng",
-    phone: "+234 805 777 9900",
-    role: "service-provider",
-    businessAddress: "Central Mechanization Hub, Iwo Road, Ibadan, Oyo State",
-    bankName: "Guaranty Trust Bank (GTBank)",
-    accountNumber: "0149586738",
-    accountName: "AgroMech Solutions Ltd",
-  },
-  consumer: {
-    id: "usr-c01",
-    name: "Chukwudi Okafor",
-    email: "chukwudi.okafor@gmail.com",
-    phone: "+234 803 999 1122",
-    role: "consumer",
-    deliveryAddress: "24 Admiralty Way, Lekki Phase 1, Lagos State",
-    bankName: "Standard Chartered",
-    accountNumber: "5002938471",
-    accountName: "Chukwudi Okafor",
-  },
+const EMPTY_USER: UserProfile = {
+  id: "",
+  name: "Marketplace User",
+  email: "",
+  phone: "",
+  role: "farmer",
 };
 
 const MarketplaceRoleContext = createContext<MarketplaceRoleContextType | undefined>(undefined);
 
 export function MarketplaceRoleProvider({ children }: { children: React.ReactNode }) {
-  const [activeRole, setActiveRoleState] = useState<MarketplaceRole>("farmer");
-  const [currentUser, setCurrentUser] = useState<UserProfile>(ROLE_PROFILES.farmer);
-  const [allUsers, setAllUsers] = useState<UserRecordForAdmin[]>(INITIAL_USERS);
-  const [transactions, setTransactions] = useState<MarketOrderItem[]>(INITIAL_TRANSACTIONS);
+  const { user: authUser } = useAuth();
 
-  // Sync profile when role switches
-  const setActiveRole = (role: MarketplaceRole) => {
-    setActiveRoleState(role);
-    setCurrentUser(ROLE_PROFILES[role]);
+  const [activeRole, setActiveRoleState] = useState<MarketplaceRole>(() => {
+    return normalizeRole(authUser?.role);
+  });
+
+  const [currentUser, setCurrentUser] = useState<UserProfile>(() => ({
+    ...EMPTY_USER,
+    id: authUser?.id || "",
+    name: authUser?.name || "Marketplace User",
+    email: authUser?.email || "",
+    phone: authUser?.phoneNumber || "",
+    role: normalizeRole(authUser?.role),
+    farmAddress: authUser?.farmAddress,
+    facilityAddress: authUser?.facilityAddress,
+    businessAddress: authUser?.businessAddress,
+    deliveryAddress: authUser?.deliveryAddress,
+    companyName: authUser?.companyName,
+    businessName: authUser?.businessName,
+  }));
+
+  const [allUsers, setAllUsers] = useState<UserRecordForAdmin[]>([]);
+  const [transactions, setTransactions] = useState<MarketOrderItem[]>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const stored = localStorage.getItem("yuca_marketplace_orders");
+        if (stored) return JSON.parse(stored);
+      } catch {}
+    }
+    return [];
+  });
+
+  // Load profile and bank details automatically from backend
+  const loadProfile = useCallback(async () => {
+    const rawRole = authUser?.role;
+    const resolvedRole = normalizeRole(rawRole);
+    setActiveRoleState(resolvedRole);
+
+    const hasToken =
+      typeof window !== "undefined" &&
+      Boolean(
+        localStorage.getItem("accessToken") ||
+        localStorage.getItem("yuca_access_token")
+      );
+
+    // Only query backend if user is authenticated with a token
+    if (!hasToken && !authUser) {
+      return;
+    }
+
+    let profileData: any = null;
+    let bankData: any = null;
+
     try {
-      localStorage.setItem("yuca_active_marketplace_role", role);
-    } catch {}
-  };
+      profileData = await getUserProfile();
+    } catch {
+      // Backend may not be authenticated yet or offline
+    }
+
+    if (resolvedRole !== "consumer") {
+      try {
+        bankData = await getUserBankDetails();
+      } catch {
+        // Bank details may not be set yet
+      }
+    }
+
+    const resolvedName =
+      profileData?.name ||
+      (profileData?.firstName && profileData?.lastName
+        ? `${profileData.firstName} ${profileData.lastName}`
+        : null) ||
+      authUser?.name ||
+      "Marketplace User";
+
+    const resolvedPhone =
+      profileData?.phoneNumber ||
+      authUser?.phoneNumber ||
+      "";
+
+    const resolvedEmail =
+      profileData?.email ||
+      authUser?.email ||
+      "";
+
+    const updatedProfile: UserProfile = {
+      id: profileData?.id || authUser?.id || "user",
+      name: resolvedName,
+      firstName: profileData?.firstName || authUser?.firstName || "",
+      lastName: profileData?.lastName || authUser?.lastName || "",
+      email: resolvedEmail,
+      phone: resolvedPhone,
+      role: resolvedRole,
+      avatarUrl: profileData?.avatarUrl || authUser?.avatarUrl,
+      companyName: profileData?.companyName || authUser?.companyName,
+      businessName: profileData?.businessName || authUser?.businessName,
+      farmName: profileData?.farmName,
+      address: profileData?.address,
+      farmAddress: profileData?.farmAddress || authUser?.farmAddress,
+      facilityAddress: profileData?.facilityAddress || authUser?.facilityAddress,
+      businessAddress: profileData?.businessAddress || authUser?.businessAddress,
+      deliveryAddress: profileData?.deliveryAddress || authUser?.deliveryAddress,
+      state: profileData?.state,
+      lga: profileData?.lga,
+      bankName: bankData?.bankName || profileData?.bankName,
+      accountNumber: bankData?.accountNumber || profileData?.accountNumber,
+      accountName: bankData?.accountName || profileData?.accountName || resolvedName,
+    };
+
+    setCurrentUser(updatedProfile);
+  }, [authUser]);
 
   useEffect(() => {
-    try {
-      const savedRole = localStorage.getItem("yuca_active_marketplace_role") as MarketplaceRole;
-      if (savedRole && ROLE_PROFILES[savedRole]) {
-        setActiveRoleState(savedRole);
-        setCurrentUser(ROLE_PROFILES[savedRole]);
-      }
-    } catch {}
-  }, []);
+    loadProfile();
+  }, [loadProfile]);
 
-  const updateCurrentUser = (updates: Partial<UserProfile>) => {
-    setCurrentUser((prev) => {
-      const updated = { ...prev, ...updates };
-      // Also update in allUsers for Admin view
-      setAllUsers((users) =>
-        users.map((u) =>
-          u.id === prev.id
-            ? {
-                ...u,
-                name: updated.name || u.name,
-                phone: updated.phone || u.phone,
-                bankName: updated.bankName || u.bankName,
-                accountNumber: updated.accountNumber || u.accountNumber,
-                accountName: updated.accountName || u.accountName,
-                address:
-                  updated.farmAddress ||
-                  updated.facilityAddress ||
-                  updated.businessAddress ||
-                  updated.deliveryAddress ||
-                  u.address,
-              }
-            : u
-        )
-      );
-      return updated;
-    });
+  const setActiveRole = (role: MarketplaceRole) => {
+    setActiveRoleState(role);
+    setCurrentUser((prev) => ({ ...prev, role }));
+  };
+
+  const updateCurrentUser = async (updates: Partial<UserProfile>) => {
+    // 1. Optimistic local update
+    setCurrentUser((prev) => ({
+      ...prev,
+      ...updates,
+    }));
+
+    // 2. Persist to PUT /api/v1/user/profile
+    try {
+      const fullName = updates.name || currentUser.name;
+      const nameParts = fullName.trim().split(" ");
+      const firstName = updates.firstName ?? (nameParts[0] || "");
+      const lastName = updates.lastName ?? (nameParts.slice(1).join(" ") || "");
+
+      await apiUpdateUserProfile({
+        name: fullName,
+        firstName,
+        lastName,
+        phoneNumber: updates.phone ?? currentUser.phone,
+        address: updates.address ?? currentUser.address,
+        farmAddress: updates.farmAddress ?? currentUser.farmAddress,
+        facilityAddress: updates.facilityAddress ?? currentUser.facilityAddress,
+        businessAddress: updates.businessAddress ?? currentUser.businessAddress,
+        deliveryAddress: updates.deliveryAddress ?? currentUser.deliveryAddress,
+        avatarUrl: updates.avatarUrl ?? currentUser.avatarUrl,
+        state: updates.state ?? currentUser.state,
+        lga: updates.lga ?? currentUser.lga,
+        farmName: updates.farmName ?? currentUser.farmName,
+        businessName: updates.businessName ?? currentUser.businessName,
+        companyName: updates.companyName ?? currentUser.companyName,
+      });
+
+      // 3. Persist to PUT /api/v1/user/bank-details if non-consumer and bank info provided
+      if (
+        activeRole !== "consumer" &&
+        (updates.bankName || updates.accountNumber || updates.accountName)
+      ) {
+        await apiUpdateUserBankDetails({
+          bankName: updates.bankName || currentUser.bankName || "",
+          accountNumber: updates.accountNumber || currentUser.accountNumber || "",
+          accountName: updates.accountName || currentUser.accountName || fullName,
+        }).catch(() => {});
+      }
+    } catch (err) {
+      console.warn("Backend profile sync notice:", err);
+    }
+  };
+
+  const reloadUserProfile = async () => {
+    await loadProfile();
   };
 
   const addListing = (listing: any) => {
-    // Add locally to window/storage or trigger visual confirmation
     try {
       const existing = JSON.parse(localStorage.getItem("yuca_custom_listings") || "[]");
       existing.unshift(listing);
@@ -453,23 +326,32 @@ export function MarketplaceRoleProvider({ children }: { children: React.ReactNod
       paymentStatus: "Paid to YucaChain Escrow",
       payoutStatus: "Pending Admin Payout",
       sellerBankDetails: orderData.sellerBankDetails || {
-        bankName: "First Bank",
-        accountNumber: "3084920194",
-        accountName: "Musa Ibrahim Farm Ent.",
+        bankName: currentUser.bankName || "First Bank",
+        accountNumber: currentUser.accountNumber || "",
+        accountName: currentUser.accountName || currentUser.name,
       },
     };
 
-    setTransactions((prev) => [newOrder, ...prev]);
+    setTransactions((prev) => {
+      const updated = [newOrder, ...prev];
+      if (typeof window !== "undefined") {
+        try {
+          localStorage.setItem("yuca_marketplace_orders", JSON.stringify(updated));
+        } catch {}
+      }
+      return updated;
+    });
+
     return orderNum;
   };
 
   const disbursePayout = (orderId: string) => {
-    setTransactions((prev) =>
-      prev.map((t) =>
+    setTransactions((prev) => {
+      const updated = prev.map((t) =>
         t.id === orderId || t.orderNumber === orderId
           ? {
               ...t,
-              payoutStatus: "Paid / Disbursed",
+              payoutStatus: "Paid / Disbursed" as const,
               payoutDate: new Date().toLocaleDateString("en-US", {
                 month: "short",
                 day: "numeric",
@@ -477,13 +359,22 @@ export function MarketplaceRoleProvider({ children }: { children: React.ReactNod
               }),
             }
           : t
-      )
-    );
+      );
+      if (typeof window !== "undefined") {
+        try {
+          localStorage.setItem("yuca_marketplace_orders", JSON.stringify(updated));
+        } catch {}
+      }
+      return updated;
+    });
   };
 
-  // Filter for active role
-  const myOrders = transactions.filter((t) => t.buyerName === currentUser.name || t.buyerRole === activeRole);
-  const mySales = transactions.filter((t) => t.sellerName === currentUser.name || t.sellerRole === activeRole);
+  const myOrders = transactions.filter(
+    (t) => t.buyerName === currentUser.name || t.buyerRole === activeRole
+  );
+  const mySales = transactions.filter(
+    (t) => t.sellerName === currentUser.name || t.sellerRole === activeRole
+  );
 
   return (
     <MarketplaceRoleContext.Provider
@@ -492,6 +383,7 @@ export function MarketplaceRoleProvider({ children }: { children: React.ReactNod
         setActiveRole,
         currentUser,
         updateCurrentUser,
+        reloadUserProfile,
         allUsers,
         myOrders,
         mySales,

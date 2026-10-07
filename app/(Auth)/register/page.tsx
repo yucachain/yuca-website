@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Formik, Form } from "formik";
 import FormInput from "@/app/components/ui/FormInput";
+import FormSelect from "@/app/components/ui/FormSelect";
 import NumericFormInput from "@/app/components/ui/NumericFormInput";
 import PasswordInput from "@/app/components/ui/PasswordInput";
 import Button from "@/app/components/ui/Button";
@@ -21,6 +22,10 @@ import {
   MarketplaceRoleType,
 } from "@/app/components/validation/schema";
 import {
+  NIGERIAN_STATES,
+  getLgasForState,
+} from "@/app/marketplace/components/locationOptions";
+import {
   Sprout,
   Factory,
   Tractor,
@@ -29,6 +34,7 @@ import {
   MapPin,
   CheckCircle2,
 } from "lucide-react";
+import { toast } from "sonner";
 
 interface RoleOption {
   id: MarketplaceRoleType;
@@ -88,17 +94,29 @@ export default function RegisterPage() {
     setStatus(null);
 
     try {
-      // Register through AuthContext / API
+      const names = values.fullName.trim().split(/\s+/).filter(Boolean);
+      const firstName = names[0] || "User";
+      const lastName = names.slice(1).join(" ") || firstName;
+      const cleanEmail = values.email ? values.email.trim() : "";
+
+      // Register through AuthContext / API with exact request body contract
       await register({
-        fullName: values.fullName.trim(),
-        phoneNumber: values.phoneNumber.trim(),
-        password: values.password,
         role: values.role,
-        farmAddress: values.farmAddress,
-        facilityAddress: values.facilityAddress,
-        businessAddress: values.businessAddress,
-        deliveryAddress: values.deliveryAddress,
-        businessName: values.companyName,
+        fullName: values.fullName.trim(),
+        firstName,
+        lastName,
+        phoneNumber: values.phoneNumber.trim(),
+        email: cleanEmail,
+        password: values.password,
+        farmAddress: values.farmAddress || "",
+        companyName: values.companyName || "",
+        facilityAddress: values.facilityAddress || "",
+        businessAddress: values.businessAddress || "",
+        deliveryAddress: values.deliveryAddress || "",
+        state: values.state || "",
+        lga: values.lga || "",
+        farmName: values.farmName || "",
+        businessName: values.businessName || values.companyName || "",
       });
 
       // Update role & profile in MarketplaceRoleContext
@@ -106,22 +124,25 @@ export default function RegisterPage() {
       updateCurrentUser({
         name: values.fullName.trim(),
         phone: values.phoneNumber.trim(),
+        email: cleanEmail,
         role: values.role as MarketplaceRole,
         farmAddress: values.farmAddress,
         facilityAddress: values.facilityAddress,
         businessAddress: values.businessAddress,
         deliveryAddress: values.deliveryAddress,
         companyName: values.companyName,
-        businessName: values.companyName,
+        businessName: values.businessName || values.companyName,
       });
 
-      router.push("/marketplace");
+      toast.success("Account created successfully! Please log in to continue.");
+      router.push("/login");
     } catch (err: unknown) {
       const message =
         err instanceof Error
           ? err.message
           : "An unexpected error occurred during registration. Please try again.";
       setStatus(message);
+      toast.error(message);
     } finally {
       setSubmitting(false);
     }
@@ -129,7 +150,7 @@ export default function RegisterPage() {
 
   return (
     <AuthLayout>
-      <AuthCard title="Create Account" className="max-w-md sm:max-w-xl">
+      <AuthCard title="Create Account" className="max-w-xl sm:max-w-2xl">
         {/* Role Badge */}
         <p className="text-center text-xs text-[#226049] font-medium bg-[#226049]/10 rounded-full px-3 py-1 mb-5 -mt-2 w-fit mx-auto">
           For Marketplace Users
@@ -147,6 +168,7 @@ export default function RegisterPage() {
             };
 
             const currentRoleObj = ROLES.find((r) => r.id === values.role) || ROLES[0];
+            const lgaOptions = useMemo(() => getLgasForState(values.state), [values.state]);
 
             return (
               <Form className="space-y-4">
@@ -186,37 +208,78 @@ export default function RegisterPage() {
                 {/* Full Name */}
                 <FormInput
                   name="fullName"
-                  label={values.role === "processor" ? "Full Name" : "Full Name"}
+                  label="Full Name *"
                   type="text"
                   placeholder={values.role === "farmer" ? "e.g. Musa Ibrahim" : "e.g. John Doe"}
                   autoComplete="name"
                 />
 
-                {/* Phone Number (Strictly numeric, text input blocked + immediate error) */}
-                <NumericFormInput
-                  name="phoneNumber"
-                  label="Phone Number *"
-                  placeholder="e.g. 08012345678 or +2348012345678"
-                  allowLeadingPlus={true}
-                  maxLength={15}
-                  helperText="Numbers only."
-                />
-
-                {/* Role Specific Address / Facility Information */}
-                {values.role === "farmer" && (
-                  <FormInput
-                    name="farmAddress"
-                    label="Farm Address"
-                    type="text"
-                    placeholder="e.g. Iseyin Cassava Cluster, Block 4B, Oyo State"
+                {/* Phone Number & Email (Side by Side) */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                  <NumericFormInput
+                    name="phoneNumber"
+                    label="Phone Number *"
+                    placeholder="08012345678"
+                    allowLeadingPlus={true}
+                    maxLength={15}
+                    helperText="Required for login identifier."
                   />
+
+                  <FormInput
+                    name="email"
+                    label="Email Address (Optional)"
+                    type="email"
+                    placeholder="e.g. user@example.com"
+                    autoComplete="email"
+                    helperText="Optional for notifications."
+                  />
+                </div>
+
+                {/* State & LGA (Side by Side with Live LGA Selection) */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                  <FormSelect
+                    name="state"
+                    label="State"
+                    placeholder="Select State"
+                    options={NIGERIAN_STATES}
+                    onChange={(e) => {
+                      setFieldValue("state", e.target.value);
+                      setFieldValue("lga", "");
+                    }}
+                  />
+
+                  <FormSelect
+                    name="lga"
+                    label="LGA / Town"
+                    placeholder={values.state ? "Select LGA" : "Select State first"}
+                    options={lgaOptions}
+                    disabled={!values.state || lgaOptions.length === 0}
+                  />
+                </div>
+
+                {/* Role Specific Address / Facility Information (Side by Side) */}
+                {values.role === "farmer" && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                    <FormInput
+                      name="farmName"
+                      label="Farm Name"
+                      type="text"
+                      placeholder="e.g. Green Valley Farm"
+                    />
+                    <FormInput
+                      name="farmAddress"
+                      label="Farm Address *"
+                      type="text"
+                      placeholder="e.g. Block 4B, Iseyin Cluster"
+                    />
+                  </div>
                 )}
 
                 {values.role === "processor" && (
-                  <div className="space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                     <FormInput
                       name="companyName"
-                      label="Company Name *"
+                      label="Company / Business Name *"
                       type="text"
                       placeholder="e.g. PrimeStarch Mills Ltd"
                     />
@@ -224,13 +287,13 @@ export default function RegisterPage() {
                       name="facilityAddress"
                       label="Processing Facility Address *"
                       type="text"
-                      placeholder="e.g. Plot 14 Industrial Layout, Agbara, Ogun State"
+                      placeholder="e.g. Plot 14 Industrial Layout, Agbara"
                     />
                   </div>
                 )}
 
                 {values.role === "service-provider" && (
-                  <div className="space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                     <FormInput
                       name="companyName"
                       label="Business Name *"
@@ -241,7 +304,7 @@ export default function RegisterPage() {
                       name="businessAddress"
                       label="Workshop Address *"
                       type="text"
-                      placeholder="e.g. Central Mechanization Yard, Iwo Road, Ibadan"
+                      placeholder="e.g. Central Yard, Iwo Road, Ibadan"
                     />
                   </div>
                 )}
@@ -255,8 +318,8 @@ export default function RegisterPage() {
                   />
                 )}
 
-                {/* Password & Confirm Password */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                {/* Password & Confirm Password (Side by Side) */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-1">
                   <PasswordInput
                     name="password"
                     label="Password *"

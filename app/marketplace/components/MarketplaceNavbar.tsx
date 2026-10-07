@@ -27,6 +27,7 @@ import {
 } from "../context/MarketplaceRoleContext";
 import UserOrdersAndSalesModal from "./UserOrdersAndSalesModal";
 import RoleProfileSettingsModal from "./RoleProfileSettingsModal";
+import { toast } from "sonner";
 
 export interface MarketplaceUser {
   initials?: string;
@@ -86,23 +87,18 @@ export default function MarketplaceNavbar({
   onToggleMobileSidebar,
 }: MarketplaceNavbarProps) {
   const router = useRouter();
-  const { activeRole, setActiveRole, currentUser } = useMarketplaceRole();
+  const { activeRole, currentUser } = useMarketplaceRole();
 
   const [menuOpen, setMenuOpen] = useState(false);
-  const [roleMenuOpen, setRoleMenuOpen] = useState(false);
   const [showOrdersModal, setShowOrdersModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
 
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const roleDropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setMenuOpen(false);
-      }
-      if (roleDropdownRef.current && !roleDropdownRef.current.contains(event.target as Node)) {
-        setRoleMenuOpen(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -178,66 +174,8 @@ export default function MarketplaceNavbar({
             </div>
           )}
 
-          {/* Right Action Icons & Role Switcher */}
+          {/* Right Action Icons & Role Display */}
           <div className="flex items-center gap-2 sm:gap-3">
-            {/* Interactive Role Switcher Pill with slight gold accent */}
-            <div className="relative" ref={roleDropdownRef}>
-              <button
-                type="button"
-                onClick={() => setRoleMenuOpen((v) => !v)}
-                className={`flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 text-xs font-bold border transition-all cursor-pointer shadow-2xs ${currentMeta.color}`}
-                title="Switch active user role"
-              >
-                <span>{currentMeta.icon}</span>
-                <span className="hidden sm:inline">Role: {currentMeta.label}</span>
-                <span className="sm:hidden">{currentMeta.label.split(" ")[0]}</span>
-                <ChevronDown size={12} className="opacity-70" />
-              </button>
-
-              {roleMenuOpen && (
-                <div className="absolute right-0 mt-2 w-56 rounded-2xl border border-gray-100 bg-white p-2 shadow-xl animate-in fade-in slide-in-from-top-2 z-50">
-                  <p className="px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider text-gray-400">
-                    Switch Active Marketplace Role
-                  </p>
-                  {(Object.keys(ROLE_META) as MarketplaceRole[]).map((roleKey) => {
-                    const meta = ROLE_META[roleKey];
-                    const isSelected = activeRole === roleKey;
-                    return (
-                      <button
-                        key={roleKey}
-                        type="button"
-                        onClick={() => {
-                          setActiveRole(roleKey);
-                          setRoleMenuOpen(false);
-                        }}
-                        className={`flex w-full items-center justify-between rounded-xl px-2.5 py-2 text-xs font-semibold transition-colors cursor-pointer ${
-                          isSelected
-                            ? "bg-emerald-50 text-[#226049] font-bold"
-                            : "text-gray-700 hover:bg-gray-50"
-                        }`}
-                      >
-                        <div className="flex items-center gap-2">
-                          <span className="text-gray-500">{meta.icon}</span>
-                          <span>{meta.label}</span>
-                        </div>
-                        {isSelected && (
-                          <span className="h-1.5 w-1.5 rounded-full bg-[#226049]" />
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-
-            {/* Register Link on Navbar */}
-            <Link
-              href="/register"
-              className="hidden md:inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-white bg-[#226049] rounded-xl hover:bg-[#1b4d3a] transition-all shadow-xs"
-            >
-              <UserPlus size={14} />
-              <span>Register</span>
-            </Link>
 
             {/* Notifications */}
             <button
@@ -294,9 +232,8 @@ export default function MarketplaceNavbar({
                 <ChevronDown
                   size={14}
                   strokeWidth={2}
-                  className={`text-gray-400 transition-transform duration-200 ${
-                    menuOpen ? "rotate-180 text-gray-700" : ""
-                  }`}
+                  className={`text-gray-400 transition-transform duration-200 ${menuOpen ? "rotate-180 text-gray-700" : ""
+                    }`}
                 />
               </button>
 
@@ -356,6 +293,7 @@ export default function MarketplaceNavbar({
                       type="button"
                       onClick={() => {
                         setMenuOpen(false);
+                        toast.success("Signed out successfully");
                         router.push("/login");
                       }}
                       className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 transition-colors cursor-pointer"

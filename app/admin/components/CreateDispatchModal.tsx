@@ -5,6 +5,7 @@ import { X, Truck, MapPin, Loader2, Check, AlertCircle } from "lucide-react";
 import type { CreateDispatchRequest, DispatchRecord, VaultUnit } from "@/app/types/batchVaultDispatch";
 import { dispatchService } from "@/app/Services/dispatchService";
 import { vaultService } from "@/app/Services/vaultService";
+import { toast } from "sonner";
 
 export interface CreateDispatchModalProps {
   open: boolean;
@@ -78,6 +79,7 @@ export default function CreateDispatchModal({
 
       const result = await dispatchService.createDispatch(payload);
       setSuccessMsg(true);
+      toast.success(`Dispatch created with tracking #${trackingNumber}`);
       setTimeout(() => {
         setSuccessMsg(false);
         onSuccess(result);
@@ -85,7 +87,9 @@ export default function CreateDispatchModal({
       }, 1000);
     } catch (err: any) {
       console.error("Failed to create dispatch release:", err);
-      setErrorMsg(err?.message || "Failed to create dispatch release on server. Please check your network and try again.");
+      const msg = err?.message || "Failed to create dispatch release on server. Please check your network and try again.";
+      setErrorMsg(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }

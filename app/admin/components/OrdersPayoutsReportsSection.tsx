@@ -30,6 +30,7 @@ import {
   MarketplaceRole,
   MarketOrderItem,
 } from "@/app/marketplace/context/MarketplaceRoleContext";
+import { toast } from "sonner";
 
 const ROLE_BADGES: Record<
   MarketplaceRole,
@@ -137,6 +138,7 @@ export default function OrdersPayoutsReportsSection() {
   const copyToClipboard = (text: string) => {
     navigator.clipboard?.writeText(text);
     setCopiedAccount(text);
+    toast.success("Account details copied to clipboard!");
     setTimeout(() => setCopiedAccount(null), 2000);
   };
 
@@ -147,11 +149,11 @@ export default function OrdersPayoutsReportsSection() {
     setTimeout(() => {
       disbursePayout(selectedOrderForPayout.id);
       setProcessing(false);
-      setSuccessToast(
-        `Disbursed ₦${selectedOrderForPayout.totalAmount.toLocaleString()} to ${
-          selectedOrderForPayout.sellerName
-        } (${selectedOrderForPayout.sellerBankDetails.bankName}). Order settled!`
-      );
+      const msg = `Disbursed ₦${selectedOrderForPayout.totalAmount.toLocaleString()} to ${
+        selectedOrderForPayout.sellerName
+      } (${selectedOrderForPayout.sellerBankDetails.bankName}). Order settled!`;
+      setSuccessToast(msg);
+      toast.success(msg);
       setSelectedOrderForPayout(null);
       setPayoutNotes("");
       setTimeout(() => setSuccessToast(null), 5000);
@@ -206,6 +208,7 @@ export default function OrdersPayoutsReportsSection() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    toast.success("Financial report exported as CSV successfully!");
   };
 
   // Export to PDF
@@ -291,6 +294,7 @@ export default function OrdersPayoutsReportsSection() {
     });
 
     doc.save(`YucaChain_Financial_Report_${new Date().toISOString().split("T")[0]}.pdf`);
+    toast.success("Financial PDF report generated and downloaded successfully!");
   };
 
   return (

@@ -15,6 +15,8 @@ export interface FormSelectProps {
   helperText?: string;
   id?: string;
   disabled?: boolean;
+  className?: string;
+  onChange?: (e: React.ChangeEvent<HTMLSelectElement>) => void;
 }
 
 /**
@@ -28,6 +30,8 @@ export default function FormSelect({
   helperText,
   id,
   disabled,
+  className,
+  onChange,
 }: FormSelectProps) {
   const [field, meta] = useField(name);
   const inputId = id ?? name;
@@ -56,10 +60,15 @@ export default function FormSelect({
             hasError ? "border-red-400" : "border-gray-300",
             !field.value && "text-gray-400",
             "disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400",
+            className,
           ]
             .filter(Boolean)
             .join(" ")}
           {...field}
+          onChange={(e) => {
+            field.onChange(e);
+            onChange?.(e);
+          }}
         >
           <option value="" disabled>
             {placeholder}

@@ -11,6 +11,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { useMarketplaceRole } from "../context/MarketplaceRoleContext";
+import { toast } from "sonner";
 
 interface ListProcessedProductModalProps {
   isOpen: boolean;
@@ -71,6 +72,7 @@ export default function ListProcessedProductModal({
 
       addListing(newListing);
       onSuccess?.(newListing);
+      toast.success(`Processed product "${formData.title}" listed successfully!`);
 
       setLoading(false);
       setSuccess(true);
