@@ -1,11 +1,14 @@
 import {
   AdminOverviewStats,
   User,
+  AdminGetUsersParams,
   UpdateAdminUserStatusRequest,
   MarketOrder,
+  AdminGetMarketOrdersParams,
   ConsolidateMarketOrdersRequest,
   AdminCreateDispatchRequest,
   Payout,
+  PlatformAdminSettings,
   UpdateAdminSettingsRequest,
   UserTypeItem,
   OrderStatusItem,
@@ -92,22 +95,55 @@ export const AdminApiService = {
 
   /**
    * 2. GET /api/v1/admin/users
-   * Get all registered users
+   * Query parameters: search, userType, status, page, pageSize
    */
-  getUsers: (): Promise<User[]> => {
-    return apiFetch<User[]>('/api/v1/admin/users', { method: 'GET' });
+  getUsers: async (
+    params?: AdminGetUsersParams
+  ): Promise<User[] & { items: User[]; totalCount: number; page: number; pageSize: number }> => {
+    const query = new URLSearchParams();
+    if (params?.search?.trim()) query.append('search', params.search.trim());
+    if (params?.userType && params.userType !== 'all') query.append('userType', params.userType);
+    if (params?.status && params.status !== 'all') query.append('status', params.status);
+    query.append('page', String(params?.page || 1));
+    query.append('pageSize', String(params?.pageSize || 50));
+
+    const qs = query.toString() ? `?${query.toString()}` : '';
+    const res = await apiFetch<any>(`/api/v1/admin/users${qs}`, { method: 'GET' });
+
+    let items: User[] = [];
+    let totalCount = 0;
+    let page = params?.page || 1;
+    let pageSize = params?.pageSize || 50;
+
+    if (Array.isArray(res)) {
+      items = res;
+      totalCount = res.length;
+    } else if (res && typeof res === 'object') {
+      if (Array.isArray(res.items)) {
+        items = res.items;
+      } else if (Array.isArray(res.data)) {
+        items = res.data;
+      } else if (Array.isArray(res.users)) {
+        items = res.users;
+      }
+      totalCount = Number(res.totalCount ?? res.totalRecords ?? res.total ?? items.length);
+      page = Number(res.page ?? res.pageNumber ?? page);
+      pageSize = Number(res.pageSize ?? pageSize);
+    }
+
+    return Object.assign(items, { items, totalCount, page, pageSize }) as any;
   },
 
   /**
    * 3. PUT /api/v1/admin/users/{id}/status
-   * Update a specific user's status (e.g. activate, suspend)
+   * Update a specific user's status (PendingVerification, Active, Suspended, Deleted)
    */
   updateUserStatus: (
     userId: string,
     payload: UpdateAdminUserStatusRequest
-  ): Promise<{ success: boolean; message: string }> => {
-    return apiFetch<{ success: boolean; message: string }>(
-      `/api/v1/admin/users/${userId}/status`,
+  ): Promise<{ success?: boolean; successful?: boolean; message?: string }> => {
+    return apiFetch<{ success?: boolean; successful?: boolean; message?: string }>(
+      `/api/v1/admin/users/${encodeURIComponent(userId)}/status`,
       {
         method: 'PUT',
         body: JSON.stringify(payload),
@@ -117,12 +153,35 @@ export const AdminApiService = {
 
   /**
    * 4. GET /api/v1/admin/market-orders
-   * Retrieve all market orders
+   * Retrieve all market orders (parameters: status, page, pageSize)
    */
-  getMarketOrders: (): Promise<MarketOrder[]> => {
-    return apiFetch<MarketOrder[]>('/api/v1/admin/market-orders', {
+  getMarketOrders: async (
+    params?: AdminGetMarketOrdersParams
+  ): Promise<MarketOrder[] & { items: MarketOrder[]; totalCount: number }> => {
+    const query = new URLSearchParams();
+    if (params?.status && params.status !== 'all') query.append('status', params.status);
+    if (params?.page) query.append('page', String(params.page));
+    if (params?.pageSize) query.append('pageSize', String(params.pageSize));
+
+    const qs = query.toString() ? `?${query.toString()}` : '';
+    const res = await apiFetch<any>(`/api/v1/admin/market-orders${qs}`, {
       method: 'GET',
     });
+
+    let items: MarketOrder[] = [];
+    let totalCount = 0;
+
+    if (Array.isArray(res)) {
+      items = res;
+      totalCount = res.length;
+    } else if (res && typeof res === 'object') {
+      if (Array.isArray(res.items)) items = res.items;
+      else if (Array.isArray(res.data)) items = res.data;
+      else if (Array.isArray(res.orders)) items = res.orders;
+      totalCount = Number(res.totalCount ?? res.total ?? items.length);
+    }
+
+    return Object.assign(items, { items, totalCount }) as any;
   },
 
   /**
@@ -131,7 +190,7 @@ export const AdminApiService = {
    */
   consolidateMarketOrders: (
     payload: ConsolidateMarketOrdersRequest
-  ): Promise<{ success: boolean; consolidatedOrderId: string }> => {
+  ): Promise<{ success?: boolean; successful?: boolean; consolidatedOrderId?: string; message?: string }> => {
     return apiFetch('/api/v1/admin/market-orders/consolidate', {
       method: 'POST',
       body: JSON.stringify(payload),
@@ -144,7 +203,7 @@ export const AdminApiService = {
    */
   dispatchOrders: (
     payload: AdminCreateDispatchRequest
-  ): Promise<{ success: boolean; dispatchId: string }> => {
+  ): Promise<{ success?: boolean; successful?: boolean; dispatchId?: string; message?: string }> => {
     return apiFetch('/api/v1/admin/dispatch-orders', {
       method: 'POST',
       body: JSON.stringify(payload),
@@ -155,8 +214,22 @@ export const AdminApiService = {
    * 7. GET /api/v1/admin/payouts
    * Fetch all seller payouts
    */
-  getPayouts: (): Promise<Payout[]> => {
-    return apiFetch<Payout[]>('/api/v1/admin/payouts', { method: 'GET' });
+  getPayouts: async (): Promise<Payout[] & { items: Payout[]; totalCount: number }> => {
+    const res = await apiFetch<any>('/api/v1/admin/payouts', { method: 'GET' });
+    let items: Payout[] = [];
+    let totalCount = 0;
+
+    if (Array.isArray(res)) {
+      items = res;
+      totalCount = res.length;
+    } else if (res && typeof res === 'object') {
+      if (Array.isArray(res.items)) items = res.items;
+      else if (Array.isArray(res.data)) items = res.data;
+      else if (Array.isArray(res.payouts)) items = res.payouts;
+      totalCount = Number(res.totalCount ?? res.total ?? items.length);
+    }
+
+    return Object.assign(items, { items, totalCount }) as any;
   },
 
   /**
@@ -165,8 +238,8 @@ export const AdminApiService = {
    */
   disbursePayout: (
     payoutId: string
-  ): Promise<{ success: boolean; transactionReference: string }> => {
-    return apiFetch(`/api/v1/admin/payouts/${payoutId}/disburse`, {
+  ): Promise<{ success?: boolean; successful?: boolean; transactionReference?: string; message?: string }> => {
+    return apiFetch(`/api/v1/admin/payouts/${encodeURIComponent(payoutId)}/disburse`, {
       method: 'POST',
     });
   },
@@ -175,8 +248,8 @@ export const AdminApiService = {
    * 9. GET /api/v1/admin/settings
    * Retrieve administrative settings
    */
-  getSettings: (): Promise<Record<string, any>> => {
-    return apiFetch('/api/v1/admin/settings', { method: 'GET' });
+  getSettings: (): Promise<PlatformAdminSettings> => {
+    return apiFetch<PlatformAdminSettings>('/api/v1/admin/settings', { method: 'GET' });
   },
 
   /**
@@ -185,7 +258,7 @@ export const AdminApiService = {
    */
   updateSettings: (
     payload: UpdateAdminSettingsRequest
-  ): Promise<{ success: boolean; message: string }> => {
+  ): Promise<{ success?: boolean; successful?: boolean; message?: string; data?: any }> => {
     return apiFetch('/api/v1/admin/settings', {
       method: 'PUT',
       body: JSON.stringify(payload),
@@ -196,19 +269,40 @@ export const AdminApiService = {
    * 11. GET /api/v1/Miscellaneous/user-types
    * Retrieve platform user types / roles
    */
-  getUserTypes: (): Promise<UserTypeItem[]> => {
-    return apiFetch<UserTypeItem[]>('/api/v1/Miscellaneous/user-types', {
+  getUserTypes: async (): Promise<UserTypeItem[]> => {
+    const res = await apiFetch<any>('/api/v1/Miscellaneous/user-types', {
       method: 'GET',
     });
+    return Array.isArray(res) ? res : Array.isArray(res?.data) ? res.data : [];
   },
 
   /**
    * 12. GET /api/v1/Miscellaneous/order-statuses
    * Retrieve all supported market order statuses
    */
-  getOrderStatuses: (): Promise<OrderStatusItem[]> => {
-    return apiFetch<OrderStatusItem[]>('/api/v1/Miscellaneous/order-statuses', {
+  getOrderStatuses: async (): Promise<OrderStatusItem[]> => {
+    const res = await apiFetch<any>('/api/v1/Miscellaneous/order-statuses', {
       method: 'GET',
     });
+    return Array.isArray(res) ? res : Array.isArray(res?.data) ? res.data : [];
+  },
+
+  /**
+   * 13. GET /api/v1/user/bank-details
+   * Retrieve user bank details (payout destination)
+   * Strictly /api/v1/user/bank-details without query parameters or route fallbacks
+   */
+  getUserBankDetails: async (): Promise<{
+    bankName?: string;
+    accountNumber?: string;
+    accountName?: string;
+  }> => {
+    try {
+      const res = await apiFetch<any>('/api/v1/user/bank-details', { method: 'GET' });
+      return res?.data ?? res ?? {};
+    } catch {
+      // Gracefully return empty object if no bank details are registered yet
+      return {};
+    }
   },
 };

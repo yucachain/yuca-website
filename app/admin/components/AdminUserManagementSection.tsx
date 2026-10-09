@@ -16,6 +16,7 @@ import {
   ArrowUpRight,
   ShieldCheck,
   Loader2,
+  RefreshCw,
 } from "lucide-react";
 import {
   useMarketplaceRole,
@@ -51,55 +52,183 @@ const ROLE_BADGES: Record<
   },
 };
 
+import { toast } from "sonner";
+
 export default function AdminUserManagementSection() {
-  const { allUsers } = useMarketplaceRole();
+  const { allUsers, currentUser } = useMarketplaceRole();
   const [remoteUsers, setRemoteUsers] = useState<UserRecordForAdmin[]>([]);
   const [userTypes, setUserTypes] = useState<any[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(true);
+  const [updatingStatusUserId, setUpdatingStatusUserId] = useState<string | null>(null);
+  const [loadingBankDetails, setLoadingBankDetails] = useState(false);
+
+  const fetchPlatformUsers = async () => {
+    try {
+      setLoadingUsers(true);
+      const [usersRes, userTypesRes] = await Promise.allSettled([
+        AdminApiService.getUsers({ page: 1, pageSize: 100 }),
+        AdminApiService.getUserTypes(),
+      ]);
+
+      if (userTypesRes.status === "fulfilled" && userTypesRes.value) {
+        const ut = Array.isArray(userTypesRes.value)
+          ? userTypesRes.value
+          : Array.isArray((userTypesRes.value as any)?.data)
+            ? (userTypesRes.value as any).data
+            : [];
+        setUserTypes(ut);
+      }
+
+      if (usersRes.status === "fulfilled" && usersRes.value) {
+        const val: any = usersRes.value;
+        const rawList: any[] = Array.isArray(val)
+          ? val
+          : Array.isArray(val?.items)
+            ? val.items
+            : Array.isArray(val?.data)
+              ? val.data
+              : Array.isArray(val?.users)
+                ? val.users
+                : [];
+
+        const mapped: UserRecordForAdmin[] = rawList.map((u: any) => {
+          const displayName =
+            u.name ||
+            u.fullName ||
+            [u.firstName, u.lastName].filter(Boolean).join(" ") ||
+            u.username ||
+            u.email?.split("@")[0] ||
+            "Platform User";
+
+          const rawRole =
+            u.userType?.name ||
+            u.userType?.value ||
+            u.userType ||
+            u.role ||
+            u.userRole ||
+            u.accountType ||
+            u.type;
+
+          const role = normalizeRole(
+            typeof rawRole === "string" ? rawRole : String(rawRole || "")
+          );
+
+          const phone = u.phone || u.phoneNumber || u.telephone || "—";
+          const location =
+            u.address ||
+            u.location ||
+            [u.lga, u.state].filter(Boolean).join(", ") ||
+            u.city ||
+            "—";
+
+          const rawStatus = String(u.status || "").toLowerCase();
+          const isSuspended =
+            rawStatus.includes("suspend") || rawStatus.includes("inactive");
+
+          // Extract bank details from possible nested objects on the user record
+          const rawBankName =
+            u.bankName ||
+            u.bankDetails?.bankName ||
+            u.bankDetail?.bankName ||
+            u.bankAccount?.bankName ||
+            u.bank?.name ||
+            u.bank?.bankName ||
+            u.bank_name ||
+            "";
+
+          const rawAccountNumber =
+            u.accountNumber ||
+            u.bankDetails?.accountNumber ||
+            u.bankDetail?.accountNumber ||
+            u.bankAccount?.accountNumber ||
+            u.bank?.accountNumber ||
+            u.account_number ||
+            "";
+
+          const rawAccountName =
+            u.accountName ||
+            u.bankDetails?.accountName ||
+            u.bankDetail?.accountName ||
+            u.bankAccount?.accountName ||
+            u.bank?.accountName ||
+            u.account_name ||
+            "";
+
+          let finalBankName = rawBankName;
+          let finalAccountNumber = rawAccountNumber;
+          let finalAccountName = rawAccountName;
+
+          const isSelf =
+            Boolean(currentUser?.id && u.id && String(currentUser.id) === String(u.id)) ||
+            Boolean(currentUser?.email && u.email && currentUser.email.toLowerCase() === String(u.email).toLowerCase());
+
+          if (isSelf && (currentUser?.bankName || currentUser?.accountNumber)) {
+            finalBankName = finalBankName || currentUser.bankName || "";
+            finalAccountNumber = finalAccountNumber || currentUser.accountNumber || "";
+            finalAccountName = finalAccountName || currentUser.accountName || "";
+          }
+
+          const localMatch = allUsers.find(
+            (lu) =>
+              (lu.id && u.id && String(lu.id) === String(u.id)) ||
+              (lu.email && u.email && lu.email.toLowerCase() === String(u.email).toLowerCase())
+          );
+          if (localMatch && (localMatch.bankName !== "—" || localMatch.accountNumber !== "—")) {
+            finalBankName = finalBankName || localMatch.bankName;
+            finalAccountNumber = finalAccountNumber || localMatch.accountNumber;
+            finalAccountName = finalAccountName || localMatch.accountName;
+          }
+
+          if (!finalBankName || !finalAccountNumber) {
+            try {
+              const keysToCheck = [
+                u.id ? `yuca_bank_details_${u.id}` : null,
+                u.email ? `yuca_bank_details_${String(u.email).toLowerCase()}` : null,
+                isSelf ? "yuca_user_bank_details" : null,
+              ].filter(Boolean) as string[];
+
+              for (const key of keysToCheck) {
+                const cached = typeof window !== "undefined" ? localStorage.getItem(key) : null;
+                if (cached) {
+                  const parsed = JSON.parse(cached);
+                  if (parsed.bankName) finalBankName = finalBankName || parsed.bankName;
+                  if (parsed.accountNumber) finalAccountNumber = finalAccountNumber || parsed.accountNumber;
+                  if (parsed.accountName) finalAccountName = finalAccountName || parsed.accountName;
+                  if (finalBankName && finalAccountNumber) break;
+                }
+              }
+            } catch {}
+          }
+
+          return {
+            id: u.id || String(Math.random()),
+            name: displayName,
+            email: u.email || "",
+            phone,
+            role,
+            address: location,
+            bankName: finalBankName || "—",
+            accountNumber: finalAccountNumber || "—",
+            accountName: finalAccountName || displayName || "—",
+            joinedDate:
+              u.createdAt || u.createdDate
+                ? new Date(u.createdAt || u.createdDate).toLocaleDateString()
+                : "Recent",
+            status: isSuspended ? "Active" : "Verified",
+          };
+        });
+
+        setRemoteUsers(mapped);
+      }
+    } catch (err) {
+      console.warn("Failed to fetch users or user types from backend:", err);
+    } finally {
+      setLoadingUsers(false);
+    }
+  };
 
   useEffect(() => {
-    let isMounted = true;
-    async function fetchPlatformUsers() {
-      try {
-        setLoadingUsers(true);
-        const [usersRes, userTypesRes] = await Promise.allSettled([
-          AdminApiService.getUsers(),
-          AdminApiService.getUserTypes(),
-        ]);
-
-        if (!isMounted) return;
-
-        if (userTypesRes.status === "fulfilled" && Array.isArray(userTypesRes.value)) {
-          setUserTypes(userTypesRes.value);
-        }
-
-        if (usersRes.status === "fulfilled" && Array.isArray(usersRes.value)) {
-          const mapped: UserRecordForAdmin[] = usersRes.value.map((u: any) => ({
-            id: u.id,
-            name: u.name || "Platform User",
-            email: u.email || "",
-            phone: u.phone || u.phoneNumber || "—",
-            role: normalizeRole(u.role),
-            address: u.address || u.location || "—",
-            bankName: u.bankName || "—",
-            accountNumber: u.accountNumber || "—",
-            accountName: u.accountName || u.name || "—",
-            joinedDate: u.createdAt ? new Date(u.createdAt).toLocaleDateString() : "Recent",
-            status: u.status === "Suspended" ? "Active" : "Verified",
-          }));
-          setRemoteUsers(mapped);
-        }
-      } catch (err) {
-        console.warn("Failed to fetch users or user types from backend:", err);
-      } finally {
-        if (isMounted) setLoadingUsers(false);
-      }
-    }
-
     fetchPlatformUsers();
-    return () => {
-      isMounted = false;
-    };
   }, []);
 
   const effectiveUsers = useMemo(() => {
@@ -148,6 +277,73 @@ export default function AdminUserManagementSection() {
     }
   };
 
+  const handleSelectUser = async (user: UserRecordForAdmin) => {
+    setSelectedUserForModal(user);
+    if (user.role === "consumer") return;
+
+    // 1. If user already has bank details populated, display immediately
+    if (user.bankName && user.bankName !== "—" && user.accountNumber && user.accountNumber !== "—") {
+      return;
+    }
+
+    // 2. Check localStorage / cached keys
+    try {
+      const keysToCheck = [
+        user.id ? `yuca_bank_details_${user.id}` : null,
+        user.email ? `yuca_bank_details_${user.email.toLowerCase()}` : null,
+        "yuca_user_bank_details",
+      ].filter(Boolean) as string[];
+
+      for (const key of keysToCheck) {
+        const cached = typeof window !== "undefined" ? localStorage.getItem(key) : null;
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (parsed.bankName || parsed.accountNumber) {
+            const enriched: UserRecordForAdmin = {
+              ...user,
+              bankName: parsed.bankName || user.bankName,
+              accountNumber: parsed.accountNumber || user.accountNumber,
+              accountName: parsed.accountName || user.accountName || user.name,
+            };
+            setSelectedUserForModal(enriched);
+            setRemoteUsers((prev) =>
+              prev.map((u) => (u.id === user.id ? enriched : u))
+            );
+            return;
+          }
+        }
+      }
+    } catch {}
+
+    // 3. If this user is the active session user, try fetching from /api/v1/user/bank-details
+    const isSelf =
+      Boolean(currentUser?.id && user.id && String(currentUser.id) === String(user.id)) ||
+      Boolean(currentUser?.email && user.email && currentUser.email.toLowerCase() === user.email.toLowerCase());
+
+    if (isSelf) {
+      try {
+        setLoadingBankDetails(true);
+        const bankData = await AdminApiService.getUserBankDetails();
+        if (bankData && (bankData.bankName || bankData.accountNumber)) {
+          const enriched: UserRecordForAdmin = {
+            ...user,
+            bankName: bankData.bankName || user.bankName,
+            accountNumber: bankData.accountNumber || user.accountNumber,
+            accountName: bankData.accountName || user.accountName || user.name,
+          };
+          setSelectedUserForModal(enriched);
+          setRemoteUsers((prev) =>
+            prev.map((u) => (u.id === user.id ? enriched : u))
+          );
+        }
+      } catch {
+        // Silently handled
+      } finally {
+        setLoadingBankDetails(false);
+      }
+    }
+  };
+
   const toggleSelectUser = (id: string) => {
     setSelectedUserIds((prev) =>
       prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
@@ -182,10 +378,6 @@ export default function AdminUserManagementSection() {
             <span className="text-lg sm:text-xl font-bold text-gray-900 tracking-tight">
               {roleCounts.all} Active
             </span>
-            <span className="inline-flex items-center gap-0.5 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-600 border border-emerald-100 shrink-0">
-              <ArrowUpRight size={10} strokeWidth={2.5} />
-              <span>7.5%</span>
-            </span>
           </div>
           <p className="text-[11px] text-gray-400 mt-1.5 font-medium">Filtered across 4 ecosystem roles</p>
         </div>
@@ -201,10 +393,6 @@ export default function AdminUserManagementSection() {
           <div className="flex flex-wrap items-baseline justify-between gap-1.5 mt-2.5">
             <span className="text-lg sm:text-xl font-bold text-gray-900 tracking-tight">
               {roleCounts.farmer} Farmers
-            </span>
-            <span className="inline-flex items-center gap-0.5 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-600 border border-emerald-100 shrink-0">
-              <ArrowUpRight size={10} strokeWidth={2.5} />
-              <span>Verified</span>
             </span>
           </div>
           <p className="text-[11px] text-gray-400 mt-1.5 font-medium">Root producers &amp; harvest suppliers</p>
@@ -222,10 +410,6 @@ export default function AdminUserManagementSection() {
             <span className="text-lg sm:text-xl font-bold text-gray-900 tracking-tight">
               {roleCounts.processor} Buyers
             </span>
-            <span className="inline-flex items-center gap-0.5 rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-blue-700 border border-blue-100 shrink-0">
-              <ArrowUpRight size={10} strokeWidth={2.5} />
-              <span>Active</span>
-            </span>
           </div>
           <p className="text-[11px] text-gray-400 mt-1.5 font-medium">Flour, garri &amp; industrial buyers</p>
         </div>
@@ -241,10 +425,6 @@ export default function AdminUserManagementSection() {
           <div className="flex flex-wrap items-baseline justify-between gap-1.5 mt-2.5">
             <span className="text-lg sm:text-xl font-bold text-gray-900 tracking-tight">
               {roleCounts["service-provider"]} Providers
-            </span>
-            <span className="inline-flex items-center gap-0.5 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-700 border border-amber-100 shrink-0">
-              <ShieldCheck size={10} strokeWidth={2.5} />
-              <span>Certified</span>
             </span>
           </div>
           <p className="text-[11px] text-gray-400 mt-1.5 font-medium">Tractor hire &amp; equipment providers</p>
@@ -269,19 +449,17 @@ export default function AdminUserManagementSection() {
                   key={tab.id}
                   type="button"
                   onClick={() => setSelectedRoleFilter(tab.id)}
-                  className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
-                    isSelected
-                      ? "bg-white text-gray-900 shadow-2xs font-bold"
-                      : "text-gray-600 hover:text-gray-900"
-                  }`}
+                  className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${isSelected
+                    ? "bg-white text-gray-900 shadow-2xs font-bold"
+                    : "text-gray-600 hover:text-gray-900"
+                    }`}
                 >
                   <span>{tab.label}</span>
                   <span
-                    className={`rounded-full px-1.5 py-0.2 text-[10px] font-bold ${
-                      isSelected
-                        ? "bg-emerald-100 text-[#226049]"
-                        : "bg-gray-200/80 text-gray-500"
-                    }`}
+                    className={`rounded-full px-1.5 py-0.2 text-[10px] font-bold ${isSelected
+                      ? "bg-emerald-100 text-[#226049]"
+                      : "bg-gray-200/80 text-gray-500"
+                      }`}
                   >
                     {tab.count}
                   </span>
@@ -443,7 +621,7 @@ export default function AdminUserManagementSection() {
                       <td className="py-3.5 px-4 text-right">
                         <button
                           type="button"
-                          onClick={() => setSelectedUserForModal(user)}
+                          onClick={() => handleSelectUser(user)}
                           className="inline-flex items-center gap-1 rounded-xl border border-gray-200 bg-white px-2.5 py-1 text-xs font-semibold text-gray-700 hover:bg-gray-50 shadow-2xs transition-colors cursor-pointer"
                         >
                           <Eye size={12} />
@@ -485,9 +663,8 @@ export default function AdminUserManagementSection() {
                   {selectedUserForModal.name}
                 </h3>
                 <span
-                  className={`inline-flex items-center gap-1 rounded-full px-2 py-0.2 text-[10px] font-bold border mt-0.5 ${
-                    ROLE_BADGES[selectedUserForModal.role].color
-                  }`}
+                  className={`inline-flex items-center gap-1 rounded-full px-2 py-0.2 text-[10px] font-bold border mt-0.5 ${ROLE_BADGES[selectedUserForModal.role].color
+                    }`}
                 >
                   {ROLE_BADGES[selectedUserForModal.role].icon}
                   <span>{ROLE_BADGES[selectedUserForModal.role].label}</span>
@@ -516,9 +693,20 @@ export default function AdminUserManagementSection() {
 
               {selectedUserForModal.role !== "consumer" && (
                 <div className="p-3.5 rounded-2xl bg-emerald-50/60 border border-emerald-200/80">
-                  <div className="flex items-center gap-1.5 text-[#226049] font-bold mb-2">
-                    <CreditCard size={14} />
-                    <span>Designated Payout Account</span>
+                  <div className="flex items-center justify-between text-[#226049] font-bold mb-2">
+                    <div className="flex items-center gap-1.5">
+                      <CreditCard size={14} />
+                      <span>Designated Payout Account</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleSelectUser(selectedUserForModal)}
+                      disabled={loadingBankDetails}
+                      className="inline-flex items-center gap-1 text-[10px] text-emerald-800 hover:text-emerald-950 font-semibold cursor-pointer"
+                    >
+                      <RefreshCw size={10} className={loadingBankDetails ? "animate-spin" : ""} />
+                      <span>{loadingBankDetails ? "Fetching..." : "Refresh Bank"}</span>
+                    </button>
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     <div>
@@ -542,7 +730,41 @@ export default function AdminUserManagementSection() {
               )}
             </div>
 
-            <div className="mt-5 pt-3 border-t border-gray-100 flex justify-end">
+            <div className="mt-5 pt-3 border-t border-gray-100 flex items-center justify-between">
+              <button
+                type="button"
+                disabled={updatingStatusUserId === selectedUserForModal.id}
+                onClick={async () => {
+                  const targetStatus = selectedUserForModal.status === "Verified" ? "Suspended" : "Active";
+                  try {
+                    setUpdatingStatusUserId(selectedUserForModal.id);
+                    await AdminApiService.updateUserStatus(selectedUserForModal.id, {
+                      status: targetStatus,
+                    });
+                    toast.success(`User status successfully updated to ${targetStatus}`);
+                    setSelectedUserForModal((prev) =>
+                      prev
+                        ? {
+                          ...prev,
+                          status: targetStatus === "Suspended" ? "Active" : "Verified",
+                        }
+                        : null
+                    );
+                    fetchPlatformUsers();
+                  } catch (err: any) {
+                    toast.error(err?.message || "Failed to update user status");
+                  } finally {
+                    setUpdatingStatusUserId(null);
+                  }
+                }}
+                className="rounded-xl border border-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
+              >
+                {updatingStatusUserId === selectedUserForModal.id
+                  ? "Updating..."
+                  : selectedUserForModal.status === "Verified"
+                    ? "Suspend User"
+                    : "Activate User"}
+              </button>
               <button
                 type="button"
                 onClick={() => setSelectedUserForModal(null)}

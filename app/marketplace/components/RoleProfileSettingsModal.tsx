@@ -227,6 +227,16 @@ export default function RoleProfileSettingsModal({
     const file = e.target.files?.[0];
     if (!file) return;
 
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please upload an image file (JPEG, PNG, WEBP).");
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("File size exceeds 5MB. Please choose a smaller image.");
+      return;
+    }
+
     // Show temporary local preview immediately for great UX
     const reader = new FileReader();
     reader.onloadend = () => {
@@ -291,13 +301,13 @@ export default function RoleProfileSettingsModal({
         formData.deliveryAddress || (activeRole === "consumer" ? resolvedAddress : "")
       ).trim();
 
-      // Only pass valid remote URLs to PUT /api/v1/user/profile to avoid 422 errors
+      // Only pass valid fully-qualified URLs to PUT /api/v1/user/profile to satisfy URI format validation
       const cleanAvatarUrl =
         avatarPreview && (avatarPreview.startsWith("http://") || avatarPreview.startsWith("https://"))
           ? avatarPreview
           : currentUser.avatarUrl && (currentUser.avatarUrl.startsWith("http://") || currentUser.avatarUrl.startsWith("https://"))
           ? currentUser.avatarUrl
-          : "";
+          : undefined;
 
       let backendErrorMsg = "";
 
@@ -324,7 +334,7 @@ export default function RoleProfileSettingsModal({
         backendErrorMsg = err?.message || "Failed to update profile";
       }
 
-      // 2. Authoritative Update Bank Details (PUT /api/v1/user/bank-details) for non-consumers
+      // 2. Authoritative Update Bank Details (POST /api/v1/user/bank-details) for non-consumers
       if (!isConsumer && (formData.bankName || formData.accountNumber)) {
         try {
           await updateUserBankDetails({
@@ -332,6 +342,18 @@ export default function RoleProfileSettingsModal({
             accountNumber: formData.accountNumber.trim(),
             accountName: formData.accountName.trim() || fullName,
           });
+          // Cache bank details in localStorage so admin directory immediately reflects it
+          try {
+            const bPayload = {
+              bankName: formData.bankName.trim(),
+              accountNumber: formData.accountNumber.trim(),
+              accountName: formData.accountName.trim() || fullName,
+            };
+            localStorage.setItem("yuca_user_bank_details", JSON.stringify(bPayload));
+            if (currentUser.id) {
+              localStorage.setItem(`yuca_bank_details_${currentUser.id}`, JSON.stringify(bPayload));
+            }
+          } catch {}
         } catch (err: any) {
           if (!backendErrorMsg) {
             backendErrorMsg = err?.message || "Failed to update bank details";

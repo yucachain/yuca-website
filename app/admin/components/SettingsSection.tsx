@@ -18,6 +18,10 @@ import { useAuth } from "@/app/Context/AuthContext";
 import { resolveDisplayName } from "@/app/Services/authService";
 import { toast } from "sonner";
 
+import { AdminApiService } from "@/app/Services/admin";
+import { Sliders } from "lucide-react";
+import type { PlatformAdminSettings, UpdateAdminSettingsRequest } from "@/app/types/admin/admin";
+
 const BLANK_SETTINGS: AdminSettings = {
   businessName: "",
   hubName: "",
@@ -40,10 +44,26 @@ const BLANK_SETTINGS: AdminSettings = {
   twoFactorEnabled: false,
 };
 
+const DEFAULT_PLATFORM_SETTINGS: PlatformAdminSettings = {
+  escrowFeePercent: 1.5,
+  logisticsPerKmRate: 150,
+  cassavaPricePerTonFloor: 85000,
+  payoutAutomationEnabled: true,
+  platformCommissionPercent: 2.5,
+  defaultLogisticsFeeNgn: 5000,
+  spoilageRiskThresholdHours: 72,
+  maintenanceMode: false,
+  supportEmail: "support@yucachain.com.ng",
+  supportPhone: "+234 800 982 2242",
+};
+
 export default function SettingsSection() {
   const { user: authUser } = useAuth();
-  const [activeTab, setActiveTab] = useState<"profile" | "capacity" | "payout" | "notifications" | "security">("profile");
+  const [activeTab, setActiveTab] = useState<
+    "platform" | "profile" | "capacity" | "payout" | "notifications" | "security"
+  >("platform");
   const [settings, setSettings] = useState<AdminSettings>(BLANK_SETTINGS);
+  const [platformSettings, setPlatformSettings] = useState<PlatformAdminSettings>(DEFAULT_PLATFORM_SETTINGS);
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -53,7 +73,29 @@ export default function SettingsSection() {
       setLoading(true);
       const userDisplayName = resolveDisplayName(authUser, "");
       try {
-        const res = await adminService.getSettings();
+        const [hubRes, platformRes] = await Promise.allSettled([
+          adminService.getSettings(),
+          AdminApiService.getSettings(),
+        ]);
+
+        if (platformRes.status === "fulfilled" && platformRes.value) {
+          const p = platformRes.value;
+          setPlatformSettings((prev) => ({
+            ...prev,
+            escrowFeePercent: p.escrowFeePercent ?? prev.escrowFeePercent,
+            logisticsPerKmRate: p.logisticsPerKmRate ?? prev.logisticsPerKmRate,
+            cassavaPricePerTonFloor: p.cassavaPricePerTonFloor ?? prev.cassavaPricePerTonFloor,
+            payoutAutomationEnabled: p.payoutAutomationEnabled ?? prev.payoutAutomationEnabled,
+            platformCommissionPercent: p.platformCommissionPercent ?? prev.platformCommissionPercent,
+            defaultLogisticsFeeNgn: p.defaultLogisticsFeeNgn ?? prev.defaultLogisticsFeeNgn,
+            spoilageRiskThresholdHours: p.spoilageRiskThresholdHours ?? prev.spoilageRiskThresholdHours,
+            maintenanceMode: p.maintenanceMode ?? prev.maintenanceMode,
+            supportEmail: p.supportEmail || prev.supportEmail,
+            supportPhone: p.supportPhone || prev.supportPhone,
+          }));
+        }
+
+        const res = hubRes.status === "fulfilled" ? hubRes.value : null;
         setSettings({
           businessName: res?.businessName || authUser?.businessName || "YucaChain",
           hubName: res?.hubName || authUser?.hubName || "",
@@ -77,7 +119,6 @@ export default function SettingsSection() {
         });
       } catch (err: any) {
         console.warn("Could not load settings from server:", err);
-        // Fallback to real logged-in user profile, NOT fake demo data
         setSettings({
           ...BLANK_SETTINGS,
           businessName: authUser?.businessName || "YucaChain",
@@ -105,36 +146,66 @@ export default function SettingsSection() {
     }
   };
 
+  const handlePlatformChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value, type } = e.target;
+    if (type === "checkbox") {
+      const checked = (e.target as HTMLInputElement).checked;
+      setPlatformSettings((prev) => ({ ...prev, [name]: checked }));
+    } else {
+      setPlatformSettings((prev) => ({ ...prev, [name]: value }));
+    }
+  };
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
     try {
-      const payload = {
-        businessName: settings.businessName || "YucaChain",
-        hubName: settings.hubName,
-        hubId: settings.hubId,
-        licenseNumber: settings.licenseNumber,
-        hubState: settings.hubState,
-        hubLga: settings.hubLga,
-        contactName: settings.contactName,
-        email: settings.email,
-        phone: settings.phone,
-        address: settings.address,
-        maxCapacityTonnes: Number(settings.maxCapacityTonnes) || 0,
-        maxTonnesCapacity: Number(settings.maxCapacityTonnes) || 0,
-        spoilageRiskThresholdHours: Number(settings.spoilageRiskThresholdHours) || 0,
-        bankName: settings.bankName,
-        accountNumber: settings.accountNumber,
-        accountName: settings.accountName,
-        settlementFrequency: settings.settlementFrequency || "Daily",
-        spoilageAlertsEmail: Boolean(settings.spoilageAlertsEmail),
-        orderAlertsSms: Boolean(settings.orderAlertsSms),
-        twoFactorEnabled: Boolean(settings.twoFactorEnabled),
-      };
+      if (activeTab === "platform") {
+        // Target: PUT /api/v1/admin/settings (UpdateAdminSettingsRequest)
+        const payload: UpdateAdminSettingsRequest = {
+          escrowFeePercent: Number(platformSettings.escrowFeePercent) || 0,
+          logisticsPerKmRate: Number(platformSettings.logisticsPerKmRate) || 0,
+          cassavaPricePerTonFloor: Number(platformSettings.cassavaPricePerTonFloor) || 0,
+          payoutAutomationEnabled: Boolean(platformSettings.payoutAutomationEnabled),
+          platformCommissionPercent: Number(platformSettings.platformCommissionPercent) || 0,
+          defaultLogisticsFeeNgn: Number(platformSettings.defaultLogisticsFeeNgn) || 0,
+          spoilageRiskThresholdHours: Number(platformSettings.spoilageRiskThresholdHours) || 24,
+          maintenanceMode: Boolean(platformSettings.maintenanceMode),
+          supportEmail: platformSettings.supportEmail?.trim() || "support@yucachain.com.ng",
+          supportPhone: platformSettings.supportPhone?.trim() || "+234 800 982 2242",
+        };
 
-      await adminService.updateSettings(payload);
-      setSavedSuccess(true);
-      toast.success("Platform and facility settings saved successfully!");
+        await AdminApiService.updateSettings(payload);
+        setSavedSuccess(true);
+        toast.success("Platform financial and operational policy settings saved successfully!");
+      } else {
+        const payload = {
+          businessName: settings.businessName || "YucaChain",
+          hubName: settings.hubName,
+          hubId: settings.hubId,
+          licenseNumber: settings.licenseNumber,
+          hubState: settings.hubState,
+          hubLga: settings.hubLga,
+          contactName: settings.contactName,
+          email: settings.email,
+          phone: settings.phone,
+          address: settings.address,
+          maxCapacityTonnes: Number(settings.maxCapacityTonnes) || 0,
+          maxTonnesCapacity: Number(settings.maxCapacityTonnes) || 0,
+          spoilageRiskThresholdHours: Number(settings.spoilageRiskThresholdHours) || 0,
+          bankName: settings.bankName,
+          accountNumber: settings.accountNumber,
+          accountName: settings.accountName,
+          settlementFrequency: settings.settlementFrequency || "Daily",
+          spoilageAlertsEmail: Boolean(settings.spoilageAlertsEmail),
+          orderAlertsSms: Boolean(settings.orderAlertsSms),
+          twoFactorEnabled: Boolean(settings.twoFactorEnabled),
+        };
+
+        await adminService.updateSettings(payload);
+        setSavedSuccess(true);
+        toast.success("Facility and operator settings saved successfully!");
+      }
       setTimeout(() => setSavedSuccess(false), 3500);
     } catch (err: any) {
       console.error("Failed to update settings on server:", err);
@@ -163,6 +234,19 @@ export default function SettingsSection() {
       </div>
 
       <div className="flex flex-wrap gap-2 border-b border-gray-100 pb-2">
+        <button
+          type="button"
+          onClick={() => setActiveTab("platform")}
+          className={[
+            "inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs sm:text-sm font-semibold transition-all cursor-pointer",
+            activeTab === "platform"
+              ? "bg-[#226049] text-white shadow-xs"
+              : "bg-white border border-gray-200 text-gray-600 hover:bg-gray-50",
+          ].join(" ")}
+        >
+          <Sliders size={16} /> Platform Policies &amp; Rates
+        </button>
+
         <button
           type="button"
           onClick={() => setActiveTab("profile")}
@@ -237,6 +321,193 @@ export default function SettingsSection() {
         </div>
       ) : (
       <form onSubmit={handleSave} className="space-y-6">
+
+        {activeTab === "platform" && (
+          <div className="rounded-2xl border border-gray-100 bg-white p-5 sm:p-8 space-y-6 shadow-xs">
+            <div className="border-b border-gray-100 pb-3">
+              <h2 className="text-base font-bold text-gray-900">
+                Platform Operations &amp; Monetary Policies
+              </h2>
+              <p className="text-xs text-gray-500 mt-0.5">
+                Manage global rates, floor prices, automated disbursement toggles, and emergency maintenance.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+              <div>
+                <label className="block text-xs font-semibold text-gray-700">
+                  Escrow Fee (%)
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  max="100"
+                  name="escrowFeePercent"
+                  value={platformSettings.escrowFeePercent ?? ""}
+                  onChange={handlePlatformChange}
+                  className="mt-1.5 w-full rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-xs sm:text-sm outline-none focus:border-emerald-700"
+                  placeholder="e.g. 1.5"
+                />
+                <p className="text-[11px] text-gray-400 mt-1">Escrow fee percentage charged on escrow payments.</p>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-700">
+                  Platform Commission (%)
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  max="100"
+                  name="platformCommissionPercent"
+                  value={platformSettings.platformCommissionPercent ?? ""}
+                  onChange={handlePlatformChange}
+                  className="mt-1.5 w-full rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-xs sm:text-sm outline-none focus:border-emerald-700"
+                  placeholder="e.g. 2.5"
+                />
+                <p className="text-[11px] text-gray-400 mt-1">Global platform cut on completed transactions.</p>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-700">
+                  Logistics Rate Per KM (₦)
+                </label>
+                <input
+                  type="number"
+                  step="0.1"
+                  min="0"
+                  name="logisticsPerKmRate"
+                  value={platformSettings.logisticsPerKmRate ?? ""}
+                  onChange={handlePlatformChange}
+                  className="mt-1.5 w-full rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-xs sm:text-sm outline-none focus:border-emerald-700"
+                  placeholder="e.g. 150"
+                />
+                <p className="text-[11px] text-gray-400 mt-1">Distance billing multiplier for dispatch transports.</p>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-700">
+                  Default Base Logistics Fee (₦)
+                </label>
+                <input
+                  type="number"
+                  step="1"
+                  min="0"
+                  name="defaultLogisticsFeeNgn"
+                  value={platformSettings.defaultLogisticsFeeNgn ?? ""}
+                  onChange={handlePlatformChange}
+                  className="mt-1.5 w-full rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-xs sm:text-sm outline-none focus:border-emerald-700"
+                  placeholder="e.g. 5000"
+                />
+                <p className="text-[11px] text-gray-400 mt-1">Base freight handling fee applied to each order.</p>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-700">
+                  Cassava Price Floor Per Ton (₦)
+                </label>
+                <input
+                  type="number"
+                  step="100"
+                  min="0"
+                  name="cassavaPricePerTonFloor"
+                  value={platformSettings.cassavaPricePerTonFloor ?? ""}
+                  onChange={handlePlatformChange}
+                  className="mt-1.5 w-full rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-xs sm:text-sm outline-none focus:border-emerald-700"
+                  placeholder="e.g. 85000"
+                />
+                <p className="text-[11px] text-gray-400 mt-1">Guaranteed minimum price threshold protecting farmers.</p>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-700">
+                  Spoilage Risk Threshold (Hours)
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  max="720"
+                  name="spoilageRiskThresholdHours"
+                  value={platformSettings.spoilageRiskThresholdHours ?? ""}
+                  onChange={handlePlatformChange}
+                  className="mt-1.5 w-full rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-xs sm:text-sm outline-none focus:border-emerald-700"
+                  placeholder="e.g. 72"
+                />
+                <p className="text-[11px] text-gray-400 mt-1">Hours before fresh tubers trigger urgency warnings.</p>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-700">
+                  Support Email
+                </label>
+                <input
+                  type="email"
+                  name="supportEmail"
+                  value={platformSettings.supportEmail ?? ""}
+                  onChange={handlePlatformChange}
+                  className="mt-1.5 w-full rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-xs sm:text-sm outline-none focus:border-emerald-700"
+                  placeholder="support@yucachain.com.ng"
+                />
+                <p className="text-[11px] text-gray-400 mt-1">Official escalation address displayed to users.</p>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-700">
+                  Support Phone
+                </label>
+                <input
+                  type="tel"
+                  name="supportPhone"
+                  value={platformSettings.supportPhone ?? ""}
+                  onChange={handlePlatformChange}
+                  className="mt-1.5 w-full rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-xs sm:text-sm outline-none focus:border-emerald-700"
+                  placeholder="+234 800 982 2242"
+                />
+                <p className="text-[11px] text-gray-400 mt-1">Official platform helpline for logistics dispatchers.</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-3 border-t border-gray-100">
+              <label className="flex items-start gap-3 p-4 rounded-xl border border-gray-200 bg-gray-50/50 cursor-pointer hover:bg-gray-50 transition-colors">
+                <input
+                  type="checkbox"
+                  name="payoutAutomationEnabled"
+                  checked={Boolean(platformSettings.payoutAutomationEnabled)}
+                  onChange={handlePlatformChange}
+                  className="mt-0.5 h-4 w-4 rounded border-gray-300 text-[#226049] focus:ring-emerald-700 cursor-pointer"
+                />
+                <div>
+                  <span className="block text-xs font-bold text-gray-900">
+                    Automated Seller Payouts
+                  </span>
+                  <span className="block text-[11px] text-gray-500 mt-0.5">
+                    Automatically trigger disbursement when dispatch is marked Delivered.
+                  </span>
+                </div>
+              </label>
+
+              <label className="flex items-start gap-3 p-4 rounded-xl border border-red-200 bg-red-50/40 cursor-pointer hover:bg-red-50/70 transition-colors">
+                <input
+                  type="checkbox"
+                  name="maintenanceMode"
+                  checked={Boolean(platformSettings.maintenanceMode)}
+                  onChange={handlePlatformChange}
+                  className="mt-0.5 h-4 w-4 rounded border-red-300 text-red-600 focus:ring-red-500 cursor-pointer"
+                />
+                <div>
+                  <span className="block text-xs font-bold text-red-900">
+                    Platform Maintenance Mode
+                  </span>
+                  <span className="block text-[11px] text-red-700 mt-0.5">
+                    Pause order placements and new listings during scheduled system upgrades.
+                  </span>
+                </div>
+              </label>
+            </div>
+          </div>
+        )}
 
         {activeTab === "profile" && (
           <div className="rounded-2xl border border-gray-100 bg-white p-5 sm:p-8 space-y-5 shadow-xs">

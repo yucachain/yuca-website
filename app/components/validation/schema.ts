@@ -338,20 +338,24 @@ export const shippingInfoInitialValues: ShippingInfoValues = {
 };
 
 export const ShippingInfoSchema: Yup.ObjectSchema<ShippingInfoValues> = Yup.object({
-  firstName: nameRule("First name"),
-  lastName: nameRule("Last name"),
+  firstName: Yup.string()
+    .trim()
+    .required("First name is required")
+    .min(2, "First name must be at least 2 characters"),
+  lastName: Yup.string()
+    .trim()
+    .default(""),
   phone: Yup.string()
     .trim()
     .required("Phone number is required")
-    .matches(/^\+?[0-9\s\-()]{7,20}$/, "Enter a valid phone number"),
+    .min(7, "Phone number must be at least 7 characters"),
   email: emailRule,
   address: Yup.string().trim().required("Delivery address is required"),
   state: Yup.string().trim().required("Please select a state"),
   country: Yup.string().trim().required("Please select a country"),
   postalCode: Yup.string()
     .trim()
-    .required("Postal code is required")
-    .matches(/^[0-9A-Za-z\s-]{3,10}$/, "Enter a valid postal code"),
+    .default(""),
   sameBillingAddress: Yup.boolean().default(true),
   saveDetails: Yup.boolean().default(true),
 });

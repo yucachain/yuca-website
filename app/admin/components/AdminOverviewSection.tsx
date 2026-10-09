@@ -224,11 +224,10 @@ export default function AdminOverviewSection({
                       setDateRange(range);
                       setShowDatePicker(false);
                     }}
-                    className={`w-full text-left rounded-xl px-3 py-2 text-xs font-semibold transition-colors cursor-pointer ${
-                      dateRange === range
-                        ? "bg-[#226049] text-white"
-                        : "text-gray-700 hover:bg-gray-50"
-                    }`}
+                    className={`w-full text-left rounded-xl px-3 py-2 text-xs font-semibold transition-colors cursor-pointer ${dateRange === range
+                      ? "bg-[#226049] text-white"
+                      : "text-gray-700 hover:bg-gray-50"
+                      }`}
                   >
                     {range}
                   </button>
@@ -262,18 +261,13 @@ export default function AdminOverviewSection({
             <span className="text-xl sm:text-2xl font-bold text-gray-900 tracking-tight">
               {kpiData.totalSales.toLocaleString()}
             </span>
-            <span className="inline-flex items-center gap-0.5 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-bold text-emerald-600 border border-emerald-100">
-              <ArrowUpRight size={11} strokeWidth={2.5} />
-              <span>4.9%</span>
-            </span>
           </div>
-          <p className="text-xs text-gray-400 mt-2 font-medium">Last month: 2345</p>
         </div>
 
         {/* Card 2: New Customer */}
         <div className="rounded-3xl border border-gray-100 bg-white p-5 shadow-xs hover:shadow-sm transition-shadow">
           <div className="flex items-center justify-between text-gray-700">
-            <span className="text-xs sm:text-sm font-semibold text-gray-500">New Customer</span>
+            <span className="text-xs sm:text-sm font-semibold text-gray-500">Total Customer</span>
             <div className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-gray-600">
               <Users size={14} strokeWidth={1.8} />
             </div>
@@ -282,12 +276,7 @@ export default function AdminOverviewSection({
             <span className="text-xl sm:text-2xl font-bold text-gray-900 tracking-tight">
               {kpiData.newCustomers}
             </span>
-            <span className="inline-flex items-center gap-0.5 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-bold text-emerald-600 border border-emerald-100">
-              <ArrowUpRight size={11} strokeWidth={2.5} />
-              <span>7.5%</span>
-            </span>
           </div>
-          <p className="text-xs text-gray-400 mt-2 font-medium">Last month: 89</p>
         </div>
 
         {/* Card 3: Total Revenue */}
@@ -302,12 +291,7 @@ export default function AdminOverviewSection({
             <span className="text-xl sm:text-2xl font-bold text-gray-900 tracking-tight">
               ${(kpiData.totalRevenue / 1000).toFixed(2)}
             </span>
-            <span className="inline-flex items-center gap-0.5 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-bold text-emerald-600 border border-emerald-100">
-              <ArrowUpRight size={11} strokeWidth={2.5} />
-              <span>12.4%</span>
-            </span>
           </div>
-          <p className="text-xs text-gray-400 mt-2 font-medium">Last month: $620.00</p>
         </div>
       </div>
 
@@ -360,9 +344,8 @@ export default function AdminOverviewSection({
                   >
                     {/* Tooltip Bubble (green brand accent) */}
                     <div
-                      className={`transition-all duration-200 mb-2 flex flex-col items-center ${
-                        isActive ? "opacity-100 scale-100" : "opacity-0 scale-95 pointer-events-none group-hover:opacity-100 group-hover:scale-100"
-                      }`}
+                      className={`transition-all duration-200 mb-2 flex flex-col items-center ${isActive ? "opacity-100 scale-100" : "opacity-0 scale-95 pointer-events-none group-hover:opacity-100 group-hover:scale-100"
+                        }`}
                     >
                       <span className="rounded-lg bg-[#226049] text-white text-[11px] font-bold px-2 py-0.5 shadow-sm whitespace-nowrap">
                         ₦{item.value.toLocaleString()}
@@ -374,11 +357,10 @@ export default function AdminOverviewSection({
                     <div className="relative w-8 sm:w-10 rounded-full overflow-hidden bg-gray-100 flex items-end">
                       <div
                         style={{ height: `${item.heightPercent}%` }}
-                        className={`w-full rounded-full transition-all duration-300 ${
-                          isActive
-                            ? "bg-gradient-to-t from-[#226049] to-[#2e8565] shadow-sm"
-                            : "bg-[#226049] opacity-80 group-hover:opacity-100"
-                        }`}
+                        className={`w-full rounded-full transition-all duration-300 ${isActive
+                          ? "bg-gradient-to-t from-[#226049] to-[#2e8565] shadow-sm"
+                          : "bg-[#226049] opacity-80 group-hover:opacity-100"
+                          }`}
                       >
                         {/* Dot indicator if active */}
                         {isActive && (
@@ -389,9 +371,8 @@ export default function AdminOverviewSection({
 
                     {/* X-axis Day Label */}
                     <span
-                      className={`text-xs font-semibold mt-3 transition-colors ${
-                        isActive ? "text-gray-900 font-bold" : "text-gray-400 group-hover:text-gray-700"
-                      }`}
+                      className={`text-xs font-semibold mt-3 transition-colors ${isActive ? "text-gray-900 font-bold" : "text-gray-400 group-hover:text-gray-700"
+                        }`}
                     >
                       {item.day}
                     </span>
@@ -612,11 +593,10 @@ export default function AdminOverviewSection({
                       {/* Status */}
                       <td className="py-3.5 px-3">
                         <span
-                          className={`inline-block px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
-                            ord.status === "Completed"
-                              ? "bg-emerald-50 text-emerald-700 border border-emerald-100"
-                              : "bg-rose-50 text-rose-500 border border-rose-100"
-                          }`}
+                          className={`inline-block px-2.5 py-0.5 rounded-full text-[11px] font-bold ${ord.status === "Completed"
+                            ? "bg-emerald-50 text-emerald-700 border border-emerald-100"
+                            : "bg-rose-50 text-rose-500 border border-rose-100"
+                            }`}
                         >
                           {ord.status}
                         </span>

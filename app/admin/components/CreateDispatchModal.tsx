@@ -7,6 +7,8 @@ import { dispatchService } from "@/app/Services/dispatchService";
 import { vaultService } from "@/app/Services/vaultService";
 import { toast } from "sonner";
 
+import { AdminApiService } from "@/app/Services/admin";
+
 export interface CreateDispatchModalProps {
   open: boolean;
   onClose: () => void;
@@ -67,22 +69,38 @@ export default function CreateDispatchModal({
     setLoading(true);
     setErrorMsg(null);
     try {
-      const payload: CreateDispatchRequest = {
-        pickupHub: pickupHub.trim() || "Hub Facility",
-        carrierName: carrierName.trim(),
-        trackingNumber: trackingNumber.trim(),
-        weighbridgeTicket: weighbridgeTicket.trim(),
-        buyerDeliveryAddress: buyerDeliveryAddress.trim(),
+      const adminPayload = {
         orderId: defaultOrderId,
+        marketplaceOrderId: defaultOrderId,
+        carrierName: carrierName.trim(),
+        trackingCode: trackingNumber.trim(),
+        weighbridgeTicket: weighbridgeTicket.trim(),
+        pickupLocation: pickupHub.trim() || "Hub Facility",
+        deliveryAddress: buyerDeliveryAddress.trim(),
         weightKg: Number(weightKg),
       };
 
-      const result = await dispatchService.createDispatch(payload);
+      let result: any;
+      try {
+        result = await AdminApiService.dispatchOrders(adminPayload);
+      } catch (adminErr) {
+        // Fallback to legacy dispatch service if needed
+        result = await dispatchService.createDispatch({
+          pickupHub: pickupHub.trim() || "Hub Facility",
+          carrierName: carrierName.trim(),
+          trackingNumber: trackingNumber.trim(),
+          weighbridgeTicket: weighbridgeTicket.trim(),
+          buyerDeliveryAddress: buyerDeliveryAddress.trim(),
+          orderId: defaultOrderId,
+          weightKg: Number(weightKg),
+        });
+      }
+
       setSuccessMsg(true);
       toast.success(`Dispatch created with tracking #${trackingNumber}`);
       setTimeout(() => {
         setSuccessMsg(false);
-        onSuccess(result);
+        onSuccess(result || (adminPayload as any));
         onClose();
       }, 1000);
     } catch (err: any) {

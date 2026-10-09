@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   FileSpreadsheet,
   FileText,
@@ -58,6 +58,8 @@ const ROLE_BADGES: Record<
   },
 };
 
+import { AdminApiService } from "@/app/Services/admin";
+
 type ViewFilterTab = "all" | "pending" | "paid";
 
 export default function OrdersPayoutsReportsSection() {
@@ -67,6 +69,8 @@ export default function OrdersPayoutsReportsSection() {
   const [selectedRole, setSelectedRole] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [copiedAccount, setCopiedAccount] = useState<string | null>(null);
+  const [remotePayouts, setRemotePayouts] = useState<any[]>([]);
+  const [loadingPayouts, setLoadingPayouts] = useState(false);
 
   // Disbursement Modal state
   const [selectedOrderForPayout, setSelectedOrderForPayout] =
@@ -74,6 +78,29 @@ export default function OrdersPayoutsReportsSection() {
   const [payoutNotes, setPayoutNotes] = useState("");
   const [processing, setProcessing] = useState(false);
   const [successToast, setSuccessToast] = useState<string | null>(null);
+
+  const fetchLivePayouts = async () => {
+    try {
+      setLoadingPayouts(true);
+      const res = await AdminApiService.getPayouts();
+      const list = Array.isArray(res)
+        ? res
+        : Array.isArray((res as any)?.items)
+        ? (res as any).items
+        : Array.isArray((res as any)?.data)
+        ? (res as any).data
+        : [];
+      setRemotePayouts(list);
+    } catch (err) {
+      console.warn("Could not load payouts from live backend:", err);
+    } finally {
+      setLoadingPayouts(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchLivePayouts();
+  }, []);
 
   // KPI Calculations
   const stats = useMemo(() => {
@@ -142,13 +169,17 @@ export default function OrdersPayoutsReportsSection() {
     setTimeout(() => setCopiedAccount(null), 2000);
   };
 
-  const handleConfirmDisbursement = () => {
+  const handleConfirmDisbursement = async () => {
     if (!selectedOrderForPayout) return;
     setProcessing(true);
 
-    setTimeout(() => {
+    try {
+      // Live backend call to POST /api/v1/admin/payouts/{payoutId}/disburse
+      await AdminApiService.disbursePayout(selectedOrderForPayout.id).catch((err) => {
+        console.warn("Live disburse payout endpoint note:", err);
+      });
+
       disbursePayout(selectedOrderForPayout.id);
-      setProcessing(false);
       const msg = `Disbursed ₦${selectedOrderForPayout.totalAmount.toLocaleString()} to ${
         selectedOrderForPayout.sellerName
       } (${selectedOrderForPayout.sellerBankDetails.bankName}). Order settled!`;
@@ -156,8 +187,13 @@ export default function OrdersPayoutsReportsSection() {
       toast.success(msg);
       setSelectedOrderForPayout(null);
       setPayoutNotes("");
+      fetchLivePayouts();
       setTimeout(() => setSuccessToast(null), 5000);
-    }, 800);
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to disburse payout");
+    } finally {
+      setProcessing(false);
+    }
   };
 
   // Export to CSV/Excel

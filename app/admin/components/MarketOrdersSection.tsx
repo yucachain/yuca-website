@@ -21,17 +21,64 @@ export default function MarketOrdersSection() {
   const [actionMessage, setActionMessage] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
 
-  // Load orders and supported statuses strictly from API
+  // Load orders and supported statuses strictly from AdminApiService
   const fetchOrders = async () => {
     setLoading(true);
     try {
       const [ordersRes, statusesRes] = await Promise.allSettled([
-        adminService.getMarketOrders(),
+        AdminApiService.getMarketOrders({ page: 1, pageSize: 50 }),
         AdminApiService.getOrderStatuses(),
       ]);
 
       if (ordersRes.status === "fulfilled") {
-        setOrders(Array.isArray(ordersRes.value) ? ordersRes.value : []);
+        const val: any = ordersRes.value;
+        const list: any[] = Array.isArray(val)
+          ? val
+          : Array.isArray(val?.items)
+          ? val.items
+          : Array.isArray(val?.data)
+          ? val.data
+          : [];
+
+        const mapped: MarketOrder[] = list.map((item: any, idx: number) => ({
+          id: item.id || item._id || String(idx),
+          orderNumber: item.orderNumber || `MO-${item.id?.slice?.(0, 6) || idx + 100}`,
+          buyer: item.buyer || item.buyerName || item.customerName || "Marketplace Buyer",
+          buyerEmail: item.buyerEmail || item.email,
+          buyerPhone: item.buyerPhone || item.phone,
+          deliveryLocation: item.deliveryLocation || item.address || "Hub Delivery Area",
+          productName: item.productName || item.product || "Cassava Produce",
+          grade: item.grade || "A",
+          neededKg: item.neededKg || item.totalWeight || item.quantity || 0,
+          selectedKg: item.selectedKg || item.fulfilledWeight || item.neededKg || 0,
+          pricePerKg: item.pricePerKg ?? item.unitPrice ?? 0,
+          totalPrice:
+            item.totalPrice ??
+            item.totalAmount ??
+            (item.neededKg || 0) * (item.pricePerKg ?? item.unitPrice ?? 0),
+          paymentStatus:
+            item.paymentStatus || (item.isPaid ? "Escrow Paid" : "Pending Payment"),
+          acceptedDate: item.acceptedDate || item.createdAt || "Recent",
+          statusLabel: item.statusLabel || item.status || "Pending Consolidation",
+          tab:
+            item.tab ||
+            (String(item.status || "").toLowerCase().includes("transit")
+              ? "in-transit"
+              : String(item.status || "").toLowerCase().includes("fulfill")
+              ? "fulfilled"
+              : String(item.status || "").toLowerCase().includes("assign")
+              ? "assigned"
+              : "pending"),
+          batches: (item.batches || []).map((b: any, bIdx: number) => ({
+            id: b.id || `b-${bIdx}`,
+            batchCode: b.batchCode || b.code || `YC-BATCH-${bIdx + 1}`,
+            farmer: b.farmer || b.farmerName || "Registered Farmer",
+            weightKg: b.weightKg || b.weight || 0,
+            grade: b.grade || "A",
+          })),
+        }));
+
+        setOrders(mapped);
       }
       if (statusesRes.status === "fulfilled" && Array.isArray(statusesRes.value)) {
         setOrderStatuses(statusesRes.value);
@@ -76,15 +123,13 @@ export default function MarketOrdersSection() {
     setIsProcessing(true);
     const orderId = consolidateOrder.id;
     const vaultLotId = `LOT-${consolidateOrder.orderNumber}`;
-    const batchIds = consolidateOrder.batches.map((b) => b.id);
 
     try {
-      await adminService.assignBatches(orderId, {
-        batchIds,
-        vaultLotId,
+      await AdminApiService.consolidateMarketOrders({
+        orderIds: [orderId],
+        qualityGrade: consolidateOrder.grade || "A",
+        lotCode: vaultLotId,
       });
-
-      await adminService.updateOrderStatus(orderId, "ASSIGNED");
 
       setOrders((prev) =>
         prev.map((o) =>
@@ -92,19 +137,19 @@ export default function MarketOrdersSection() {
             ? {
                 ...o,
                 tab: "assigned" as const,
-                statusLabel: "Assigned to Vault",
+                statusLabel: "Consolidated & Assigned to Lot",
               }
             : o
         )
       );
 
-      const msg = `Order ${consolidateOrder.orderNumber} successfully assigned to Vault Lot ${vaultLotId}!`;
+      const msg = `Order ${consolidateOrder.orderNumber} successfully consolidated under Lot ${vaultLotId}!`;
       setActionMessage(msg);
       toast.success(msg);
       setTimeout(() => setActionMessage(null), 4000);
     } catch (err: any) {
-      console.error("Failed to assign batches:", err);
-      const errMsg = `Failed to assign batches: ${err?.message || "Server error"}`;
+      console.error("Failed to consolidate orders:", err);
+      const errMsg = `Failed to consolidate: ${err?.message || "Server error"}`;
       setActionMessage(errMsg);
       toast.error(errMsg);
       setTimeout(() => setActionMessage(null), 5000);

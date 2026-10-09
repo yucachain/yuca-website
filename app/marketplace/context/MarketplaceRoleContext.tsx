@@ -14,10 +14,11 @@ export type MarketplaceRole = "farmer" | "processor" | "service-provider" | "con
 export function normalizeRole(rawRole?: string | null): MarketplaceRole {
   if (!rawRole) return "farmer";
   const lower = rawRole.toLowerCase();
-  if (lower.includes("farm")) return "farmer";
+  if (lower.includes("farm") || lower.includes("grower")) return "farmer";
   if (
     lower.includes("process") ||
     lower.includes("buyer") ||
+    lower.includes("aggregat") ||
     lower.includes("mill") ||
     lower.includes("off-taker")
   ) {
@@ -25,8 +26,12 @@ export function normalizeRole(rawRole?: string | null): MarketplaceRole {
   }
   if (
     lower.includes("service") ||
+    lower.includes("isp") ||
+    lower.includes("vault") ||
+    lower.includes("operator") ||
     lower.includes("transport") ||
-    lower.includes("machin")
+    lower.includes("machin") ||
+    lower.includes("logistic")
   ) {
     return "service-provider";
   }

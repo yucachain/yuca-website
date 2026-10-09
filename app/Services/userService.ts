@@ -50,22 +50,29 @@ export async function getUserProfile(): Promise<any> {
 export async function updateUserProfile(
   payload: UserProfilePayload
 ): Promise<any> {
-  const body = {
-    name: payload.name || "",
-    firstName: payload.firstName || "",
-    lastName: payload.lastName || "",
-    phoneNumber: payload.phoneNumber || "",
-    address: payload.address || "",
-    farmAddress: payload.farmAddress || "",
-    facilityAddress: payload.facilityAddress || "",
-    businessAddress: payload.businessAddress || "",
-    deliveryAddress: payload.deliveryAddress || "",
-    avatarUrl: payload.avatarUrl || "",
-    state: payload.state || "",
-    lga: payload.lga || "",
-    farmName: payload.farmName || "",
-    businessName: payload.businessName || "",
-    companyName: payload.companyName || "",
+  const isValidUrl = (url?: string | null) => {
+    if (!url) return false;
+    const trimmed = url.trim();
+    return trimmed.startsWith("http://") || trimmed.startsWith("https://");
+  };
+
+  const body: Record<string, any> = {
+    name: payload.name?.trim() || null,
+    firstName: payload.firstName?.trim() || null,
+    lastName: payload.lastName?.trim() || null,
+    phoneNumber: payload.phoneNumber?.trim() || null,
+    address: payload.address?.trim() || null,
+    farmAddress: payload.farmAddress?.trim() || null,
+    facilityAddress: payload.facilityAddress?.trim() || null,
+    businessAddress: payload.businessAddress?.trim() || null,
+    deliveryAddress: payload.deliveryAddress?.trim() || null,
+    // Only pass fully-qualified URL if valid; otherwise null to satisfy OpenAPI uri format validator
+    avatarUrl: isValidUrl(payload.avatarUrl) ? payload.avatarUrl!.trim() : null,
+    state: payload.state?.trim() || null,
+    lga: payload.lga?.trim() || null,
+    farmName: payload.farmName?.trim() || null,
+    businessName: payload.businessName?.trim() || null,
+    companyName: payload.companyName?.trim() || null,
   };
 
   const res = await fetchWithAuth<UserProfileResponse>("/api/v1/user/profile", {
@@ -80,31 +87,50 @@ export async function updateUserProfile(
  * POST /api/v1/user/avatar (multipart/form-data)
  */
 export async function uploadUserAvatar(file: File): Promise<string | null> {
+  if (!file) throw new Error("No image file provided.");
+
   const formData = new FormData();
-  formData.append("file", file);
-  formData.append("avatar", file);
+  // Strictly "file" field as declared in OpenAPI schema
+  formData.append("file", file, file.name);
 
   const res = await fetchWithAuth<any>("/api/v1/user/avatar", {
     method: "POST",
     body: formData,
   });
 
-  return (
+  const rawUrl =
     res?.avatarUrl ||
     res?.data?.avatarUrl ||
     res?.url ||
     res?.data?.url ||
     res?.photoUrl ||
     res?.data?.photoUrl ||
-    (typeof res?.data === "string" && (res.data.startsWith("http://") || res.data.startsWith("https://")) ? res.data : null) ||
-    (typeof res === "string" && (res.startsWith("http://") || res.startsWith("https://")) ? res : null) ||
-    null
-  );
+    (typeof res?.data === "string" && res.data.length > 5 ? res.data : null) ||
+    (typeof res === "string" && res.length > 5 ? res : null) ||
+    null;
+
+  if (!rawUrl) return null;
+
+  // If already absolute URL
+  if (rawUrl.startsWith("http://") || rawUrl.startsWith("https://")) {
+    return rawUrl;
+  }
+
+  // If backend returns a relative path like /uploads/...
+  const baseUrl = (process.env.NEXT_PUBLIC_API_BASE_URL || "")
+    .replace(/\/index\.html?$/i, "")
+    .replace(/\/$/, "");
+
+  if (rawUrl.startsWith("/")) {
+    return `${baseUrl}${rawUrl}`;
+  }
+
+  return rawUrl;
 }
 
 /**
  * Fetch user bank details (Farmer, Buyer/Processor, Service Provider)
- * GET /api/v1/user/bank-details
+ * GET /api/v1/user/bank-details (strictly no query parameters or route fallbacks)
  */
 export async function getUserBankDetails(): Promise<UserBankDetailsResponse> {
   const res = await fetchWithAuth<UserBankDetailsResponse>(
@@ -118,25 +144,47 @@ export async function getUserBankDetails(): Promise<UserBankDetailsResponse> {
 
 /**
  * Update user bank details (Farmer, Buyer/Processor, Service Provider)
- * PUT /api/v1/user/bank-details
+ * POST /api/v1/user/bank-details (fallback to PUT if method not allowed)
+ * Body: { bankName, accountNumber, accountName }
  */
 export async function updateUserBankDetails(
   payload: UserBankDetailsPayload
 ): Promise<UserBankDetailsResponse> {
   const body = {
-    bankName: payload.bankName || "",
-    accountNumber: payload.accountNumber || "",
-    accountName: payload.accountName || "",
+    bankName: (payload.bankName || "").trim(),
+    accountNumber: (payload.accountNumber || "").trim(),
+    accountName: (payload.accountName || "").trim(),
   };
 
-  const res = await fetchWithAuth<UserBankDetailsResponse>(
-    "/api/v1/user/bank-details",
-    {
-      method: "PUT",
-      body: JSON.stringify(body),
+  try {
+    // Attempt POST as requested by user
+    const res = await fetchWithAuth<UserBankDetailsResponse>(
+      "/api/v1/user/bank-details",
+      {
+        method: "POST",
+        body: JSON.stringify(body),
+      }
+    );
+    return res?.data ?? res;
+  } catch (err: any) {
+    const msg = String(err?.message || "");
+    // If backend only accepts PUT (e.g. 405 Method Not Allowed) or 404, fallback to PUT
+    if (
+      msg.includes("405") ||
+      msg.includes("Method Not Allowed") ||
+      msg.includes("404")
+    ) {
+      const res = await fetchWithAuth<UserBankDetailsResponse>(
+        "/api/v1/user/bank-details",
+        {
+          method: "PUT",
+          body: JSON.stringify(body),
+        }
+      );
+      return res?.data ?? res;
     }
-  );
-  return res?.data ?? res;
+    throw err;
+  }
 }
 
 /**

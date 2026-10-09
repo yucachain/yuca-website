@@ -19,12 +19,46 @@ import {
 import { useMarketplaceRole } from "@/app/marketplace/context/MarketplaceRoleContext";
 import { useCart, DeliveryMethodOption } from "@/app/marketplace/context/CartContext";
 import { marketplaceApi } from "@/app/Services/marketplaceService";
-import { ShieldCheck, Truck, Warehouse, CheckCircle2 } from "lucide-react";
+import { ShieldCheck, Truck, Warehouse, CheckCircle2, AlertCircle } from "lucide-react";
+import { toast } from "sonner";
 
 export default function ShippingInfoPage() {
   const router = useRouter();
   const { activeRole, currentUser } = useMarketplaceRole();
   const { deliveryMethod, setDeliveryMethod } = useCart();
+
+  const [initialValues] = useState<ShippingInfoValues>(() => {
+    let saved: Partial<ShippingInfoValues> = {};
+    if (typeof window !== "undefined") {
+      try {
+        const stored = localStorage.getItem("yuca_shipping_info");
+        if (stored) saved = JSON.parse(stored);
+      } catch {}
+    }
+
+    const nameParts = (currentUser.name || "").trim().split(/\s+/);
+    const firstName = saved.firstName || nameParts[0] || "";
+    const lastName = saved.lastName || (nameParts.length > 1 ? nameParts.slice(1).join(" ") : "");
+
+    return {
+      ...shippingInfoInitialValues,
+      firstName,
+      lastName,
+      email: saved.email || currentUser.email || "",
+      phone: saved.phone || currentUser.phone || "",
+      address:
+        saved.address ||
+        currentUser.deliveryAddress ||
+        currentUser.facilityAddress ||
+        currentUser.businessAddress ||
+        currentUser.farmAddress ||
+        currentUser.address ||
+        "",
+      state: saved.state || currentUser.state || "Oyo",
+      country: saved.country || "Nigeria",
+      postalCode: saved.postalCode || "",
+    };
+  });
 
   const handleSubmit = async (
     values: ShippingInfoValues,
@@ -45,33 +79,22 @@ export default function ShippingInfoPage() {
         pickupLocation: "YucaVault Central Cluster, Oyo State",
       };
 
-      const quote = await marketplaceApi.getCheckoutQuote(quotePayload).catch((err) => {
+      try {
+        const quote = await marketplaceApi.getCheckoutQuote(quotePayload);
+        if (quote) {
+          localStorage.setItem("yuca_checkout_quote", JSON.stringify(quote));
+        }
+      } catch (err) {
         console.warn("getCheckoutQuote API fallback:", err);
-        return null;
-      });
-
-      if (quote) {
-        localStorage.setItem("yuca_checkout_quote", JSON.stringify(quote));
       }
-    } catch {}
-    setSubmitting(false);
-    router.push("/marketplace/review");
-  };
 
-  const initialValues: ShippingInfoValues = {
-    ...shippingInfoInitialValues,
-    firstName: currentUser.name.split(" ")[0] || "",
-    lastName: currentUser.name.split(" ").slice(1).join(" ") || "",
-    email: currentUser.email || "",
-    phone: currentUser.phone || "",
-    address:
-      currentUser.deliveryAddress ||
-      currentUser.facilityAddress ||
-      currentUser.businessAddress ||
-      currentUser.farmAddress ||
-      "",
-    state: "Oyo",
-    country: "Nigeria",
+      setSubmitting(false);
+      router.push("/marketplace/review");
+    } catch (err: any) {
+      console.error("Shipping submit error:", err);
+      toast.error("Failed to proceed: " + (err?.message || "Please check your inputs"));
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -183,66 +206,89 @@ export default function ShippingInfoPage() {
         onSubmit={handleSubmit}
         enableReinitialize
       >
-        {({ isSubmitting }) => (
-          <Form className="space-y-4 font-sans" noValidate>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <FormInput
-                name="firstName"
-                label="First Name"
-                placeholder="First Name"
-              />
-              <FormInput
-                name="lastName"
-                label="Last Name"
-                placeholder="Last Name"
-              />
-            </div>
+        {({ isSubmitting, errors, submitCount }) => {
+          const hasErrors = submitCount > 0 && Object.keys(errors).length > 0;
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          return (
+            <Form className="space-y-4 font-sans" noValidate>
+              {hasErrors && (
+                <div className="p-3.5 rounded-2xl bg-red-50/90 border border-red-200 text-red-700 text-xs animate-in fade-in">
+                  <div className="flex items-center gap-1.5 font-bold mb-1">
+                    <AlertCircle size={14} className="shrink-0 text-red-600" />
+                    <span>Please correct the required information:</span>
+                  </div>
+                  <ul className="list-disc list-inside space-y-0.5 text-[11px] text-red-600">
+                    {Object.entries(errors).map(([k, err]) => (
+                      <li key={k}>{String(err)}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <FormInput
+                  name="firstName"
+                  label="First Name"
+                  placeholder="First Name"
+                />
+                <FormInput
+                  name="lastName"
+                  label="Last Name"
+                  placeholder="Last Name"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <FormInput
+                  name="phone"
+                  label="Phone Number"
+                  type="tel"
+                  placeholder="Phone Number"
+                  autoComplete="tel"
+                />
+                <FormInput
+                  name="email"
+                  label="Email Address"
+                  type="email"
+                  placeholder="Email Address"
+                  autoComplete="email"
+                />
+              </div>
+
               <FormInput
-                name="phone"
-                label="Phone Number"
-                type="tel"
-                placeholder="Phone Number"
-                autoComplete="tel"
+                name="address"
+                label="Destination / Delivery Street Address"
+                placeholder="e.g. Plot 14 Industrial Layout, Agbara, Ogun State"
               />
-              <FormInput
-                name="email"
-                label="Email Address"
-                type="email"
-                placeholder="Email Address"
-                autoComplete="email"
-              />
-            </div>
 
-            <FormInput
-              name="address"
-              label="Destination / Delivery Street Address"
-              placeholder="e.g. Plot 14 Industrial Layout, Agbara, Ogun State"
-            />
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <FormSelect
+                  name="state"
+                  label="State"
+                  placeholder="Select State"
+                  options={NIGERIAN_STATES}
+                />
+                <FormSelect
+                  name="country"
+                  label="Country"
+                  placeholder="Select Country"
+                  options={COUNTRIES}
+                />
+                <FormInput
+                  name="postalCode"
+                  label="Postal Code (Optional)"
+                  placeholder="e.g. 200001"
+                />
+              </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <FormSelect
-                name="state"
-                label="State"
-                placeholder="Select State"
-                options={NIGERIAN_STATES}
-              />
-              <FormSelect
-                name="country"
-                label="Country"
-                placeholder="Select Country"
-                options={COUNTRIES}
-              />
-            </div>
-
-            <div className="mx-auto w-full max-w-[240px] pt-4">
-              <Button type="submit" isLoading={isSubmitting}>
-                Continue to Review
-              </Button>
-            </div>
-          </Form>
-        )}
+              <div className="mx-auto w-full max-w-[240px] pt-4">
+                <Button type="submit" isLoading={isSubmitting}>
+                  Continue to Review
+                </Button>
+              </div>
+            </Form>
+          );
+        }}
       </Formik>
     </CheckoutShell>
   );
