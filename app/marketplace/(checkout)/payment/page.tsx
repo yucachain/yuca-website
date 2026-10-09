@@ -107,7 +107,7 @@ export default function PaymentPage() {
 
       try {
         localStorage.setItem("yuca_last_order_ref", createdOrderNumber || assignedOrderNumber);
-      } catch {}
+      } catch { }
 
       replaceCart([]);
       setSubmitting(false);
@@ -265,13 +265,6 @@ export default function PaymentPage() {
               <Upload size={18} className="mx-auto text-gray-400 mb-1" />
               <p className="font-semibold text-gray-700 text-xs">Upload Transfer Receipt (Optional)</p>
               <p className="text-[10px] text-gray-400 mt-0.5">PNG, JPG, or PDF receipt screenshot</p>
-            </div>
-
-            <div className="rounded-xl border border-emerald-100 bg-emerald-50/60 p-3 flex items-start gap-2">
-              <ShieldCheck size={16} className="text-[#226049] shrink-0 mt-0.5" />
-              <p className="text-[11px] text-emerald-950 leading-relaxed">
-                YucaChain Escrow Guarantee: Sellers (Farmers, Processors, Service Providers) do not receive money until you confirm inspection &amp; receipt of produce or service.
-              </p>
             </div>
 
             <button
