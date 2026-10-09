@@ -1,4 +1,4 @@
-import type { MarketOrder, AdminSettings } from "@/app/admin/components/types";
+import type { MarketOrder } from "@/app/admin/components/types";
 import { refreshAccessToken } from "@/app/Services/authService";
 import { getAuthToken } from "@/app/Services/tokenHelper";
 
@@ -72,9 +72,20 @@ export interface BackendAdminSettings {
   licenseNumber?: string;
   hubState?: string;
   hubLga?: string;
+  contactName?: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  maxCapacityTonnes?: number;
   maxTonnesCapacity?: number;
   spoilageRiskThresholdHours?: number;
-  settlementFrequency?: string;
+  bankName?: string;
+  accountNumber?: string;
+  accountName?: string;
+  settlementFrequency?: "Instant" | "Daily" | "Weekly" | string;
+  spoilageAlertsEmail?: boolean;
+  orderAlertsSms?: boolean;
+  twoFactorEnabled?: boolean;
   [key: string]: any;
 }
 
