@@ -131,6 +131,18 @@ export default function ReviewOrderPage() {
             <span className="font-semibold text-gray-900">₦{subtotal.toLocaleString()}</span>
           </div>
           <div className="flex justify-between text-gray-600">
+            <span>Logistics &amp; Haulage:</span>
+            {isYucaVault ? (
+              <span className="font-semibold text-emerald-800">
+                ₦{logisticsFee.toLocaleString()} (5% YucaVault)
+              </span>
+            ) : (
+              <span className="font-medium text-gray-400">
+                ₦0 (Excluded / Direct Arrangement)
+              </span>
+            )}
+          </div>
+          <div className="flex justify-between text-gray-600">
             <span>YucaChain Escrow Protection:</span>
             <span className="font-bold text-emerald-800">FREE / Covered</span>
           </div>

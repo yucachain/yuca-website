@@ -92,11 +92,18 @@ export function clearAuthTokens(): void {
 }
 
 /**
- * Retrieves the active access token from localStorage.
+ * Retrieves the active access token from localStorage or user cache.
  */
 export function getAuthToken(): string {
   if (typeof window === "undefined") return "";
-  const candidateKeys = ["accessToken", "yuca_access_token", "token", "authToken"];
+  const candidateKeys = [
+    "accessToken",
+    "yuca_access_token",
+    "token",
+    "authToken",
+    "jwt",
+    "yuca_token",
+  ];
   for (const key of candidateKeys) {
     const raw = localStorage.getItem(key);
     if (!raw) continue;
@@ -109,7 +116,73 @@ export function getAuthToken(): string {
     }
     if (clean) return clean;
   }
+
+  for (const userKey of ["user", "yuca_user_data"]) {
+    const raw = localStorage.getItem(userKey);
+    if (!raw) continue;
+    try {
+      const parsed = JSON.parse(raw);
+      const token =
+        parsed.accessToken ||
+        parsed.token ||
+        parsed.data?.accessToken ||
+        parsed.data?.token;
+      if (typeof token === "string" && token.trim()) {
+        let clean = token.trim();
+        if (clean.startsWith('"') && clean.endsWith('"')) {
+          clean = clean.slice(1, -1).trim();
+        }
+        if (clean.startsWith("Bearer ")) {
+          clean = clean.slice(7).trim();
+        }
+        if (clean) return clean;
+      }
+    } catch {}
+  }
+
+  return "";
+}
+
+/**
+ * Retrieves the active refresh token from localStorage or user cache.
+ */
+export function getRefreshToken(): string {
+  if (typeof window === "undefined") return "";
+  const candidateKeys = [
+    "refreshToken",
+    "yuca_refresh_token",
+    "refresh_token",
+  ];
+  for (const key of candidateKeys) {
+    const raw = localStorage.getItem(key);
+    if (!raw) continue;
+    let clean = raw.trim();
+    if (clean.startsWith('"') && clean.endsWith('"')) {
+      clean = clean.slice(1, -1).trim();
+    }
+    if (clean) return clean;
+  }
+
+  for (const userKey of ["user", "yuca_user_data"]) {
+    const raw = localStorage.getItem(userKey);
+    if (!raw) continue;
+    try {
+      const parsed = JSON.parse(raw);
+      const token =
+        parsed.refreshToken ||
+        parsed.data?.refreshToken;
+      if (typeof token === "string" && token.trim()) {
+        let clean = token.trim();
+        if (clean.startsWith('"') && clean.endsWith('"')) {
+          clean = clean.slice(1, -1).trim();
+        }
+        if (clean) return clean;
+      }
+    } catch {}
+  }
+
   return "";
 }
 
 export default getAuthToken;
+

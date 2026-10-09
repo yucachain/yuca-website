@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { SlidersHorizontal, RotateCcw, Check } from "lucide-react";
 
 export type QualityGrade = "A" | "B";
@@ -18,43 +18,61 @@ export interface MarketplaceFilters {
 export interface FilterPanelProps {
   weightRange?: WeightRange;
   defaultGrades?: QualityGrade[];
+  currentFilters?: MarketplaceFilters;
   onApplyFilters?: (filters: MarketplaceFilters) => void;
 }
 
 export default function FilterPanel({
-  weightRange = { min: 1, max: 500 },
+  weightRange = { min: 0, max: 500 },
   defaultGrades = ["A", "B"],
+  currentFilters,
   onApplyFilters,
 }: FilterPanelProps) {
-  const [selectedGrades, setSelectedGrades] = useState<Set<QualityGrade>>(
-    new Set(defaultGrades)
-  );
-  const [weight, setWeight] = useState(weightRange.min);
+  const [selectedGrades, setSelectedGrades] = useState<Set<QualityGrade>>(() => {
+    return new Set(currentFilters?.grades && currentFilters.grades.length > 0 ? currentFilters.grades : defaultGrades);
+  });
+  const [weight, setWeight] = useState(currentFilters?.weight ?? weightRange.min);
+
+  // Sync when currentFilters prop changes
+  useEffect(() => {
+    if (currentFilters) {
+      if (currentFilters.grades && currentFilters.grades.length > 0) {
+        setSelectedGrades(new Set(currentFilters.grades));
+      } else {
+        setSelectedGrades(new Set(["A", "B"]));
+      }
+      if (typeof currentFilters.weight === "number") {
+        setWeight(currentFilters.weight);
+      }
+    }
+  }, [currentFilters]);
 
   const toggleGrade = (grade: QualityGrade) => {
     setSelectedGrades((prev) => {
       const next = new Set(prev);
       if (next.has(grade)) {
-        // Prevent deselecting both so user always has at least one active grade
-        if (next.size > 1) {
-          next.delete(grade);
-        }
+        next.delete(grade);
       } else {
         next.add(grade);
       }
+      // If none selected, default to all grades
       return next;
     });
   };
 
   const handleApply = () => {
-    onApplyFilters?.({ grades: Array.from(selectedGrades), weight });
+    const gradesArray = Array.from(selectedGrades);
+    onApplyFilters?.({
+      grades: gradesArray.length === 0 ? ["A", "B"] : gradesArray,
+      weight,
+    });
   };
 
   const handleReset = () => {
     const fullGrades = new Set<QualityGrade>(["A", "B"]);
     setSelectedGrades(fullGrades);
-    setWeight(weightRange.min);
-    onApplyFilters?.({ grades: ["A", "B"], weight: weightRange.min });
+    setWeight(0);
+    onApplyFilters?.({ grades: ["A", "B"], weight: 0 });
   };
 
   const weightProgress =
@@ -111,7 +129,7 @@ export default function FilterPanel({
             Min Batch Size
           </p>
           <span className="inline-flex items-center rounded-lg bg-emerald-50 px-2 py-0.5 text-xs font-bold text-[#226049] border border-emerald-200/50">
-            {weight} {weight === 1 ? "Tonne" : "Tonnes"}
+            {weight === 0 ? "Any Volume" : `${weight} ${weight === 1 ? "Tonne" : "Tonnes"}`}
           </span>
         </div>
 

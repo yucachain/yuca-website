@@ -66,9 +66,11 @@ export default function CartPage() {
         }
 
         replaceCart([]);
-      } catch (err) {
+      } catch (err: any) {
         if (!cancelled) {
-          console.error("Failed to load cart:", err);
+          if (!String(err?.message || "").includes("401")) {
+            console.error("Failed to load cart:", err);
+          }
 
           const fallbackCart = (() => {
             try {

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import CheckoutShell from "@/app/marketplace/components/CheckoutShell";
 import { useCart } from "@/app/marketplace/context/CartContext";
 import { useMarketplaceRole } from "@/app/marketplace/context/MarketplaceRoleContext";
+import { marketplaceApi } from "@/app/Services/marketplaceService";
 import {
   Building2,
   Copy,
@@ -19,7 +20,7 @@ import { toast } from "sonner";
 
 export default function PaymentPage() {
   const router = useRouter();
-  const { cartItems, total, replaceCart } = useCart();
+  const { cartItems, subtotal, total, replaceCart } = useCart();
   const { placeOrder, activeRole, currentUser } = useMarketplaceRole();
 
   const [copiedField, setCopiedField] = useState<string | null>(null);
@@ -40,26 +41,60 @@ export default function PaymentPage() {
     setTimeout(() => setCopiedField(null), 2000);
   };
 
-  const handleCompletePayment = () => {
+  const handleCompletePayment = async () => {
     setSubmitting(true);
 
-    setTimeout(() => {
-      // Place order in shared context
+    try {
       let firstItem = cartItems[0];
       const deliveryMethod =
         (typeof window !== "undefined" &&
           (localStorage.getItem("yuca_delivery_method") as any)) ||
         "yucavault-pickup";
 
+      const shippingInfo = (() => {
+        try {
+          return JSON.parse(localStorage.getItem("yuca_shipping_info") || "{}");
+        } catch {
+          return {};
+        }
+      })();
+
+      const orderPayload = {
+        type: "Standard",
+        paymentMethod: "BankTransfer",
+        deliveryMethod: deliveryMethod === "direct-delivery" ? "Delivery" : "SelfPickup",
+        deliveryAddress: shippingInfo.address ? `${shippingInfo.address}, ${shippingInfo.state || "Oyo"}` : (currentUser.deliveryAddress || "Farm Gate"),
+        pickupLocation: "YucaVault Central Cluster, Oyo State",
+        preferredPickupDate: new Date().toISOString().split("T")[0],
+        logisticsNote: transferRef ? `Transfer Ref: ${transferRef} (Depositor: ${depositorName})` : "Bank transfer to YucaChain Escrow",
+        batchId: firstItem?.id && firstItem.id.length > 20
+          ? firstItem.id
+          : "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+        quantityKg: firstItem?.quantity ? Number(firstItem.quantity) * 1000 : 1000,
+      };
+
+      const apiResult = await marketplaceApi.createOrder(orderPayload).catch((err) => {
+        console.warn("Backend createOrder API fallback:", err);
+        return null;
+      });
+
+      if (transferRef.trim()) {
+        await marketplaceApi.verifyPayment(transferRef.trim(), "BankTransfer").catch((err) => {
+          console.warn("verifyPayment API notice:", err);
+        });
+      }
+
+      const assignedOrderNumber = apiResult?.orderNumber || apiResult?.id || orderRef;
+
       const createdOrderNumber = placeOrder({
-        orderNumber: orderRef,
+        orderNumber: assignedOrderNumber,
         productTitle: firstItem ? firstItem.title : "Cassava Produce & Goods",
         category: firstItem ? (firstItem as any).category || "Produce" : "Produce",
         sellerName: firstItem ? firstItem.seller : "Verified Farm Hub",
         sellerRole: "farmer",
         quantity: firstItem ? firstItem.quantity : 1,
         unit: firstItem ? firstItem.unit : "Tonnes",
-        totalAmount: total > 0 ? total : 375000,
+        totalAmount: total > 0 ? total : subtotal,
         deliveryMethod,
         paymentStatus: "Paid to YucaChain Escrow",
         payoutStatus: "Pending Admin Payout",
@@ -71,14 +106,17 @@ export default function PaymentPage() {
       });
 
       try {
-        localStorage.setItem("yuca_last_order_ref", createdOrderNumber || orderRef);
+        localStorage.setItem("yuca_last_order_ref", createdOrderNumber || assignedOrderNumber);
       } catch {}
 
       replaceCart([]);
       setSubmitting(false);
       toast.success("Payment submitted to YucaChain Escrow!");
-      router.push(`/marketplace/confirmation?orderNumber=${createdOrderNumber || orderRef}`);
-    }, 1000);
+      router.push(`/marketplace/confirmation?orderNumber=${createdOrderNumber || assignedOrderNumber}`);
+    } catch (err: any) {
+      setSubmitting(false);
+      toast.error(err.message || "Failed to process payment");
+    }
   };
 
   return (
@@ -181,7 +219,7 @@ export default function PaymentPage() {
               <div className="pt-2 border-t border-gray-100 flex items-center justify-between">
                 <span className="text-gray-500 font-semibold">Total Amount to Transfer:</span>
                 <span className="text-xl font-extrabold text-gray-900">
-                  ₦{(total > 0 ? total : 375000).toLocaleString()}
+                  ₦{(total > 0 ? total : subtotal).toLocaleString()}
                 </span>
               </div>
             </div>

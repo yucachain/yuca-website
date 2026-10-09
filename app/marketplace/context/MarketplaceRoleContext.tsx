@@ -103,7 +103,9 @@ interface MarketplaceRoleContextType {
   activeRole: MarketplaceRole;
   setActiveRole: (role: MarketplaceRole) => void;
   currentUser: UserProfile;
-  updateCurrentUser: (updates: Partial<UserProfile>) => Promise<void>;
+  updateCurrentUser: (
+    updates: Partial<UserProfile> & { skipBackendSync?: boolean }
+  ) => Promise<void>;
   reloadUserProfile: () => Promise<void>;
   allUsers: UserRecordForAdmin[];
   myOrders: MarketOrderItem[];
@@ -246,12 +248,19 @@ export function MarketplaceRoleProvider({ children }: { children: React.ReactNod
     setCurrentUser((prev) => ({ ...prev, role }));
   };
 
-  const updateCurrentUser = async (updates: Partial<UserProfile>) => {
+  const updateCurrentUser = async (
+    updates: Partial<UserProfile> & { skipBackendSync?: boolean }
+  ) => {
     // 1. Optimistic local update
+    const { skipBackendSync, ...userUpdates } = updates;
     setCurrentUser((prev) => ({
       ...prev,
-      ...updates,
+      ...userUpdates,
     }));
+
+    if (skipBackendSync) {
+      return;
+    }
 
     // 2. Persist to PUT /api/v1/user/profile
     try {
@@ -300,9 +309,75 @@ export function MarketplaceRoleProvider({ children }: { children: React.ReactNod
 
   const addListing = (listing: any) => {
     try {
-      const existing = JSON.parse(localStorage.getItem("yuca_custom_listings") || "[]");
-      existing.unshift(listing);
-      localStorage.setItem("yuca_custom_listings", JSON.stringify(existing));
+      const existing: any[] = JSON.parse(localStorage.getItem("yuca_custom_listings") || "[]");
+      const list = Array.isArray(existing) ? existing : [];
+
+      const newId = listing.id ? String(listing.id).trim().toLowerCase() : "";
+      const newCode =
+        listing.batchCode && listing.batchCode !== "BCH-UNKNOWN"
+          ? String(listing.batchCode).trim().toLowerCase()
+          : "";
+      const newComposite = `${(listing.title || "").trim().toLowerCase()}|${(
+        listing.seller || ""
+      )
+        .trim()
+        .toLowerCase()}|${listing.quantity}|${listing.pricePerTonne}`;
+
+      // Deduplicate current list first to clean any preexisting duplicates
+      const seenIds = new Set<string>();
+      const seenCodes = new Set<string>();
+      const seenComposites = new Set<string>();
+      const cleanedList: any[] = [];
+
+      for (const item of list) {
+        if (!item) continue;
+        const itemId = item.id ? String(item.id).trim().toLowerCase() : "";
+        const itemCode =
+          item.batchCode && item.batchCode !== "BCH-UNKNOWN"
+            ? String(item.batchCode).trim().toLowerCase()
+            : "";
+        const itemComp = `${(item.title || "").trim().toLowerCase()}|${(
+          item.seller || ""
+        )
+          .trim()
+          .toLowerCase()}|${item.quantity}|${item.pricePerTonne}`;
+
+        if (itemId && seenIds.has(itemId)) continue;
+        if (itemCode && seenCodes.has(itemCode)) continue;
+        if (itemComp && seenComposites.has(itemComp)) continue;
+
+        if (itemId) seenIds.add(itemId);
+        if (itemCode) seenCodes.add(itemCode);
+        if (itemComp) seenComposites.add(itemComp);
+
+        cleanedList.push(item);
+      }
+
+      // Check if new listing already exists in cleaned list
+      const isAlreadyPresent = cleanedList.some((item) => {
+        const itemId = item.id ? String(item.id).trim().toLowerCase() : "";
+        const itemCode =
+          item.batchCode && item.batchCode !== "BCH-UNKNOWN"
+            ? String(item.batchCode).trim().toLowerCase()
+            : "";
+        const itemComp = `${(item.title || "").trim().toLowerCase()}|${(
+          item.seller || ""
+        )
+          .trim()
+          .toLowerCase()}|${item.quantity}|${item.pricePerTonne}`;
+
+        return (
+          (newId && itemId === newId) ||
+          (newCode && itemCode === newCode) ||
+          (newComposite && itemComp === newComposite)
+        );
+      });
+
+      if (!isAlreadyPresent) {
+        cleanedList.unshift(listing);
+      }
+
+      localStorage.setItem("yuca_custom_listings", JSON.stringify(cleanedList));
     } catch {}
   };
 

@@ -118,11 +118,22 @@ async function fetcher<T>(endpoint: string, options: RequestInit = {}): Promise<
 export const cartApi = {
   // GET /api/v1/cart
   getCart: async (): Promise<Cart> => {
-    const payload = await fetcher<any>('/cart', {
-      method: 'GET',
-    });
+    try {
+      const token = getAuthToken();
+      if (!token) {
+        return { items: [], total: 0, subtotal: 0, totalItems: 0 };
+      }
+      const payload = await fetcher<any>('/cart', {
+        method: 'GET',
+      });
 
-    return normalizeCartResponse(payload);
+      return normalizeCartResponse(payload);
+    } catch (err: any) {
+      if (String(err?.message || '').includes('401')) {
+        return { items: [], total: 0, subtotal: 0, totalItems: 0 };
+      }
+      throw err;
+    }
   },
 
   // POST /api/v1/cart/items

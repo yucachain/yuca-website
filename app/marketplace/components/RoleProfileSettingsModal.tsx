@@ -15,6 +15,7 @@ import {
   Factory,
   Tractor,
   ShoppingBag,
+  Bell,
 } from "lucide-react";
 import { useMarketplaceRole } from "../context/MarketplaceRoleContext";
 import {
@@ -22,6 +23,10 @@ import {
   updateUserProfile,
   getUserBankDetails,
   updateUserBankDetails,
+  uploadUserAvatar,
+  getUserSettings,
+  updateUserSettings,
+  type UserSettingsPayload,
 } from "@/app/Services/userService";
 import { NIGERIAN_STATES } from "@/app/marketplace/components/locationOptions";
 import { toast } from "sonner";
@@ -40,6 +45,7 @@ export default function RoleProfileSettingsModal({
 
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
 
   const [formData, setFormData] = useState({
     name: currentUser.name || "",
@@ -57,9 +63,15 @@ export default function RoleProfileSettingsModal({
     farmName: currentUser.farmName || "",
     businessName: currentUser.businessName || "",
     companyName: currentUser.companyName || "",
-    bankName: currentUser.bankName || "First Bank of Nigeria",
+    bankName: currentUser.bankName || "",
     accountNumber: currentUser.accountNumber || "",
     accountName: currentUser.accountName || currentUser.name || "",
+  });
+
+  const [settings, setSettings] = useState<UserSettingsPayload>({
+    smsAlertsEnabled: true,
+    emailAlertsEnabled: true,
+    pushAlertsEnabled: true,
   });
 
   const [avatarPreview, setAvatarPreview] = useState<string | null>(
@@ -69,7 +81,7 @@ export default function RoleProfileSettingsModal({
   const [phoneError, setPhoneError] = useState<string | null>(null);
   const [accountError, setAccountError] = useState<string | null>(null);
 
-  // Fetch remote profile and bank details when opened
+  // Fetch remote profile, bank details, and settings when opened
   useEffect(() => {
     if (!isOpen) return;
 
@@ -78,21 +90,33 @@ export default function RoleProfileSettingsModal({
 
     async function fetchData() {
       try {
-        const [profileRes, bankRes] = await Promise.allSettled([
+        const [profileRes, bankRes, settingsRes] = await Promise.allSettled([
           getUserProfile(),
           !isConsumer ? getUserBankDetails() : Promise.resolve(null),
+          getUserSettings(),
         ]);
 
         if (!isMounted) return;
 
         let profile: any = null;
         if (profileRes.status === "fulfilled" && profileRes.value) {
-          profile = profileRes.value;
+          profile = profileRes.value?.data || profileRes.value;
         }
 
         let bank: any = null;
         if (bankRes.status === "fulfilled" && bankRes.value) {
-          bank = bankRes.value;
+          bank = bankRes.value?.data || bankRes.value;
+        }
+
+        if (settingsRes.status === "fulfilled" && settingsRes.value) {
+          const s: any = (settingsRes.value as any)?.data || settingsRes.value;
+          if (s && typeof s === "object") {
+            setSettings({
+              smsAlertsEnabled: s.smsAlertsEnabled !== false,
+              emailAlertsEnabled: s.emailAlertsEnabled !== false,
+              pushAlertsEnabled: s.pushAlertsEnabled !== false,
+            });
+          }
         }
 
         const fullName = profile?.name || currentUser.name || "";
@@ -117,9 +141,9 @@ export default function RoleProfileSettingsModal({
           farmName: profile?.farmName || currentUser.farmName || "",
           businessName: profile?.businessName || currentUser.businessName || "",
           companyName: profile?.companyName || currentUser.companyName || "",
-          bankName: bank?.bankName || profile?.bankName || prev.bankName,
-          accountNumber: bank?.accountNumber || profile?.accountNumber || prev.accountNumber,
-          accountName: bank?.accountName || profile?.accountName || prev.accountName || fullName,
+          bankName: bank?.bankName || bank?.data?.bankName || profile?.bankName || currentUser.bankName || prev.bankName || "",
+          accountNumber: bank?.accountNumber || bank?.data?.accountNumber || profile?.accountNumber || currentUser.accountNumber || prev.accountNumber || "",
+          accountName: bank?.accountName || bank?.data?.accountName || profile?.accountName || currentUser.accountName || prev.accountName || fullName,
         }));
 
         if (profile?.avatarUrl) {
@@ -199,11 +223,33 @@ export default function RoleProfileSettingsModal({
     setFormData({ ...formData, accountNumber: cleaned });
   };
 
-  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const url = URL.createObjectURL(file);
-      setAvatarPreview(url);
+    if (!file) return;
+
+    // Show temporary local preview immediately for great UX
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      if (typeof reader.result === "string") {
+        setAvatarPreview(reader.result);
+      }
+    };
+    reader.readAsDataURL(file);
+
+    setIsUploadingAvatar(true);
+    try {
+      const uploadedUrl = await uploadUserAvatar(file);
+      if (uploadedUrl && (uploadedUrl.startsWith("http://") || uploadedUrl.startsWith("https://"))) {
+        setAvatarPreview(uploadedUrl);
+        toast.success("Profile photo uploaded successfully!");
+      } else {
+        toast.info("Photo selected.");
+      }
+    } catch (err: any) {
+      console.warn("Avatar upload error:", err);
+      toast.warning("Photo selected locally. (Avatar upload: " + (err?.message || "server error") + ")");
+    } finally {
+      setIsUploadingAvatar(false);
     }
   };
 
@@ -212,63 +258,136 @@ export default function RoleProfileSettingsModal({
     setIsSubmitting(true);
 
     try {
-      const fullName = formData.name.trim();
-      const parts = fullName.split(" ");
-      const firstName = formData.firstName.trim() || parts[0] || "";
-      const lastName = formData.lastName.trim() || parts.slice(1).join(" ") || "";
+      const fullName = (formData.name || currentUser.name || "User").trim();
+      const parts = fullName.split(/\s+/).filter(Boolean);
+      const firstName = formData.firstName.trim() || parts[0] || fullName || "User";
+      const lastName =
+        formData.lastName.trim() ||
+        (parts.length > 1 ? parts.slice(1).join(" ") : parts[0] || "User");
 
-      // 1. Update Profile (PUT /api/v1/user/profile)
-      await updateUserProfile({
-        name: fullName,
-        firstName,
-        lastName,
-        phoneNumber: formData.phoneNumber.trim(),
-        address: formData.address.trim(),
-        farmAddress: formData.farmAddress.trim(),
-        facilityAddress: formData.facilityAddress.trim(),
-        businessAddress: formData.businessAddress.trim(),
-        deliveryAddress: formData.deliveryAddress.trim(),
-        avatarUrl: avatarPreview || "",
-        state: formData.state.trim(),
-        lga: formData.lga.trim(),
-        farmName: formData.farmName.trim(),
-        businessName: formData.businessName.trim(),
-        companyName: formData.companyName.trim(),
-      });
+      const resolvedAddress = (
+        formData.address ||
+        formData.farmAddress ||
+        formData.facilityAddress ||
+        formData.businessAddress ||
+        formData.deliveryAddress ||
+        currentUser.address ||
+        "Nigeria"
+      ).trim();
 
-      // 2. Update Bank Details (PUT /api/v1/user/bank-details) for non-consumers
-      if (!isConsumer && (formData.bankName || formData.accountNumber)) {
-        await updateUserBankDetails({
-          bankName: formData.bankName.trim(),
-          accountNumber: formData.accountNumber.trim(),
-          accountName: formData.accountName.trim() || fullName,
+      const resolvedFarmAddress = (
+        formData.farmAddress || (activeRole === "farmer" ? resolvedAddress : "")
+      ).trim();
+
+      const resolvedFacilityAddress = (
+        formData.facilityAddress || (activeRole === "processor" ? resolvedAddress : "")
+      ).trim();
+
+      const resolvedBusinessAddress = (
+        formData.businessAddress || (activeRole === "service-provider" ? resolvedAddress : "")
+      ).trim();
+
+      const resolvedDeliveryAddress = (
+        formData.deliveryAddress || (activeRole === "consumer" ? resolvedAddress : "")
+      ).trim();
+
+      // Only pass valid remote URLs to PUT /api/v1/user/profile to avoid 422 errors
+      const cleanAvatarUrl =
+        avatarPreview && (avatarPreview.startsWith("http://") || avatarPreview.startsWith("https://"))
+          ? avatarPreview
+          : currentUser.avatarUrl && (currentUser.avatarUrl.startsWith("http://") || currentUser.avatarUrl.startsWith("https://"))
+          ? currentUser.avatarUrl
+          : "";
+
+      let backendErrorMsg = "";
+
+      // 1. Authoritative Update Profile call (PUT /api/v1/user/profile)
+      try {
+        await updateUserProfile({
+          name: fullName,
+          firstName,
+          lastName,
+          phoneNumber: formData.phoneNumber.trim(),
+          address: resolvedAddress,
+          farmAddress: resolvedFarmAddress,
+          facilityAddress: resolvedFacilityAddress,
+          businessAddress: resolvedBusinessAddress,
+          deliveryAddress: resolvedDeliveryAddress,
+          avatarUrl: cleanAvatarUrl,
+          state: (formData.state || currentUser.state || "Oyo").trim(),
+          lga: (formData.lga || currentUser.lga || "Ibadan").trim(),
+          farmName: formData.farmName.trim(),
+          businessName: formData.businessName.trim(),
+          companyName: formData.companyName.trim(),
         });
+      } catch (err: any) {
+        backendErrorMsg = err?.message || "Failed to update profile";
       }
 
-      // 3. Update local context
+      // 2. Authoritative Update Bank Details (PUT /api/v1/user/bank-details) for non-consumers
+      if (!isConsumer && (formData.bankName || formData.accountNumber)) {
+        try {
+          await updateUserBankDetails({
+            bankName: formData.bankName.trim(),
+            accountNumber: formData.accountNumber.trim(),
+            accountName: formData.accountName.trim() || fullName,
+          });
+        } catch (err: any) {
+          if (!backendErrorMsg) {
+            backendErrorMsg = err?.message || "Failed to update bank details";
+          }
+        }
+      }
+
+      // 3. Authoritative Update User Notification Settings (PUT /api/v1/user/settings)
+      try {
+        await updateUserSettings({
+          smsAlertsEnabled: Boolean(settings.smsAlertsEnabled),
+          emailAlertsEnabled: Boolean(settings.emailAlertsEnabled),
+          pushAlertsEnabled: Boolean(settings.pushAlertsEnabled),
+        });
+      } catch (err: any) {
+        console.warn("User settings update failed:", err);
+      }
+
+      // 4. Update local context with skipBackendSync to prevent duplicate/triple calls
       await updateCurrentUser({
         name: fullName,
         firstName,
         lastName,
         phone: formData.phoneNumber.trim(),
-        address: formData.address.trim(),
-        farmAddress: formData.farmAddress.trim(),
-        facilityAddress: formData.facilityAddress.trim(),
-        businessAddress: formData.businessAddress.trim(),
-        deliveryAddress: formData.deliveryAddress.trim(),
-        state: formData.state.trim(),
-        lga: formData.lga.trim(),
+        address: resolvedAddress,
+        farmAddress: resolvedFarmAddress,
+        facilityAddress: resolvedFacilityAddress,
+        businessAddress: resolvedBusinessAddress,
+        deliveryAddress: resolvedDeliveryAddress,
+        state: (formData.state || currentUser.state || "Oyo").trim(),
+        lga: (formData.lga || currentUser.lga || "Ibadan").trim(),
         farmName: formData.farmName.trim(),
         businessName: formData.businessName.trim(),
         companyName: formData.companyName.trim(),
         bankName: formData.bankName.trim(),
         accountNumber: formData.accountNumber.trim(),
         accountName: formData.accountName.trim() || fullName,
-        avatarUrl: avatarPreview || undefined,
+        avatarUrl: cleanAvatarUrl || undefined,
+        skipBackendSync: true,
       });
 
       setSaved(true);
-      toast.success("Profile & bank payout details saved successfully!");
+      if (backendErrorMsg) {
+        if (
+          backendErrorMsg.toLowerCase().includes("session") ||
+          backendErrorMsg.toLowerCase().includes("unauthorized") ||
+          backendErrorMsg.toLowerCase().includes("401")
+        ) {
+          toast.warning("Profile saved locally! Please sign in again to sync changes to the cloud.");
+        } else {
+          toast.warning(`Saved locally: ${backendErrorMsg}`);
+        }
+      } else {
+        toast.success("Profile & settings saved successfully!");
+      }
+
       setTimeout(() => {
         setSaved(false);
         onClose();
@@ -328,7 +447,9 @@ export default function RoleProfileSettingsModal({
             <div className="flex items-center gap-4 p-4 rounded-2xl bg-gray-50/70 border border-gray-100">
               <div className="relative">
                 <div className="h-16 w-16 rounded-full overflow-hidden border-2 border-[#226049] bg-white flex items-center justify-center shadow-xs">
-                  {avatarPreview ? (
+                  {isUploadingAvatar ? (
+                    <Loader2 size={24} className="text-[#226049] animate-spin" />
+                  ) : avatarPreview ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={avatarPreview}
@@ -342,10 +463,15 @@ export default function RoleProfileSettingsModal({
                   )}
                 </div>
                 <label className="absolute -bottom-1 -right-1 h-6 w-6 rounded-full bg-[#226049] text-white flex items-center justify-center shadow-xs cursor-pointer hover:bg-[#1a4336]">
-                  <Camera size={12} />
+                  {isUploadingAvatar ? (
+                    <Loader2 size={12} className="animate-spin" />
+                  ) : (
+                    <Camera size={12} />
+                  )}
                   <input
                     type="file"
                     accept="image/*"
+                    disabled={isUploadingAvatar}
                     onChange={handleAvatarChange}
                     className="hidden"
                   />
@@ -355,7 +481,9 @@ export default function RoleProfileSettingsModal({
               <div>
                 <p className="font-bold text-gray-900 text-sm">Profile Picture</p>
                 <p className="text-[11px] text-gray-500">
-                  Click the camera icon to upload a new profile photo.
+                  {isUploadingAvatar
+                    ? "Uploading photo to server..."
+                    : "Click the camera icon to upload a new profile photo."}
                 </p>
                 <span className="inline-block mt-1 text-[10px] font-semibold text-[#226049] bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200/60">
                   Account Role: {activeRole.toUpperCase().replace("-", " ")}
@@ -580,22 +708,13 @@ export default function RoleProfileSettingsModal({
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block font-semibold text-gray-600 mb-1">Bank Name</label>
-                    <select
+                    <input
+                      type="text"
+                      placeholder="e.g. Access Bank, Zenith Bank, GTBank, OPay..."
                       value={formData.bankName}
                       onChange={(e) => setFormData({ ...formData, bankName: e.target.value })}
-                      className="w-full rounded-xl border border-gray-200 px-3 py-2 text-gray-900 focus:border-[#226049] focus:outline-none bg-white"
-                    >
-                      <option value="First Bank of Nigeria">First Bank of Nigeria</option>
-                      <option value="Zenith Bank">Zenith Bank</option>
-                      <option value="Access Bank">Access Bank</option>
-                      <option value="Guaranty Trust Bank (GTBank)">Guaranty Trust Bank (GTBank)</option>
-                      <option value="United Bank for Africa (UBA)">United Bank for Africa (UBA)</option>
-                      <option value="Sterling Bank">Sterling Bank</option>
-                      <option value="Stanbic IBTC Bank">Stanbic IBTC Bank</option>
-                      <option value="Fidelity Bank">Fidelity Bank</option>
-                      <option value="Union Bank of Nigeria">Union Bank of Nigeria</option>
-                      <option value="Wema Bank">Wema Bank</option>
-                    </select>
+                      className="w-full rounded-xl border border-gray-200 px-3 py-2 text-gray-900 focus:border-[#226049] focus:outline-none bg-white font-medium"
+                    />
                   </div>
 
                   <div>
@@ -636,6 +755,66 @@ export default function RoleProfileSettingsModal({
                 </div>
               </div>
             )}
+
+            {/* Notification & Alert Preferences (PUT /api/v1/user/settings) */}
+            <div className="pt-3 border-t border-gray-100">
+              <div className="flex items-center gap-1.5 mb-2">
+                <Bell size={15} className="text-[#226049]" />
+                <span className="font-bold text-gray-900 text-xs">
+                  Notification &amp; Alert Preferences
+                </span>
+              </div>
+              <p className="text-[11px] text-gray-500 mb-3">
+                Manage your real-time alerts and communication channels for orders, marketplace updates, and payouts.
+              </p>
+
+              <div className="space-y-2">
+                <label className="flex items-center justify-between p-2.5 rounded-xl border border-gray-100 bg-gray-50/60 hover:bg-gray-50 cursor-pointer transition-colors">
+                  <div>
+                    <p className="font-semibold text-gray-800 text-xs">SMS Alerts</p>
+                    <p className="text-[11px] text-gray-500">Receive urgent dispatch and order status messages via SMS text</p>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={settings.smsAlertsEnabled}
+                    onChange={(e) =>
+                      setSettings({ ...settings, smsAlertsEnabled: e.target.checked })
+                    }
+                    className="h-4 w-4 rounded text-[#226049] focus:ring-[#226049] border-gray-300 accent-[#226049] cursor-pointer"
+                  />
+                </label>
+
+                <label className="flex items-center justify-between p-2.5 rounded-xl border border-gray-100 bg-gray-50/60 hover:bg-gray-50 cursor-pointer transition-colors">
+                  <div>
+                    <p className="font-semibold text-gray-800 text-xs">Email Alerts</p>
+                    <p className="text-[11px] text-gray-500">Receive email summaries, invoices, and payout confirmations</p>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={settings.emailAlertsEnabled}
+                    onChange={(e) =>
+                      setSettings({ ...settings, emailAlertsEnabled: e.target.checked })
+                    }
+                    className="h-4 w-4 rounded text-[#226049] focus:ring-[#226049] border-gray-300 accent-[#226049] cursor-pointer"
+                  />
+                </label>
+
+                <label className="flex items-center justify-between p-2.5 rounded-xl border border-gray-100 bg-gray-50/60 hover:bg-gray-50 cursor-pointer transition-colors">
+                  <div>
+                    <p className="font-semibold text-gray-800 text-xs">Push Notifications</p>
+                    <p className="text-[11px] text-gray-500">Instant browser notifications and in-app updates</p>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={settings.pushAlertsEnabled}
+                    onChange={(e) =>
+                      setSettings({ ...settings, pushAlertsEnabled: e.target.checked })
+                    }
+                    className="h-4 w-4 rounded text-[#226049] focus:ring-[#226049] border-gray-300 accent-[#226049] cursor-pointer"
+                  />
+                </label>
+              </div>
+            </div>
 
             <div className="flex gap-2 pt-4 border-t border-gray-100">
               <button

@@ -63,6 +63,8 @@ function cartReducer(state: CartEntry[], action: CartAction): CartEntry[] {
   }
 }
 
+export type DeliveryMethodOption = "yucavault-pickup" | "direct-delivery" | "self-pickup";
+
 interface CartContextValue {
   cartItems: CartEntry[];
   totalItems: number;
@@ -70,6 +72,8 @@ interface CartContextValue {
   logisticsFee: number;
   hasLogistics: boolean;
   setHasLogistics: (enabled: boolean) => void;
+  deliveryMethod: DeliveryMethodOption;
+  setDeliveryMethod: (method: DeliveryMethodOption) => void;
   vat: number;
   total: number;
   addToCart: (batch: CassavaBatch) => void;
@@ -85,7 +89,34 @@ const STORAGE_KEY = "yuca_cart_v1";
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [cartItems, dispatch] = useReducer(cartReducer, []);
-  const [hasLogistics, setHasLogistics] = React.useState<boolean>(true);
+  const [deliveryMethod, setDeliveryMethodState] = React.useState<DeliveryMethodOption>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const stored = localStorage.getItem("yuca_delivery_method");
+        if (stored === "direct-delivery" || stored === "self-pickup" || stored === "yucavault-pickup") {
+          return stored as DeliveryMethodOption;
+        }
+      } catch {}
+    }
+    return "yucavault-pickup";
+  });
+
+  const setDeliveryMethod = useCallback((method: DeliveryMethodOption) => {
+    setDeliveryMethodState(method);
+    try {
+      localStorage.setItem("yuca_delivery_method", method);
+    } catch {}
+  }, []);
+
+  const hasLogistics = deliveryMethod === "yucavault-pickup";
+
+  const setHasLogistics = useCallback(
+    (enabled: boolean) => {
+      const nextMethod: DeliveryMethodOption = enabled ? "yucavault-pickup" : "direct-delivery";
+      setDeliveryMethod(nextMethod);
+    },
+    [setDeliveryMethod]
+  );
 
   // Hydrate cart from localStorage first, then sync with live server Cart API
   useEffect(() => {
@@ -119,7 +150,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
             currency: i.currency || "₦",
             seller: i.seller || i.sellerName || "Verified Seller",
             location: i.location || "Nigeria",
-            image: i.image || i.imageUrl || i.photoUrls?.[0] || "/images/batches/Batch1.png",
+            image: (i.image || i.imageUrl || i.photoUrls?.[0] || "").replace(/.*Batch1\.png.*/, ""),
           }));
           dispatch({ type: "INIT", items: formatted });
         }
@@ -216,9 +247,12 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     () => cartItems.reduce((acc, i) => acc + i.pricePerTonne * i.quantity, 0),
     [cartItems]
   );
+
+  // Logistics fee (5%) ONLY calculates when the buyer selects YucaVault to carry/transport the order
+  // If the buyer selects another option (e.g. self pickup or direct delivery), logistics percentage is NOT calculated (0)
   const logisticsFee = useMemo(
-    () => Math.round(subtotal * 0.05),
-    [subtotal]
+    () => (hasLogistics ? Math.round(subtotal * 0.05) : 0),
+    [subtotal, hasLogistics]
   );
   const vat = 0;
   const total = subtotal + (hasLogistics ? logisticsFee : 0) + vat;
@@ -230,6 +264,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     logisticsFee,
     hasLogistics,
     setHasLogistics,
+    deliveryMethod,
+    setDeliveryMethod,
     vat,
     total,
     addToCart,

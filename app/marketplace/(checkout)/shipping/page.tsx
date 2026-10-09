@@ -17,15 +17,14 @@ import {
   ShippingInfoValues,
 } from "@/app/components/validation/schema";
 import { useMarketplaceRole } from "@/app/marketplace/context/MarketplaceRoleContext";
+import { useCart, DeliveryMethodOption } from "@/app/marketplace/context/CartContext";
+import { marketplaceApi } from "@/app/Services/marketplaceService";
 import { ShieldCheck, Truck, Warehouse, CheckCircle2 } from "lucide-react";
 
 export default function ShippingInfoPage() {
   const router = useRouter();
   const { activeRole, currentUser } = useMarketplaceRole();
-
-  const [deliveryMethod, setDeliveryMethod] = useState<
-    "yucavault-pickup" | "direct-delivery" | "hub-pickup"
-  >("yucavault-pickup");
+  const { deliveryMethod, setDeliveryMethod } = useCart();
 
   const handleSubmit = async (
     values: ShippingInfoValues,
@@ -39,6 +38,21 @@ export default function ShippingInfoPage() {
       };
       localStorage.setItem("yuca_shipping_info", JSON.stringify(merged));
       localStorage.setItem("yuca_delivery_method", deliveryMethod);
+
+      const quotePayload = {
+        deliveryMethod: deliveryMethod === "direct-delivery" ? "Delivery" : "SelfPickup",
+        deliveryAddress: `${values.address}, ${values.state}, Nigeria`,
+        pickupLocation: "YucaVault Central Cluster, Oyo State",
+      };
+
+      const quote = await marketplaceApi.getCheckoutQuote(quotePayload).catch((err) => {
+        console.warn("getCheckoutQuote API fallback:", err);
+        return null;
+      });
+
+      if (quote) {
+        localStorage.setItem("yuca_checkout_quote", JSON.stringify(quote));
+      }
     } catch {}
     setSubmitting(false);
     router.push("/marketplace/review");
@@ -98,9 +112,14 @@ export default function ShippingInfoPage() {
               <h4 className="text-sm font-bold text-gray-900">
                 Assign YucaVault to Pick Up &amp; Inspect
               </h4>
-              <span className="rounded-full bg-emerald-100/80 px-2 py-0.5 text-[10px] font-bold text-[#226049]">
-                Recommended for Buyers
-              </span>
+              <div className="flex items-center gap-1.5">
+                <span className="rounded-full bg-emerald-100/80 px-2 py-0.5 text-[10px] font-bold text-[#226049]">
+                  5% Haulage Fee
+                </span>
+                <span className="rounded-full bg-emerald-100/80 px-2 py-0.5 text-[10px] font-bold text-[#226049]">
+                  Recommended for Buyers
+                </span>
+              </div>
             </div>
             <p className="mt-1 text-xs text-gray-500 leading-relaxed">
               YucaChain’s certified logistics truck will pick up the produce directly from the farm gate, verify weight on calibrated scales, and store or dispatch directly to your factory.
@@ -140,11 +159,11 @@ export default function ShippingInfoPage() {
                 Direct Seller Delivery / Haulage
               </h4>
               <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-bold text-gray-600">
-                Doorstep / Gate
+                ₦0 / No Logistics Fee Added
               </span>
             </div>
             <p className="mt-1 text-xs text-gray-500 leading-relaxed">
-              Produce is transported directly from seller’s location to your provided delivery address via commercial haulage.
+              Produce is transported directly from seller’s location to your provided delivery address via commercial haulage. No logistics percentage calculated.
             </p>
           </div>
           <div className="mt-1">

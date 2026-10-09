@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState } from "react";
-import Image from "next/image";
 import {
   MapPin,
   Building2,
@@ -13,7 +12,10 @@ import {
   CheckCircle2,
   ShieldCheck,
   PackageCheck,
-  Share2,
+  Sprout,
+  Package,
+  Tractor,
+  FlaskConical,
 } from "lucide-react";
 import type { CassavaBatch } from "./types";
 
@@ -37,10 +39,8 @@ export default function ProductDetailPanel({
   const currency = batch.currency ?? "₦";
   const storageLocation = batch.storageLocation ?? batch.location;
 
-  const imageUrl =
-    !imageError && batch.images && batch.images.length > 0 && batch.images[0]
-      ? batch.images[0]
-      : "/images/batches/Batch1.png";
+  const rawImage = batch.images && batch.images.length > 0 ? batch.images[0] : "";
+  const hasImage = Boolean(rawImage && !imageError && !rawImage.includes("Batch1.png"));
 
   const isGradeA = batch.grade === "A";
 
@@ -76,22 +76,42 @@ export default function ProductDetailPanel({
 
       {/* Scrollable Content */}
       <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5 no-scrollbar">
-        {/* Product Image */}
-        <div className="overflow-hidden rounded-2xl h-48 w-full relative bg-gray-50 border border-gray-100">
-          <Image
-            src={imageUrl}
-            alt={batch.title}
-            fill
-            sizes="420px"
-            className="object-cover"
-            onError={() => setImageError(true)}
-          />
+        {/* Product Image Stage */}
+        <div className="overflow-hidden rounded-2xl h-48 w-full relative bg-gray-50 border border-gray-100 flex items-center justify-center">
+          {hasImage ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={rawImage}
+              alt={batch.title}
+              className="h-full w-full object-cover"
+              onError={() => setImageError(true)}
+            />
+          ) : (
+            <div className="flex flex-col items-center justify-center text-center p-4 h-full w-full bg-gradient-to-br from-emerald-50 via-white to-gray-50">
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#226049]/10 text-[#226049] mb-2 shadow-2xs">
+                {batch.category === "process-products" ? (
+                  <Package size={26} />
+                ) : batch.category === "machinery-lease" ? (
+                  <Tractor size={26} />
+                ) : batch.category === "inputs-seeds" ? (
+                  <FlaskConical size={26} />
+                ) : (
+                  <Sprout size={26} />
+                )}
+              </div>
+              <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">
+                {batch.category?.replace("-", " ") || "Produce"}
+              </span>
+              <span className="text-xs font-semibold text-gray-800 truncate max-w-[200px]">
+                {batch.title}
+              </span>
+            </div>
+          )}
 
           <div className="absolute top-3 left-3">
             <span
-              className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-bold text-white shadow-xs backdrop-blur-xs ${
-                isGradeA ? "bg-[#226049]" : "bg-amber-600"
-              }`}
+              className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-bold text-white shadow-xs backdrop-blur-xs ${isGradeA ? "bg-[#226049]" : "bg-amber-600"
+                }`}
             >
               <CheckCircle2 size={12} strokeWidth={2.5} />
               Grade {batch.grade} {isGradeA ? "Premium" : "Standard"}
@@ -170,22 +190,6 @@ export default function ProductDetailPanel({
               </span>
               <span className="font-semibold text-gray-800">{batch.storageTime || "Fresh"}</span>
             </div>
-
-            <div className="flex items-center justify-between py-1.5 px-3 rounded-xl bg-gray-50 border border-gray-100">
-              <span className="flex items-center gap-2 text-gray-500">
-                <Thermometer size={13} className="text-gray-400" />
-                Vault Temperature
-              </span>
-              <span className="font-semibold text-gray-800">{batch.temperatureC}°C</span>
-            </div>
-
-            <div className="flex items-center justify-between py-1.5 px-3 rounded-xl bg-gray-50 border border-gray-100">
-              <span className="flex items-center gap-2 text-gray-500">
-                <Droplets size={13} className="text-gray-400" />
-                Humidity Level
-              </span>
-              <span className="font-semibold text-gray-800">{batch.humidityPercent}% RH</span>
-            </div>
           </div>
         </div>
 
@@ -206,11 +210,10 @@ export default function ProductDetailPanel({
         <button
           type="button"
           onClick={handleAddCart}
-          className={`w-full inline-flex items-center justify-center gap-2 rounded-xl py-2.5 text-xs font-bold transition-all shadow-xs cursor-pointer ${
-            added
+          className={`w-full inline-flex items-center justify-center gap-2 rounded-xl py-2.5 text-xs font-bold transition-all shadow-xs cursor-pointer ${added
               ? "bg-emerald-600 text-white"
               : "bg-[#226049] hover:bg-[#1a4336] text-white active:scale-98"
-          }`}
+            }`}
         >
           <ShoppingCart size={14} />
           <span>{added ? "Added to Cart!" : "Add to Cart"}</span>

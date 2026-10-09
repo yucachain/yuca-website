@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState } from "react";
-import Image from "next/image";
 import {
   Star,
   ShoppingCart,
@@ -9,6 +8,10 @@ import {
   MapPin,
   Building2,
   Check,
+  Sprout,
+  Package,
+  Tractor,
+  FlaskConical,
 } from "lucide-react";
 import type { CassavaBatch } from "./types";
 
@@ -32,10 +35,8 @@ export default function ProductCard({
   const unit = batch.unit ?? "Tonnes";
   const currency = batch.currency ?? "₦";
 
-  const imageUrl =
-    !imageError && batch.images && batch.images.length > 0 && batch.images[0]
-      ? batch.images[0]
-      : "/images/batches/Batch1.png";
+  const rawImage = batch.images && batch.images.length > 0 ? batch.images[0] : "";
+  const hasImage = Boolean(rawImage && !imageError && !rawImage.includes("Batch1.png"));
 
   const handleAdd = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -58,16 +59,37 @@ export default function ProductCard({
           : "border-gray-200/70 hover:border-gray-300 hover:shadow-md",
       ].join(" ")}
     >
-      {/* Product Image Stage (Matches inspiration layout) */}
-      <div className="relative h-38 sm:h-42 w-full rounded-xl bg-[#f8f9fa] flex items-center justify-center p-2 overflow-hidden mb-3 border border-gray-100/80">
-        <Image
-          src={imageUrl}
-          alt={batch.title}
-          fill
-          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-          className="object-cover rounded-lg transition-transform duration-300 group-hover:scale-105"
-          onError={() => setImageError(true)}
-        />
+      {/* Product Image Stage */}
+      <div className="relative h-38 sm:h-42 w-full rounded-xl bg-[#f8f9fa] flex items-center justify-center overflow-hidden mb-3 border border-gray-100/80">
+        {hasImage ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={rawImage}
+            alt={batch.title}
+            className="h-full w-full object-cover rounded-lg transition-transform duration-300 group-hover:scale-105"
+            onError={() => setImageError(true)}
+          />
+        ) : (
+          <div className="flex flex-col items-center justify-center text-center p-3 h-full w-full bg-gradient-to-br from-emerald-50/70 via-white to-gray-50 rounded-lg">
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#226049]/10 text-[#226049] mb-1.5 shadow-2xs">
+              {batch.category === "process-products" ? (
+                <Package size={20} />
+              ) : batch.category === "machinery-lease" ? (
+                <Tractor size={20} />
+              ) : batch.category === "inputs-seeds" ? (
+                <FlaskConical size={20} />
+              ) : (
+                <Sprout size={20} />
+              )}
+            </div>
+            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">
+              {batch.category?.replace("-", " ") || "Produce"}
+            </span>
+            <span className="text-[11px] font-semibold text-gray-700 truncate max-w-[140px]">
+              {batch.title}
+            </span>
+          </div>
+        )}
 
         {/* Floating Grade Pill */}
         <div className="absolute top-2 left-2 flex items-center gap-1">
@@ -83,7 +105,7 @@ export default function ProductCard({
           </span>
         </div>
 
-        {/* Floating Star Rating in slight gold (from inspiration) */}
+        {/* Floating Star Rating */}
         <div className="absolute top-2 right-2 flex items-center gap-1 rounded-md bg-white/95 px-1.5 py-0.5 shadow-2xs backdrop-blur-xs border border-amber-200/60">
           <Star size={11} className="fill-amber-400 text-amber-500" />
           <span className="text-[10px] font-bold text-gray-800">{rating}</span>

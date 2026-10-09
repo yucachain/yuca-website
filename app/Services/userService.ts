@@ -26,28 +26,21 @@ export interface UserBankDetailsResponse {
   [key: string]: any;
 }
 
+export interface UserSettingsPayload {
+  smsAlertsEnabled: boolean;
+  emailAlertsEnabled: boolean;
+  pushAlertsEnabled: boolean;
+}
+
 /**
  * Fetch current user's profile
  * GET /api/v1/user/profile
  */
 export async function getUserProfile(): Promise<any> {
-  try {
-    const res = await fetchWithAuth<UserProfileResponse>("/api/v1/user/profile", {
-      method: "GET",
-    });
-    return res?.data ?? res;
-  } catch (error) {
-    // Graceful fallback to legacy /api/v1/users/profile if backend uses plural
-    try {
-      const fallbackRes = await fetchWithAuth<UserProfileResponse>(
-        "/api/v1/users/profile",
-        { method: "GET" }
-      );
-      return fallbackRes?.data ?? fallbackRes;
-    } catch {
-      throw error;
-    }
-  }
+  const res = await fetchWithAuth<UserProfileResponse>("/api/v1/user/profile", {
+    method: "GET",
+  });
+  return res?.data ?? res;
 }
 
 /**
@@ -75,27 +68,38 @@ export async function updateUserProfile(
     companyName: payload.companyName || "",
   };
 
-  try {
-    const res = await fetchWithAuth<UserProfileResponse>("/api/v1/user/profile", {
-      method: "PUT",
-      body: JSON.stringify(body),
-    });
-    return res?.data ?? res;
-  } catch (error) {
-    // Graceful fallback if backend uses plural
-    try {
-      const fallbackRes = await fetchWithAuth<UserProfileResponse>(
-        "/api/v1/users/profile",
-        {
-          method: "PUT",
-          body: JSON.stringify(body),
-        }
-      );
-      return fallbackRes?.data ?? fallbackRes;
-    } catch {
-      throw error;
-    }
-  }
+  const res = await fetchWithAuth<UserProfileResponse>("/api/v1/user/profile", {
+    method: "PUT",
+    body: JSON.stringify(body),
+  });
+  return res?.data ?? res;
+}
+
+/**
+ * Upload user profile picture
+ * POST /api/v1/user/avatar (multipart/form-data)
+ */
+export async function uploadUserAvatar(file: File): Promise<string | null> {
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("avatar", file);
+
+  const res = await fetchWithAuth<any>("/api/v1/user/avatar", {
+    method: "POST",
+    body: formData,
+  });
+
+  return (
+    res?.avatarUrl ||
+    res?.data?.avatarUrl ||
+    res?.url ||
+    res?.data?.url ||
+    res?.photoUrl ||
+    res?.data?.photoUrl ||
+    (typeof res?.data === "string" && (res.data.startsWith("http://") || res.data.startsWith("https://")) ? res.data : null) ||
+    (typeof res === "string" && (res.startsWith("http://") || res.startsWith("https://")) ? res : null) ||
+    null
+  );
 }
 
 /**
@@ -135,11 +139,45 @@ export async function updateUserBankDetails(
   return res?.data ?? res;
 }
 
+/**
+ * Fetch user notification & alert settings
+ * GET /api/v1/user/settings
+ */
+export async function getUserSettings(): Promise<UserSettingsPayload> {
+  const res = await fetchWithAuth<any>("/api/v1/user/settings", {
+    method: "GET",
+  });
+  return res?.data ?? res;
+}
+
+/**
+ * Update user notification & alert settings
+ * PUT /api/v1/user/settings
+ */
+export async function updateUserSettings(
+  payload: UserSettingsPayload
+): Promise<any> {
+  const body = {
+    smsAlertsEnabled: Boolean(payload.smsAlertsEnabled),
+    emailAlertsEnabled: Boolean(payload.emailAlertsEnabled),
+    pushAlertsEnabled: Boolean(payload.pushAlertsEnabled),
+  };
+
+  const res = await fetchWithAuth<any>("/api/v1/user/settings", {
+    method: "PUT",
+    body: JSON.stringify(body),
+  });
+  return res?.data ?? res;
+}
+
 export const userService = {
   getUserProfile,
   updateUserProfile,
+  uploadUserAvatar,
   getUserBankDetails,
   updateUserBankDetails,
+  getUserSettings,
+  updateUserSettings,
 };
 
 export default userService;

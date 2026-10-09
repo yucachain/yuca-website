@@ -17,6 +17,7 @@ import {
   RefreshTokenRequest, 
   RefreshTokenResponseData
 } from "../types/auth";
+import { getRefreshToken } from "./tokenHelper";
 
 const API_BASE_URL = (process.env.NEXT_PUBLIC_API_BASE_URL || "")
   .replace(/\/index\.html?$/i, "")
@@ -590,11 +591,7 @@ export async function logoutUser(
 }
 
 export async function refreshAccessToken(): Promise<string> {
-  const storedRefreshToken =
-    typeof window !== "undefined"
-      ? localStorage.getItem("refreshToken") ||
-        localStorage.getItem("yuca_refresh_token")
-      : null;
+  const storedRefreshToken = getRefreshToken();
 
   if (!storedRefreshToken) {
     throw new Error("No refresh token available");
@@ -613,31 +610,23 @@ export async function refreshAccessToken(): Promise<string> {
     body: JSON.stringify(payload),
   });
 
-  const data: ApiResponse<RefreshTokenResponseData> = await response.json();
+  const data: ApiResponse<RefreshTokenResponseData> = await response.json().catch(() => ({}));
 
   if (!response.ok || (data.successful !== undefined && !data.successful) || !data.data?.accessToken) {
-    // Clear storage if token refresh fails
-    if (typeof window !== "undefined") {
-      localStorage.removeItem("accessToken");
-      localStorage.removeItem("yuca_access_token");
-      localStorage.removeItem("refreshToken");
-      localStorage.removeItem("yuca_refresh_token");
-      localStorage.removeItem("userRole");
-      localStorage.removeItem("user");
-      localStorage.removeItem("yuca_user_data");
-    }
     throw new Error(data.message || "Failed to refresh session");
   }
 
   // Update localStorage with new tokens
-  localStorage.setItem("accessToken", data.data.accessToken);
-  localStorage.setItem("yuca_access_token", data.data.accessToken);
+  const cleanAccessToken = (data.data.accessToken || "").replace(/^"|"$/g, "").replace(/^Bearer\s+/i, "").trim();
+  localStorage.setItem("accessToken", cleanAccessToken);
+  localStorage.setItem("yuca_access_token", cleanAccessToken);
   if (data.data.refreshToken) {
-    localStorage.setItem("refreshToken", data.data.refreshToken);
-    localStorage.setItem("yuca_refresh_token", data.data.refreshToken);
+    const cleanRefresh = (data.data.refreshToken || "").replace(/^"|"$/g, "").trim();
+    localStorage.setItem("refreshToken", cleanRefresh);
+    localStorage.setItem("yuca_refresh_token", cleanRefresh);
   }
 
-  return data.data.accessToken;
+  return cleanAccessToken;
 }
 
 const authService = {

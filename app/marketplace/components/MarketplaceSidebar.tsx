@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import { useState } from "react";
 import {
   LayoutDashboard,
   TrendingUp,
@@ -8,8 +8,6 @@ import {
   ShoppingBag,
   CreditCard,
   Settings,
-  Users,
-  HelpCircle,
   X,
   Sparkles,
   ChevronRight,
@@ -26,6 +24,12 @@ export interface MarketplaceCategory {
 }
 
 export const MARKETPLACE_CATEGORIES: MarketplaceCategory[] = [
+  {
+    id: "all",
+    label: "All Products",
+    description: "Browse all items",
+    dotColor: "bg-emerald-600",
+  },
   {
     id: "raw-cassava",
     label: "Raw Cassava Batches",
@@ -48,7 +52,7 @@ export const MARKETPLACE_CATEGORIES: MarketplaceCategory[] = [
     id: "process-products",
     label: "Process Products",
     description: "Flour, starch, garri & chips",
-    dotColor: "bg-emerald-600",
+    dotColor: "bg-teal-600",
   },
 ];
 
@@ -56,20 +60,24 @@ export interface MarketplaceSidebarProps {
   activeCategoryId?: string;
   onCategoryChange?: (id: string) => void;
   weightRange?: WeightRange;
+  currentFilters?: MarketplaceFilters;
   onApplyFilters?: (filters: MarketplaceFilters) => void;
   onCloseMobileDrawer?: () => void;
   onOpenOrdersModal?: () => void;
   onOpenSettingsModal?: () => void;
+  categoryCounts?: Record<string, number>;
 }
 
 export default function MarketplaceSidebar({
-  activeCategoryId = "raw-cassava",
+  activeCategoryId = "all",
   onCategoryChange,
-  weightRange = { min: 1, max: 500 },
+  weightRange = { min: 0, max: 500 },
+  currentFilters,
   onApplyFilters,
   onCloseMobileDrawer,
   onOpenOrdersModal,
   onOpenSettingsModal,
+  categoryCounts,
 }: MarketplaceSidebarProps) {
   const { currentUser, activeRole } = useMarketplaceRole();
   const [activeNav, setActiveNav] = useState("product");
@@ -128,43 +136,43 @@ export default function MarketplaceSidebar({
               type="button"
               onClick={() => {
                 setActiveNav("dashboard");
-                onCategoryChange?.("raw-cassava");
+                onCategoryChange?.("all");
               }}
-              className={`flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold transition-all cursor-pointer ${
-                activeNav === "dashboard"
-                  ? "bg-gray-50 text-gray-900 font-bold"
-                  : "text-gray-500 hover:text-gray-900 hover:bg-gray-50"
-              }`}
+              className={`flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold transition-all cursor-pointer ${activeNav === "dashboard"
+                ? "bg-gray-50 text-gray-900 font-bold"
+                : "text-gray-500 hover:text-gray-900 hover:bg-gray-50"
+                }`}
             >
               <LayoutDashboard size={15} className="text-gray-400" />
               <span>Dashboard</span>
             </button>
 
-            <button
+            {/* <button
               type="button"
               onClick={() => {
                 setActiveNav("analytics");
                 onOpenOrdersModal?.();
               }}
-              className={`flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold transition-all cursor-pointer ${
-                activeNav === "analytics"
+              className={`flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold transition-all cursor-pointer ${activeNav === "analytics"
                   ? "bg-gray-50 text-gray-900 font-bold"
                   : "text-gray-500 hover:text-gray-900 hover:bg-gray-50"
-              }`}
+                }`}
             >
               <TrendingUp size={15} className="text-gray-400" />
               <span>Analytics</span>
-            </button>
+            </button> */}
 
             {/* Active Product Tab from Inspiration */}
             <button
               type="button"
-              onClick={() => setActiveNav("product")}
-              className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-xs transition-all cursor-pointer ${
-                activeNav === "product"
-                  ? "bg-emerald-50 text-[#226049] font-bold border-l-4 border-[#226049] shadow-2xs"
-                  : "text-gray-500 hover:text-gray-900 hover:bg-gray-50"
-              }`}
+              onClick={() => {
+                setActiveNav("product");
+                onCategoryChange?.("all");
+              }}
+              className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-xs transition-all cursor-pointer ${activeNav === "product"
+                ? "bg-emerald-50 text-[#226049] font-bold border-l-4 border-[#226049] shadow-2xs"
+                : "text-gray-500 hover:text-gray-900 hover:bg-gray-50"
+                }`}
             >
               <div className="flex items-center gap-2.5">
                 <Package size={15} className={activeNav === "product" ? "text-[#226049]" : "text-gray-400"} />
@@ -201,24 +209,36 @@ export default function MarketplaceSidebar({
           <div className="space-y-1">
             {MARKETPLACE_CATEGORIES.map((cat) => {
               const isSelected = cat.id === activeCategoryId;
+              const count = categoryCounts?.[cat.id];
               return (
                 <button
                   key={cat.id}
                   type="button"
                   onClick={() => handleCategorySelect(cat.id)}
-                  className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-xs transition-all cursor-pointer ${
-                    isSelected
-                      ? "bg-emerald-50/70 text-[#226049] font-bold"
-                      : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
-                  }`}
+                  className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-xs transition-all cursor-pointer ${isSelected
+                    ? "bg-emerald-50/70 text-[#226049] font-bold"
+                    : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                    }`}
                 >
                   <div className="flex items-center gap-2.5 truncate">
                     <span className={`h-2 w-2 rounded-xs shrink-0 ${cat.dotColor}`} />
                     <span className="truncate">{cat.label}</span>
                   </div>
-                  {isSelected && (
-                    <ChevronRight size={13} className="text-[#226049] shrink-0" />
-                  )}
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    {count !== undefined && (
+                      <span
+                        className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-md ${isSelected
+                          ? "bg-[#226049] text-white"
+                          : "bg-gray-100 text-gray-500"
+                          }`}
+                      >
+                        {count}
+                      </span>
+                    )}
+                    {isSelected && (
+                      <ChevronRight size={13} className="text-[#226049] shrink-0" />
+                    )}
+                  </div>
                 </button>
               );
             })}
@@ -231,15 +251,6 @@ export default function MarketplaceSidebar({
             System
           </p>
           <div className="space-y-1">
-            <button
-              type="button"
-              onClick={() => onOpenSettingsModal?.()}
-              className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold text-gray-500 hover:text-gray-900 hover:bg-gray-50 transition-all cursor-pointer"
-            >
-              <Settings size={15} className="text-gray-400" />
-              <span>Settings</span>
-            </button>
-
             <button
               type="button"
               onClick={() => setShowFilters((prev) => !prev)}
@@ -261,6 +272,7 @@ export default function MarketplaceSidebar({
           <div className="bg-gray-50/60 p-3 rounded-2xl border border-gray-100">
             <FilterPanel
               weightRange={weightRange}
+              currentFilters={currentFilters}
               onApplyFilters={(f) => {
                 onApplyFilters?.(f);
                 onCloseMobileDrawer?.();
@@ -288,13 +300,12 @@ export default function MarketplaceSidebar({
             {Array.from({ length: 18 }).map((_, i) => (
               <span
                 key={i}
-                className={`flex-1 h-full rounded-xs ${
-                  i < 12
-                    ? "bg-[#226049]"
-                    : i < 15
+                className={`flex-1 h-full rounded-xs ${i < 12
+                  ? "bg-[#226049]"
+                  : i < 15
                     ? "bg-amber-500"
                     : "bg-gray-200"
-                }`}
+                  }`}
               />
             ))}
           </div>

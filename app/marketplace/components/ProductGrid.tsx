@@ -12,6 +12,7 @@ export interface ProductGridProps {
   onAddToCart: (batch: CassavaBatch) => void;
   onPlaceOrder: (batch: CassavaBatch) => void;
   panelOpen: boolean;
+  onResetFilters?: () => void;
 }
 
 export default function ProductGrid({
@@ -21,6 +22,7 @@ export default function ProductGrid({
   onAddToCart,
   onPlaceOrder,
   panelOpen,
+  onResetFilters,
 }: ProductGridProps) {
   if (batches.length === 0) {
     return (
@@ -28,10 +30,19 @@ export default function ProductGrid({
         <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gray-50 text-gray-400 mb-3">
           <PackageOpen size={24} />
         </div>
-        <p className="text-sm font-bold text-gray-900">No products found in this category</p>
+        <p className="text-sm font-bold text-gray-900">No products match your current filters</p>
         <p className="mt-1 text-xs text-gray-500 max-w-sm">
-          Try adjusting your search keywords, quality grade filters, or select a different category from the sidebar.
+          Try clearing your quality grade or weight filters, or select "All Products" to browse available inventory.
         </p>
+        {onResetFilters && (
+          <button
+            type="button"
+            onClick={onResetFilters}
+            className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-[#226049] px-4 py-2 text-xs font-bold text-white hover:bg-[#1a4336] transition-colors cursor-pointer shadow-2xs"
+          >
+            Clear All Filters
+          </button>
+        )}
       </div>
     );
   }
@@ -44,9 +55,9 @@ export default function ProductGrid({
           : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
       }`}
     >
-      {batches.map((batch) => (
+      {batches.map((batch, idx) => (
         <ProductCard
-          key={batch.id}
+          key={`${batch.id}-${idx}`}
           batch={batch}
           selected={selectedBatchId === batch.id}
           onViewDetails={onViewDetails}
