@@ -17,6 +17,7 @@ import {
   X,
   CreditCard,
 } from "lucide-react";
+import type { AdminOverviewStats } from "@/app/types/admin/admin";
 import {
   useMarketplaceRole,
   MarketOrderItem,
@@ -24,10 +25,12 @@ import {
 
 export interface AdminOverviewSectionProps {
   onNavigateToOrders: () => void;
+  stats?: AdminOverviewStats | null;
 }
 
 export default function AdminOverviewSection({
   onNavigateToOrders,
+  stats,
 }: AdminOverviewSectionProps) {
   const { allTransactions, allUsers } = useMarketplaceRole();
 
@@ -66,13 +69,15 @@ export default function AdminOverviewSection({
     const paidTotal = paidList.reduce((acc, t) => acc + t.totalAmount, 0);
 
     return {
-      totalSales: allTransactions.length > 0 ? (2500 + allTransactions.length * 15) : 2500,
-      newCustomers: allUsers.length > 0 ? (110 + allUsers.length) : 110,
+      totalSales:
+        stats?.totalMarketOrders ??
+        (allTransactions.length > 0 ? 2500 + allTransactions.length * 15 : 2500),
+      newCustomers: stats?.totalUsers ?? (allUsers.length > 0 ? 110 + allUsers.length : 110),
       returnProducts: pendingList.length > 0 ? (72 + pendingList.length) : 72,
-      totalRevenue: totalGMV > 0 ? totalGMV : 8220640,
+      totalRevenue: stats?.revenue ?? (totalGMV > 0 ? totalGMV : 8220640),
       paidTotal,
     };
-  }, [allTransactions, allUsers]);
+  }, [allTransactions, allUsers, stats]);
 
   // Weekly Revenue Analytics Bar Chart Data (matches image layout: Fri, Sat, Sun, Mon, Thu, Wen, Thus)
   const weeklyData = useMemo(() => {

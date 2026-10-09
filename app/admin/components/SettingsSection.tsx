@@ -109,17 +109,30 @@ export default function SettingsSection() {
     e.preventDefault();
     setIsSaving(true);
     try {
-      await adminService.updateSettings({
+      const payload = {
         businessName: settings.businessName || "YucaChain",
         hubName: settings.hubName,
         hubId: settings.hubId,
         licenseNumber: settings.licenseNumber,
         hubState: settings.hubState,
         hubLga: settings.hubLga,
+        contactName: settings.contactName,
+        email: settings.email,
+        phone: settings.phone,
+        address: settings.address,
+        maxCapacityTonnes: Number(settings.maxCapacityTonnes) || 0,
         maxTonnesCapacity: Number(settings.maxCapacityTonnes) || 0,
         spoilageRiskThresholdHours: Number(settings.spoilageRiskThresholdHours) || 0,
+        bankName: settings.bankName,
+        accountNumber: settings.accountNumber,
+        accountName: settings.accountName,
         settlementFrequency: settings.settlementFrequency || "Daily",
-      });
+        spoilageAlertsEmail: Boolean(settings.spoilageAlertsEmail),
+        orderAlertsSms: Boolean(settings.orderAlertsSms),
+        twoFactorEnabled: Boolean(settings.twoFactorEnabled),
+      };
+
+      await adminService.updateSettings(payload);
       setSavedSuccess(true);
       toast.success("Platform and facility settings saved successfully!");
       setTimeout(() => setSavedSuccess(false), 3500);
