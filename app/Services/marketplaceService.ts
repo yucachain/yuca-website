@@ -500,6 +500,30 @@ export const marketplaceApi = {
       ];
     }
   },
+
+  // GET /api/v1/Miscellaneous/user-types
+  getUserTypes: async (): Promise<any[]> => {
+    try {
+      const result = await fetcher<any>('/Miscellaneous/user-types', {
+        method: 'GET',
+      });
+      return Array.isArray(result) ? result : Array.isArray(result?.data) ? result.data : [];
+    } catch {
+      return ["Farmer", "Processor", "ServiceProvider", "Consumer", "Admin"];
+    }
+  },
+
+  // GET /api/v1/Miscellaneous/order-statuses
+  getOrderStatuses: async (): Promise<any[]> => {
+    try {
+      const result = await fetcher<any>('/Miscellaneous/order-statuses', {
+        method: 'GET',
+      });
+      return Array.isArray(result) ? result : Array.isArray(result?.data) ? result.data : [];
+    } catch {
+      return ["Pending", "Assigned", "InTransit", "Fulfilled", "Cancelled"];
+    }
+  },
 };
 
 export default marketplaceApi;

@@ -75,3 +75,15 @@ export interface AdminSettings {
 }
 
 export type UpdateAdminSettingsRequest = Partial<AdminSettings>;
+
+export type MiscellaneousItem = string | {
+  id?: string | number;
+  name?: string;
+  value?: string;
+  label?: string;
+  description?: string;
+  [key: string]: any;
+};
+
+export type UserTypeItem = MiscellaneousItem;
+export type OrderStatusItem = MiscellaneousItem;

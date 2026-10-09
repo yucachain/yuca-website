@@ -7,6 +7,8 @@ import {
   AdminCreateDispatchRequest,
   Payout,
   UpdateAdminSettingsRequest,
+  UserTypeItem,
+  OrderStatusItem,
 } from '@/app/types/admin/admin';
 
 import { getAuthToken } from '@/app/Services/tokenHelper';
@@ -187,6 +189,26 @@ export const AdminApiService = {
     return apiFetch('/api/v1/admin/settings', {
       method: 'PUT',
       body: JSON.stringify(payload),
+    });
+  },
+
+  /**
+   * 11. GET /api/v1/Miscellaneous/user-types
+   * Retrieve platform user types / roles
+   */
+  getUserTypes: (): Promise<UserTypeItem[]> => {
+    return apiFetch<UserTypeItem[]>('/api/v1/Miscellaneous/user-types', {
+      method: 'GET',
+    });
+  },
+
+  /**
+   * 12. GET /api/v1/Miscellaneous/order-statuses
+   * Retrieve all supported market order statuses
+   */
+  getOrderStatuses: (): Promise<OrderStatusItem[]> => {
+    return apiFetch<OrderStatusItem[]>('/api/v1/Miscellaneous/order-statuses', {
+      method: 'GET',
     });
   },
 };

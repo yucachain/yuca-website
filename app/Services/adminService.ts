@@ -231,6 +231,26 @@ export const adminService = {
       });
     });
   },
+
+  /**
+   * GET /api/v1/Miscellaneous/user-types
+   */
+  async getUserTypes(): Promise<any[]> {
+    const res = await adminFetch<any>("/api/v1/Miscellaneous/user-types", {
+      method: "GET",
+    });
+    return Array.isArray(res) ? res : Array.isArray(res?.data) ? res.data : [];
+  },
+
+  /**
+   * GET /api/v1/Miscellaneous/order-statuses
+   */
+  async getOrderStatuses(): Promise<any[]> {
+    const res = await adminFetch<any>("/api/v1/Miscellaneous/order-statuses", {
+      method: "GET",
+    });
+    return Array.isArray(res) ? res : Array.isArray(res?.data) ? res.data : [];
+  },
 };
 
 export default adminService;

@@ -54,6 +54,7 @@ const ROLE_BADGES: Record<
 export default function AdminUserManagementSection() {
   const { allUsers } = useMarketplaceRole();
   const [remoteUsers, setRemoteUsers] = useState<UserRecordForAdmin[]>([]);
+  const [userTypes, setUserTypes] = useState<any[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(true);
 
   useEffect(() => {
@@ -61,10 +62,19 @@ export default function AdminUserManagementSection() {
     async function fetchPlatformUsers() {
       try {
         setLoadingUsers(true);
-        const data = await AdminApiService.getUsers();
+        const [usersRes, userTypesRes] = await Promise.allSettled([
+          AdminApiService.getUsers(),
+          AdminApiService.getUserTypes(),
+        ]);
+
         if (!isMounted) return;
-        if (Array.isArray(data)) {
-          const mapped: UserRecordForAdmin[] = data.map((u: any) => ({
+
+        if (userTypesRes.status === "fulfilled" && Array.isArray(userTypesRes.value)) {
+          setUserTypes(userTypesRes.value);
+        }
+
+        if (usersRes.status === "fulfilled" && Array.isArray(usersRes.value)) {
+          const mapped: UserRecordForAdmin[] = usersRes.value.map((u: any) => ({
             id: u.id,
             name: u.name || "Platform User",
             email: u.email || "",
@@ -80,7 +90,7 @@ export default function AdminUserManagementSection() {
           setRemoteUsers(mapped);
         }
       } catch (err) {
-        console.warn("Failed to fetch users from backend:", err);
+        console.warn("Failed to fetch users or user types from backend:", err);
       } finally {
         if (isMounted) setLoadingUsers(false);
       }

@@ -7,11 +7,13 @@ import ConsolidateOrdersModal from "./ConsolidateOrdersModal";
 import Pagination from "./Pagination";
 import type { MarketOrder, MarketOrderTab } from "./types";
 import { adminService } from "@/app/Services/adminService";
+import { AdminApiService } from "@/app/Services/admin";
 import { Check, RefreshCw, ShoppingCart } from "lucide-react";
 import { toast } from "sonner";
 
 export default function MarketOrdersSection() {
   const [orders, setOrders] = useState<MarketOrder[]>([]);
+  const [orderStatuses, setOrderStatuses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<MarketOrderTab>("all");
   const [page, setPage] = useState(1);
@@ -19,12 +21,21 @@ export default function MarketOrdersSection() {
   const [actionMessage, setActionMessage] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
 
-  // Load orders strictly from API
+  // Load orders and supported statuses strictly from API
   const fetchOrders = async () => {
     setLoading(true);
     try {
-      const data = await adminService.getMarketOrders();
-      setOrders(Array.isArray(data) ? data : []);
+      const [ordersRes, statusesRes] = await Promise.allSettled([
+        adminService.getMarketOrders(),
+        AdminApiService.getOrderStatuses(),
+      ]);
+
+      if (ordersRes.status === "fulfilled") {
+        setOrders(Array.isArray(ordersRes.value) ? ordersRes.value : []);
+      }
+      if (statusesRes.status === "fulfilled" && Array.isArray(statusesRes.value)) {
+        setOrderStatuses(statusesRes.value);
+      }
     } catch (err: any) {
       console.error("Failed to load market orders from API:", err);
       setOrders([]);
@@ -132,7 +143,12 @@ export default function MarketOrdersSection() {
       )}
 
       <div className="mt-6">
-        <MarketOrderFilterTabs counts={counts} activeTab={activeTab} onChange={handleTabChange} />
+        <MarketOrderFilterTabs
+          counts={counts}
+          activeTab={activeTab}
+          onChange={handleTabChange}
+          orderStatuses={orderStatuses}
+        />
       </div>
 
       <div className="mt-6">

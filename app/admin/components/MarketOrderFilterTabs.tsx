@@ -13,12 +13,14 @@ export interface MarketOrderFilterTabsProps {
   counts: Record<MarketOrderTab, number>;
   activeTab: MarketOrderTab;
   onChange: (tab: MarketOrderTab) => void;
+  orderStatuses?: any[];
 }
 
 export default function MarketOrderFilterTabs({
   counts,
   activeTab,
   onChange,
+  orderStatuses,
 }: MarketOrderFilterTabsProps) {
   const tabs: MarketOrderTab[] = [
     "all",
