@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Formik, Form } from "formik";
-import FormInput from "@/app/components/ui/FormInput";
+import EmailFormInput from "@/app/components/ui/EmailFormInput";
 import PasswordInput from "@/app/components/ui/PasswordInput";
 import Button from "@/app/components/ui/Button";
 import { AdminLoginSchema, adminLoginInitialValues } from "@/app/components/validation/schema";
@@ -66,13 +66,11 @@ export default function AdminLoginPage() {
         >
           {({ isSubmitting, status }) => (
             <Form className="space-y-5">
-              {/* Only Email Address */}
-              <FormInput
+              {/* Strict Email Address Input */}
+              <EmailFormInput
                 name="email"
                 label="Admin Email Address"
-                type="email"
                 placeholder="admin@yucachain.com"
-                autoComplete="email"
               />
 
               {/* Password */}

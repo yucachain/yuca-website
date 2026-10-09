@@ -483,7 +483,19 @@ export const adminLoginInitialValues: AdminLoginValues = {
 export const AdminLoginSchema: Yup.ObjectSchema<AdminLoginValues> = Yup.object({
   email: Yup.string()
     .trim()
-    .email("Please enter a valid administrator email address")
-    .required("Email address is required"),
+    .required("Email address is required")
+    .test(
+      "no-phone-numbers",
+      "Phone numbers or numbers alone are not allowed. Please enter a valid email address.",
+      (val) => !val || !/^\+?[0-9\s\-()]+$/.test(val.trim())
+    )
+    .test(
+      "must-be-valid-email",
+      "Please enter a valid administrator email address (e.g. admin@yucachain.com)",
+      (val) => {
+        if (!val) return false;
+        return /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(val.trim());
+      }
+    ),
   password: Yup.string().required("Password is required"),
 });
