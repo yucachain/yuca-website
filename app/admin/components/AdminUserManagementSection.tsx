@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   Users,
   Search,
@@ -15,12 +15,15 @@ import {
   CreditCard,
   ArrowUpRight,
   ShieldCheck,
+  Loader2,
 } from "lucide-react";
 import {
   useMarketplaceRole,
   MarketplaceRole,
   UserRecordForAdmin,
+  normalizeRole,
 } from "@/app/marketplace/context/MarketplaceRoleContext";
+import { AdminApiService } from "@/app/Services/admin";
 
 const ROLE_BADGES: Record<
   MarketplaceRole,
@@ -50,6 +53,49 @@ const ROLE_BADGES: Record<
 
 export default function AdminUserManagementSection() {
   const { allUsers } = useMarketplaceRole();
+  const [remoteUsers, setRemoteUsers] = useState<UserRecordForAdmin[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(true);
+
+  useEffect(() => {
+    let isMounted = true;
+    async function fetchPlatformUsers() {
+      try {
+        setLoadingUsers(true);
+        const data = await AdminApiService.getUsers();
+        if (!isMounted) return;
+        if (Array.isArray(data)) {
+          const mapped: UserRecordForAdmin[] = data.map((u: any) => ({
+            id: u.id,
+            name: u.name || "Platform User",
+            email: u.email || "",
+            phone: u.phone || u.phoneNumber || "—",
+            role: normalizeRole(u.role),
+            address: u.address || u.location || "—",
+            bankName: u.bankName || "—",
+            accountNumber: u.accountNumber || "—",
+            accountName: u.accountName || u.name || "—",
+            joinedDate: u.createdAt ? new Date(u.createdAt).toLocaleDateString() : "Recent",
+            status: u.status === "Suspended" ? "Active" : "Verified",
+          }));
+          setRemoteUsers(mapped);
+        }
+      } catch (err) {
+        console.warn("Failed to fetch users from backend:", err);
+      } finally {
+        if (isMounted) setLoadingUsers(false);
+      }
+    }
+
+    fetchPlatformUsers();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const effectiveUsers = useMemo(() => {
+    if (remoteUsers.length > 0) return remoteUsers;
+    return allUsers;
+  }, [remoteUsers, allUsers]);
 
   const [selectedRoleFilter, setSelectedRoleFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
@@ -58,7 +104,7 @@ export default function AdminUserManagementSection() {
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
 
   const filteredUsers = useMemo(() => {
-    return allUsers.filter((u) => {
+    return effectiveUsers.filter((u) => {
       const matchRole =
         selectedRoleFilter === "all" || u.role === selectedRoleFilter;
       const q = searchQuery.toLowerCase().trim();
@@ -72,17 +118,17 @@ export default function AdminUserManagementSection() {
 
       return matchRole && matchSearch;
     });
-  }, [allUsers, selectedRoleFilter, searchQuery]);
+  }, [effectiveUsers, selectedRoleFilter, searchQuery]);
 
   const roleCounts = useMemo(() => {
     return {
-      all: allUsers.length,
-      farmer: allUsers.filter((u) => u.role === "farmer").length,
-      processor: allUsers.filter((u) => u.role === "processor").length,
-      "service-provider": allUsers.filter((u) => u.role === "service-provider").length,
-      consumer: allUsers.filter((u) => u.role === "consumer").length,
+      all: effectiveUsers.length,
+      farmer: effectiveUsers.filter((u) => u.role === "farmer").length,
+      processor: effectiveUsers.filter((u) => u.role === "processor").length,
+      "service-provider": effectiveUsers.filter((u) => u.role === "service-provider").length,
+      consumer: effectiveUsers.filter((u) => u.role === "consumer").length,
     };
-  }, [allUsers]);
+  }, [effectiveUsers]);
 
   const toggleSelectAll = () => {
     if (selectedUserIds.length === filteredUsers.length) {
@@ -286,7 +332,14 @@ export default function AdminUserManagementSection() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50 font-medium">
-              {filteredUsers.length === 0 ? (
+              {loadingUsers ? (
+                <tr>
+                  <td colSpan={7} className="py-12 text-center text-gray-400">
+                    <Loader2 size={24} className="mx-auto mb-2 text-[#226049] animate-spin" />
+                    <p className="font-semibold text-gray-600">Loading registered platform users...</p>
+                  </td>
+                </tr>
+              ) : filteredUsers.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="py-12 text-center text-gray-400">
                     <Users size={32} className="mx-auto mb-2 opacity-40 text-gray-400" />
@@ -397,7 +450,7 @@ export default function AdminUserManagementSection() {
 
         {/* Footer info */}
         <div className="flex items-center justify-between pt-4 mt-2 border-t border-gray-100 text-xs text-gray-400">
-          <span>Showing {filteredUsers.length} of {allUsers.length} registered platform users</span>
+          <span>Showing {filteredUsers.length} of {effectiveUsers.length} registered platform users</span>
         </div>
       </div>
 

@@ -9,32 +9,70 @@ import {
   UpdateAdminSettingsRequest,
 } from '@/app/types/admin/admin';
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://1kjmjs7h-5130.uks1.devtunnels.ms';
+import { getAuthToken } from '@/app/Services/tokenHelper';
+import { refreshAccessToken } from '@/app/Services/authService';
+
+const BASE_URL = (process.env.NEXT_PUBLIC_API_BASE_URL || '/backend-api')
+  .replace(/\/index\.html?$/i, '')
+  .replace(/\/$/, '');
 
 /**
- * Helper function to send authenticated fetch requests
+ * Helper function to send authenticated fetch requests with auto-refresh on 401
  */
 async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-  // Retrieve token (e.g. from localStorage, cookies, or session store)
-  const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
+  let token = getAuthToken();
 
-  const headers: HeadersInit = {
+  const getHeaders = (authToken: string | null): HeadersInit => ({
     'Content-Type': 'application/json',
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    Accept: 'application/json',
+    ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
     ...options.headers,
-  };
-
-  const response = await fetch(`${BASE_URL}${endpoint}`, {
-    ...options,
-    headers,
   });
+
+  const requestUrl = /^https?:\/\//i.test(endpoint)
+    ? endpoint
+    : `${BASE_URL}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
+
+  let response = await fetch(requestUrl, {
+    ...options,
+    headers: getHeaders(token || null),
+  });
+
+  // Attempt auto-refresh on 401
+  if (response.status === 401) {
+    try {
+      const refreshedToken = await refreshAccessToken();
+      if (refreshedToken) {
+        token = refreshedToken;
+        response = await fetch(requestUrl, {
+          ...options,
+          headers: getHeaders(refreshedToken),
+        });
+      }
+    } catch {
+      // Refresh attempt failed
+    }
+  }
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.message || `API Error: ${response.status} ${response.statusText}`);
+    const message =
+      errorData.message ||
+      errorData.error ||
+      (typeof errorData.data === 'string' ? errorData.data : errorData.data?.message) ||
+      `API Error: ${response.status} ${response.statusText}`;
+    throw new Error(message);
   }
 
-  return response.json();
+  if (response.status === 204) {
+    return {} as T;
+  }
+
+  const result = await response.json().catch(() => ({}));
+  if (result && typeof result === 'object' && 'data' in result && result.data !== undefined) {
+    return result.data as T;
+  }
+  return result as T;
 }
 
 // ==================== ADMIN API ENDPOINTS ====================

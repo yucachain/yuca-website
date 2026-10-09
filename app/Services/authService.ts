@@ -137,6 +137,8 @@ export async function loginUser(payload: LoginRequest): Promise<LoginResponse> {
   if (token) {
     localStorage.setItem("accessToken", token);
     localStorage.setItem("yuca_access_token", token);
+    localStorage.setItem("authToken", token);
+    localStorage.setItem("token", token);
     if (refreshToken) {
       localStorage.setItem("refreshToken", refreshToken);
       localStorage.setItem("yuca_refresh_token", refreshToken);
@@ -212,6 +214,8 @@ export async function adminLoginUser(payload: LoginRequest): Promise<LoginRespon
   if (token) {
     localStorage.setItem("accessToken", token);
     localStorage.setItem("yuca_access_token", token);
+    localStorage.setItem("authToken", token);
+    localStorage.setItem("token", token);
     if (refreshToken) {
       localStorage.setItem("refreshToken", refreshToken);
       localStorage.setItem("yuca_refresh_token", refreshToken);

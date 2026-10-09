@@ -53,6 +53,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (typeof window === "undefined") return;
     try {
       localStorage.setItem(StorageKey.TOKEN, authToken);
+      localStorage.setItem("authToken", authToken);
+      localStorage.setItem("token", authToken);
       localStorage.setItem("accessToken", authToken);
       localStorage.setItem("yuca_access_token", authToken);
       localStorage.setItem(StorageKey.USER, JSON.stringify(userData));

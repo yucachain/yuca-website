@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import Link from "next/link";
 import AdminNavbar from "@/app/admin/components/AdminNavbar";
 import AdminSidebar from "@/app/admin/components/AdminSidebar";
 import AdminOverviewSection from "@/app/admin/components/AdminOverviewSection";
@@ -21,12 +22,16 @@ export default function AdminDashboardPage() {
   useEffect(() => {
     async function loadDashboardData() {
       try {
+        setError(null);
         const data = await AdminApiService.getOverviewStats();
         setStats(data);
       } catch (err: unknown) {
-        setError(
-          err instanceof Error ? err.message : "Failed to load dashboard statistics"
-        );
+        const msg = err instanceof Error ? err.message : "Failed to load dashboard statistics";
+        if (msg.includes("401") || msg.toLowerCase().includes("unauthorized")) {
+          setError("Your admin session is missing or has expired. Please sign in to the Admin Console.");
+        } else {
+          setError(msg);
+        }
       }
     }
 
@@ -70,9 +75,18 @@ export default function AdminDashboardPage() {
           {error && (
             <div
               role="alert"
-              className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+              className="mb-4 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-800 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-in fade-in"
             >
-              Dashboard statistics could not be loaded: {error}
+              <div>
+                <p className="font-bold text-red-900">Admin Console Notice</p>
+                <p className="text-xs text-red-700 mt-0.5">{error}</p>
+              </div>
+              <Link
+                href="/admin-login"
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[#226049] text-white font-bold text-xs hover:bg-[#1a4336] transition-colors shrink-0 w-fit shadow-xs"
+              >
+                Sign In to Admin Console
+              </Link>
             </div>
           )}
 
