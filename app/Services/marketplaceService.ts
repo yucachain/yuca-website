@@ -216,10 +216,17 @@ export const marketplaceApi = {
   // Body: { type, paymentMethod, deliveryMethod, deliveryAddress, pickupLocation, preferredPickupDate, logisticsNote, batchId, quantityKg }
   // ─────────────────────────────────────────────────────────────
   createOrder: async (data: CreateMarketplaceOrderRequest): Promise<any> => {
-    return fetcher<any>('/marketplace/orders', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
+    try {
+      return await fetcher<any>('/marketplace/orders', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+    } catch {
+      return await fetcher<any>('/orders', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+    }
   },
 
   // ─────────────────────────────────────────────────────────────

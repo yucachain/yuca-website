@@ -71,6 +71,10 @@ export default function OrdersPayoutsReportsSection() {
   const [copiedAccount, setCopiedAccount] = useState<string | null>(null);
   const [remotePayouts, setRemotePayouts] = useState<any[]>([]);
   const [loadingPayouts, setLoadingPayouts] = useState(false);
+  const [userBankDetailsMap, setUserBankDetailsMap] = useState<
+    Record<string, { bankName: string; accountNumber: string; accountName: string }>
+  >({});
+  const [loadingModalBank, setLoadingModalBank] = useState(false);
 
   // Disbursement Modal state
   const [selectedOrderForPayout, setSelectedOrderForPayout] =
@@ -91,6 +95,23 @@ export default function OrdersPayoutsReportsSection() {
         ? (res as any).data
         : [];
       setRemotePayouts(list);
+
+      // Preload bank details map from live remote payouts
+      const bankMap: Record<
+        string,
+        { bankName: string; accountNumber: string; accountName: string }
+      > = {};
+      list.forEach((p: any) => {
+        const key = p.payeeUserId || p.sellerName || p.orderNumber;
+        if (key && (p.accountNumber || p.bankName)) {
+          bankMap[String(key).toLowerCase()] = {
+            bankName: p.bankName || "Commercial Bank",
+            accountNumber: p.accountNumber || "",
+            accountName: p.accountName || p.sellerName || "",
+          };
+        }
+      });
+      setUserBankDetailsMap((prev) => ({ ...prev, ...bankMap }));
     } catch (err) {
       console.warn("Could not load payouts from live backend:", err);
     } finally {
@@ -100,27 +121,98 @@ export default function OrdersPayoutsReportsSection() {
 
   useEffect(() => {
     fetchLivePayouts();
+
+    // Query active user's verified bank details
+    AdminApiService.getUserBankDetails()
+      .then((bank) => {
+        if (bank && (bank.accountNumber || bank.bankName)) {
+          setUserBankDetailsMap((prev) => ({
+            ...prev,
+            current: {
+              bankName: bank.bankName || "",
+              accountNumber: bank.accountNumber || "",
+              accountName: bank.accountName || "",
+            },
+          }));
+        }
+      })
+      .catch(() => {});
   }, []);
+
+  // Merge live payouts and live bank details onto allTransactions
+  const enrichedTransactions = useMemo(() => {
+    const payoutByOrder = new Map<string, any>();
+    const payoutByUser = new Map<string, any>();
+    remotePayouts.forEach((p: any) => {
+      if (p.orderNumber) payoutByOrder.set(String(p.orderNumber).toLowerCase(), p);
+      if (p.orderId) payoutByOrder.set(String(p.orderId).toLowerCase(), p);
+      if (p.payeeUserId) payoutByUser.set(String(p.payeeUserId).toLowerCase(), p);
+      if (p.sellerName) payoutByUser.set(String(p.sellerName).toLowerCase(), p);
+    });
+
+    return allTransactions.map((tx) => {
+      const orderKey = String(tx.orderNumber || tx.id).toLowerCase();
+      const sellerKey = String((tx as any).sellerId || tx.sellerName || "").toLowerCase();
+
+      const matchedPayout = payoutByOrder.get(orderKey) || payoutByUser.get(sellerKey);
+      const mappedBank = userBankDetailsMap[sellerKey] || userBankDetailsMap[orderKey];
+
+      // Disregard hardcoded mock placeholder account "3084920194"
+      const isMockPlaceholder = tx.sellerBankDetails?.accountNumber === "3084920194";
+
+      const resolvedBankName =
+        matchedPayout?.bankName ||
+        mappedBank?.bankName ||
+        (!isMockPlaceholder ? tx.sellerBankDetails?.bankName : "") ||
+        "";
+
+      const resolvedAccountNumber =
+        matchedPayout?.accountNumber ||
+        mappedBank?.accountNumber ||
+        (!isMockPlaceholder ? tx.sellerBankDetails?.accountNumber : "") ||
+        "";
+
+      const resolvedAccountName =
+        matchedPayout?.accountName ||
+        mappedBank?.accountName ||
+        (!isMockPlaceholder ? tx.sellerBankDetails?.accountName : "") ||
+        tx.sellerName;
+
+      const hasVerifiedBank = Boolean(
+        resolvedAccountNumber && resolvedAccountNumber !== "No account on file"
+      );
+
+      return {
+        ...tx,
+        sellerBankDetails: {
+          bankName: resolvedBankName || (hasVerifiedBank ? "Commercial Bank" : "Awaiting Bank Setup"),
+          accountNumber: resolvedAccountNumber || "No account on file",
+          accountName: resolvedAccountName,
+        },
+        hasVerifiedBank,
+      };
+    });
+  }, [allTransactions, remotePayouts, userBankDetailsMap]);
 
   // KPI Calculations
   const stats = useMemo(() => {
-    const totalGMV = allTransactions.reduce((acc, t) => acc + t.totalAmount, 0);
-    const paidList = allTransactions.filter(
+    const totalGMV = enrichedTransactions.reduce((acc, t) => acc + t.totalAmount, 0);
+    const paidList = enrichedTransactions.filter(
       (t) => t.payoutStatus === "Paid / Disbursed"
     );
-    const pendingList = allTransactions.filter(
+    const pendingList = enrichedTransactions.filter(
       (t) => t.payoutStatus !== "Paid / Disbursed"
     );
 
     const paidVol = paidList.reduce((acc, t) => acc + t.totalAmount, 0);
     const pendingVol = pendingList.reduce((acc, t) => acc + t.totalAmount, 0);
     const settlementRate =
-      allTransactions.length > 0
-        ? Math.round((paidList.length / allTransactions.length) * 100)
+      enrichedTransactions.length > 0
+        ? Math.round((paidList.length / enrichedTransactions.length) * 100)
         : 100;
 
     return {
-      totalCount: allTransactions.length,
+      totalCount: enrichedTransactions.length,
       totalGMV,
       paidCount: paidList.length,
       paidVol,
@@ -128,11 +220,11 @@ export default function OrdersPayoutsReportsSection() {
       pendingVol,
       settlementRate,
     };
-  }, [allTransactions]);
+  }, [enrichedTransactions]);
 
   // Filtered transactions
   const filteredList = useMemo(() => {
-    return allTransactions.filter((tx) => {
+    return enrichedTransactions.filter((tx) => {
       // Tab filter
       const isPaid = tx.payoutStatus === "Paid / Disbursed";
       if (activeTab === "pending" && isPaid) return false;
@@ -160,13 +252,51 @@ export default function OrdersPayoutsReportsSection() {
         tx.sellerBankDetails.accountNumber.includes(q)
       );
     });
-  }, [allTransactions, activeTab, selectedRole, searchQuery]);
+  }, [enrichedTransactions, activeTab, selectedRole, searchQuery]);
 
   const copyToClipboard = (text: string) => {
+    if (!text || text === "No account on file") return;
     navigator.clipboard?.writeText(text);
     setCopiedAccount(text);
     toast.success("Account details copied to clipboard!");
     setTimeout(() => setCopiedAccount(null), 2000);
+  };
+
+  const handleOpenDisbursementModal = async (order: MarketOrderItem) => {
+    setSelectedOrderForPayout(order);
+    setLoadingModalBank(true);
+    const sellerUserId = (order as any).sellerId || (order as any).payeeUserId;
+
+    try {
+      // Fetch live bank details for this specific seller from GET /api/v1/user/bank-details
+      const liveBank = await AdminApiService.getUserBankDetails(sellerUserId);
+      if (liveBank && (liveBank.accountNumber || liveBank.bankName)) {
+        const enrichedBank = {
+          bankName: liveBank.bankName || "Commercial Bank",
+          accountNumber: liveBank.accountNumber || "",
+          accountName: liveBank.accountName || order.sellerName,
+        };
+
+        setSelectedOrderForPayout((prev) =>
+          prev
+            ? {
+                ...prev,
+                sellerBankDetails: enrichedBank,
+              }
+            : null
+        );
+
+        const cacheKey = String(sellerUserId || order.sellerName).toLowerCase();
+        setUserBankDetailsMap((prev) => ({
+          ...prev,
+          [cacheKey]: enrichedBank,
+        }));
+      }
+    } catch (err) {
+      console.warn("Could not fetch user bank details:", err);
+    } finally {
+      setLoadingModalBank(false);
+    }
   };
 
   const handleConfirmDisbursement = async () => {
@@ -174,8 +304,12 @@ export default function OrdersPayoutsReportsSection() {
     setProcessing(true);
 
     try {
-      // Live backend call to POST /api/v1/admin/payouts/{payoutId}/disburse
-      await AdminApiService.disbursePayout(selectedOrderForPayout.id).catch((err) => {
+      // Live backend call to POST /api/v1/payments/payouts/process
+      await AdminApiService.disbursePayout(
+        selectedOrderForPayout.id,
+        selectedOrderForPayout.totalAmount,
+        (selectedOrderForPayout as any).sellerId || (selectedOrderForPayout as any).payeeUserId || selectedOrderForPayout.id
+      ).catch((err) => {
         console.warn("Live disburse payout endpoint note:", err);
       });
 
@@ -632,31 +766,44 @@ export default function OrdersPayoutsReportsSection() {
 
                       {/* Recipient Bank Details */}
                       <td className="py-3.5 px-3">
-                        <div className="flex items-center gap-1.5">
-                          <p className="font-semibold text-gray-900 text-xs">
-                            {tx.sellerBankDetails.bankName}
-                          </p>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              copyToClipboard(tx.sellerBankDetails.accountNumber)
-                            }
-                            className="text-gray-400 hover:text-gray-700 p-0.5 transition-colors cursor-pointer"
-                            title="Copy Account Number"
-                          >
-                            {copiedAccount === tx.sellerBankDetails.accountNumber ? (
-                              <Check size={11} className="text-emerald-700" />
-                            ) : (
-                              <Copy size={11} />
-                            )}
-                          </button>
-                        </div>
-                        <p className="font-mono text-gray-600 text-[11px]">
-                          {tx.sellerBankDetails.accountNumber}
-                        </p>
-                        <p className="text-[10px] text-gray-400 truncate max-w-[150px]">
-                          {tx.sellerBankDetails.accountName}
-                        </p>
+                        {tx.hasVerifiedBank ? (
+                          <>
+                            <div className="flex items-center gap-1.5">
+                              <p className="font-semibold text-gray-900 text-xs">
+                                {tx.sellerBankDetails.bankName}
+                              </p>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  copyToClipboard(tx.sellerBankDetails.accountNumber)
+                                }
+                                className="text-gray-400 hover:text-gray-700 p-0.5 transition-colors cursor-pointer"
+                                title="Copy Account Number"
+                              >
+                                {copiedAccount === tx.sellerBankDetails.accountNumber ? (
+                                  <Check size={11} className="text-emerald-700" />
+                                ) : (
+                                  <Copy size={11} />
+                                )}
+                              </button>
+                            </div>
+                            <p className="font-mono text-gray-700 text-[11px] font-bold">
+                              {tx.sellerBankDetails.accountNumber}
+                            </p>
+                            <p className="text-[10px] text-gray-400 truncate max-w-[150px]">
+                              {tx.sellerBankDetails.accountName}
+                            </p>
+                          </>
+                        ) : (
+                          <div className="space-y-0.5">
+                            <span className="inline-flex items-center gap-1 rounded-md bg-amber-50 border border-amber-200 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800">
+                              Bank Setup Pending
+                            </span>
+                            <p className="text-[10px] text-gray-400 truncate max-w-[150px]">
+                              {tx.sellerName}
+                            </p>
+                          </div>
+                        )}
                       </td>
 
                       {/* Payout Status */}
@@ -684,7 +831,7 @@ export default function OrdersPayoutsReportsSection() {
                         ) : (
                           <button
                             type="button"
-                            onClick={() => setSelectedOrderForPayout(tx)}
+                            onClick={() => handleOpenDisbursementModal(tx)}
                             className="inline-flex items-center gap-1.5 rounded-xl bg-[#226049] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#1a4336] shadow-2xs transition-all cursor-pointer active:scale-95"
                           >
                             <Send size={12} />
@@ -759,28 +906,58 @@ export default function OrdersPayoutsReportsSection() {
 
               {/* Bank Details */}
               <div className="rounded-2xl border border-emerald-200 bg-emerald-50/60 p-3.5 space-y-1.5">
-                <div className="flex items-center gap-1.5 text-[#226049] font-bold mb-1">
-                  <CreditCard size={14} />
-                  <span>Designated Bank Account</span>
+                <div className="flex items-center justify-between mb-1">
+                  <div className="flex items-center gap-1.5 text-[#226049] font-bold text-xs">
+                    <CreditCard size={14} />
+                    <span>Designated Bank Account</span>
+                  </div>
+                  {loadingModalBank && (
+                    <span className="flex items-center gap-1 text-[10px] text-emerald-800">
+                      <Loader2 size={11} className="animate-spin" />
+                      Checking live bank details...
+                    </span>
+                  )}
                 </div>
-                <div className="flex justify-between text-xs">
-                  <span className="text-gray-600">Bank:</span>
-                  <span className="font-bold text-gray-900">
-                    {selectedOrderForPayout.sellerBankDetails.bankName}
-                  </span>
-                </div>
-                <div className="flex justify-between text-xs">
-                  <span className="text-gray-600">Account Number:</span>
-                  <span className="font-mono font-bold text-gray-900">
-                    {selectedOrderForPayout.sellerBankDetails.accountNumber}
-                  </span>
-                </div>
-                <div className="flex justify-between text-xs">
-                  <span className="text-gray-600">Account Name:</span>
-                  <span className="font-medium text-gray-900">
-                    {selectedOrderForPayout.sellerBankDetails.accountName}
-                  </span>
-                </div>
+
+                {selectedOrderForPayout.sellerBankDetails.accountNumber &&
+                selectedOrderForPayout.sellerBankDetails.accountNumber !== "No account on file" ? (
+                  <>
+                    <div className="flex justify-between text-xs">
+                      <span className="text-gray-600">Bank:</span>
+                      <span className="font-bold text-gray-900">
+                        {selectedOrderForPayout.sellerBankDetails.bankName}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-xs">
+                      <span className="text-gray-600">Account Number:</span>
+                      <div className="flex items-center gap-1">
+                        <span className="font-mono font-bold text-gray-900">
+                          {selectedOrderForPayout.sellerBankDetails.accountNumber}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => copyToClipboard(selectedOrderForPayout.sellerBankDetails.accountNumber)}
+                          className="text-gray-400 hover:text-gray-700 p-0.5 cursor-pointer"
+                        >
+                          <Copy size={11} />
+                        </button>
+                      </div>
+                    </div>
+                    <div className="flex justify-between text-xs">
+                      <span className="text-gray-600">Account Name:</span>
+                      <span className="font-medium text-gray-900">
+                        {selectedOrderForPayout.sellerBankDetails.accountName}
+                      </span>
+                    </div>
+                  </>
+                ) : (
+                  <div className="py-2 text-center text-xs text-amber-800 bg-amber-50/80 rounded-xl border border-amber-200 p-2">
+                    <p className="font-bold">No Verified Bank Account on File</p>
+                    <p className="text-[11px] text-amber-700 mt-0.5">
+                      The seller has not registered bank details on the backend yet.
+                    </p>
+                  </div>
+                )}
               </div>
 
               {/* Disbursement Reference Note */}

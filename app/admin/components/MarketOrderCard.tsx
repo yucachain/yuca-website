@@ -1,5 +1,5 @@
 import React from "react";
-import { ShoppingBag, MapPin, CheckCircle, ShieldCheck, Mail, Phone, Calendar } from "lucide-react";
+import { ShoppingBag, MapPin, CheckCircle, ShieldCheck, Mail, Phone, Calendar, Building } from "lucide-react";
 import type { MarketOrder } from "./types";
 
 const gradeBadgeStyles: Record<string, string> = {
@@ -73,7 +73,7 @@ export default function MarketOrderCard({ order, onConsolidate }: MarketOrderCar
           </span>
         </div>
 
-        <div>
+          <div>
           <span className="block text-gray-400 text-xs font-medium">Financial Overview</span>
           <div className="mt-0.5">
             <span className="text-base font-bold text-emerald-900">
@@ -84,6 +84,18 @@ export default function MarketOrderCard({ order, onConsolidate }: MarketOrderCar
             </span>
           </div>
         </div>
+
+        {(order as any).sellerBankDetails && (order as any).sellerBankDetails.accountNumber && (
+          <div className="col-span-full pt-2.5 border-t border-gray-200/60 flex flex-wrap items-center justify-between gap-2 text-xs">
+            <span className="text-gray-500 flex items-center gap-1.5 font-medium">
+              <Building size={13} className="text-[#226049]" />
+              Seller Settlement Bank Account:
+            </span>
+            <span className="font-mono font-bold text-gray-900 bg-white px-2 py-0.5 rounded border border-gray-200">
+              {(order as any).sellerBankDetails.bankName} • {(order as any).sellerBankDetails.accountNumber} ({(order as any).sellerBankDetails.accountName})
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Consolidation Progress */}

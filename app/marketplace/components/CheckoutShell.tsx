@@ -5,6 +5,8 @@ import MarketplaceNavbar, { MarketplaceUser } from "./MarketplaceNavbar";
 import CheckoutSteps, { CheckoutStepsProps } from "./CheckoutSteps";
 import Footer from "@/app/components/Footer";
 
+import { useCart } from "../context/CartContext";
+
 export interface CheckoutShellProps {
   currentStep: CheckoutStepsProps["currentStep"];
   children: React.ReactNode;
@@ -13,6 +15,7 @@ export interface CheckoutShellProps {
   cardMaxWidth?: string;
   user?: MarketplaceUser;
   cartCount?: number;
+  hasNotifications?: boolean;
 }
 
 export default function CheckoutShell({
@@ -21,12 +24,20 @@ export default function CheckoutShell({
   cardWrapper = true,
   showBackToCart = true,
   cardMaxWidth = "max-w-3xl",
-  user = { initials: "DF", name: "Drevo Foods Ltd.", role: "Buyer" },
-  cartCount = 5,
+  user,
+  cartCount,
+  hasNotifications,
 }: CheckoutShellProps) {
+  const { totalItems } = useCart();
+  const effectiveCartCount = cartCount !== undefined ? cartCount : totalItems;
+
   return (
     <div className="flex min-h-screen flex-col bg-gradient-to-b from-white to-gray-100">
-      <MarketplaceNavbar user={user} cartCount={cartCount} hasNotifications />
+      <MarketplaceNavbar
+        user={user}
+        cartCount={effectiveCartCount}
+        hasNotifications={hasNotifications}
+      />
 
       <main className="flex-1 px-4 sm:px-6 lg:px-10 py-6 sm:py-10">
         {showBackToCart && (

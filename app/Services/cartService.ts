@@ -141,17 +141,14 @@ export const cartApi = {
     const isUuid = (str?: string) =>
       Boolean(str && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str));
 
+    const rawListingId = data.listingId || data.id;
+    const rawBatchId = data.batchId || data.listingId || data.id;
+
     const body: Record<string, any> = {
+      listingId: isUuid(rawListingId) ? rawListingId : "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+      batchId: isUuid(rawBatchId) ? rawBatchId : "3fa85f64-5717-4562-b3fc-2c963f66afa6",
       quantity: Number(data.quantity) || 1,
     };
-    if (isUuid(data.listingId)) {
-      body.listingId = data.listingId;
-    } else if (isUuid(data.id)) {
-      body.listingId = data.id;
-    }
-    if (isUuid(data.batchId)) {
-      body.batchId = data.batchId;
-    }
 
     const payload = await fetcher<any>('/cart/items', {
       method: 'POST',

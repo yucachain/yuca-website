@@ -81,6 +81,7 @@ export interface MarketOrderItem {
   paymentStatus: "Paid to YucaChain Escrow" | "Pending Payment";
   payoutStatus: "Pending Admin Payout" | "Paid / Disbursed";
   payoutDate?: string;
+  sellerId?: string;
   sellerBankDetails: {
     bankName: string;
     accountNumber: string;
@@ -395,6 +396,7 @@ export function MarketplaceRoleProvider({ children }: { children: React.ReactNod
       category: orderData.category || "General",
       sellerName: orderData.sellerName || "Verified Supplier",
       sellerRole: orderData.sellerRole || "farmer",
+      sellerId: orderData.sellerId,
       buyerName: currentUser.name,
       buyerRole: activeRole,
       quantity: orderData.quantity || 1,

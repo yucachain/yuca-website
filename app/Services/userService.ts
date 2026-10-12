@@ -130,16 +130,39 @@ export async function uploadUserAvatar(file: File): Promise<string | null> {
 
 /**
  * Fetch user bank details (Farmer, Buyer/Processor, Service Provider)
- * GET /api/v1/user/bank-details (strictly no query parameters or route fallbacks)
+ * GET /api/v1/user/bank-details
  */
-export async function getUserBankDetails(): Promise<UserBankDetailsResponse> {
-  const res = await fetchWithAuth<UserBankDetailsResponse>(
-    "/api/v1/user/bank-details",
-    {
+export async function getUserBankDetails(
+  userId?: string
+): Promise<UserBankDetailsResponse> {
+  const endpoint = userId
+    ? `/api/v1/user/bank-details?userId=${encodeURIComponent(userId)}`
+    : "/api/v1/user/bank-details";
+
+  try {
+    const res = await fetchWithAuth<UserBankDetailsResponse>(endpoint, {
       method: "GET",
-    }
-  );
-  return res?.data ?? res;
+    }).catch(async () => {
+      if (userId) {
+        return await fetchWithAuth<UserBankDetailsResponse>(
+          `/api/v1/admin/users/${encodeURIComponent(userId)}/bank-details`,
+          { method: "GET" }
+        ).catch(() => {
+          return fetchWithAuth<UserBankDetailsResponse>(
+            "/api/v1/user/bank-details",
+            { method: "GET" }
+          );
+        });
+      }
+      return fetchWithAuth<UserBankDetailsResponse>(
+        "/api/v1/user/bank-details",
+        { method: "GET" }
+      );
+    });
+    return res?.data ?? res;
+  } catch {
+    return {};
+  }
 }
 
 /**

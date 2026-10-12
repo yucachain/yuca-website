@@ -194,7 +194,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     cartApi
       .addItem({
         id: batch.id,
-        listingId: batch.id,
+        listingId: (batch as any).listingId || batch.id,
+        batchId: (batch as any).batchId || batch.id,
         quantity: 1,
         title: batch.title,
         pricePerTonne: batch.pricePerTonne,

@@ -25,6 +25,8 @@ import {
   useMarketplaceRole,
   MarketplaceRole,
 } from "../context/MarketplaceRoleContext";
+import { useCart } from "../context/CartContext";
+import { notificationService } from "@/app/Services/notificationService";
 import UserOrdersAndSalesModal from "./UserOrdersAndSalesModal";
 import RoleProfileSettingsModal from "./RoleProfileSettingsModal";
 import { toast } from "sonner";
@@ -78,7 +80,7 @@ const ROLE_META: Record<
 };
 
 export default function MarketplaceNavbar({
-  cartCount = 0,
+  cartCount,
   hasNotifications = false,
   onBellClick,
   onCartClick,
@@ -88,12 +90,34 @@ export default function MarketplaceNavbar({
 }: MarketplaceNavbarProps) {
   const router = useRouter();
   const { activeRole, currentUser } = useMarketplaceRole();
+  const { totalItems } = useCart();
+  const effectiveCartCount = cartCount !== undefined ? cartCount : totalItems;
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [showOrdersModal, setShowOrdersModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [liveUnreadCount, setLiveUnreadCount] = useState<number>(0);
 
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    notificationService
+      .getNotifications()
+      .then((items) => {
+        if (!isMounted) return;
+        const unread = Array.isArray(items)
+          ? items.filter((n) => !n.read).length
+          : 0;
+        setLiveUnreadCount(unread);
+      })
+      .catch(() => {
+        if (isMounted) setLiveUnreadCount(0);
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -185,7 +209,7 @@ export default function MarketplaceNavbar({
               className="relative flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-xl border border-gray-200/80 bg-white text-gray-700 transition-all hover:bg-gray-50 hover:border-gray-300 active:scale-95 cursor-pointer shadow-2xs"
             >
               <Bell size={17} strokeWidth={1.8} />
-              {hasNotifications && (
+              {(hasNotifications || liveUnreadCount > 0) && (
                 <span className="absolute right-2.5 top-2.5 h-2 w-2 rounded-full bg-amber-500 ring-2 ring-white" />
               )}
             </button>
@@ -198,9 +222,9 @@ export default function MarketplaceNavbar({
               className="relative flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-xl border border-gray-200/80 bg-white text-gray-700 transition-all hover:bg-gray-50 hover:border-gray-300 active:scale-95 cursor-pointer shadow-2xs"
             >
               <ShoppingCart size={17} strokeWidth={1.8} />
-              {cartCount > 0 && (
+              {effectiveCartCount > 0 && (
                 <span className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-[#226049] text-[10px] font-bold text-white shadow-xs">
-                  {cartCount > 99 ? "99+" : cartCount}
+                  {effectiveCartCount > 99 ? "99+" : effectiveCartCount}
                 </span>
               )}
             </button>

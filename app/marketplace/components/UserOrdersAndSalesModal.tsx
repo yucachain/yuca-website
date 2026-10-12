@@ -89,7 +89,7 @@ export default function UserOrdersAndSalesModal({
       paymentStatus: ro.paymentStatus || ro.status || "Paid to YucaChain Escrow",
       payoutStatus: ro.payoutStatus || "Pending Admin Payout",
       isDelivered: ro.status === "Delivered" || ro.isDelivered,
-      sellerBankDetails: ro.sellerBankDetails || { bankName: "YucaChain Escrow", accountNumber: "3084920194", accountName: "Yuca Escrow" },
+      sellerBankDetails: ro.sellerBankDetails || (currentUser.accountNumber ? { bankName: currentUser.bankName || "Commercial Bank", accountNumber: currentUser.accountNumber, accountName: currentUser.accountName || currentUser.name } : { bankName: "Awaiting Bank Setup", accountNumber: "No account on file", accountName: ro.sellerName || "Seller" }),
     }))
     : localOrders;
 

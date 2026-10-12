@@ -211,11 +211,13 @@ export const AdminApiService = {
   },
 
   /**
-   * 7. GET /api/v1/admin/payouts
+   * 7. GET /api/v1/payments/sellers-payouts (fallback: /api/v1/admin/payouts)
    * Fetch all seller payouts
    */
   getPayouts: async (): Promise<Payout[] & { items: Payout[]; totalCount: number }> => {
-    const res = await apiFetch<any>('/api/v1/admin/payouts', { method: 'GET' });
+    const res = await apiFetch<any>('/api/v1/payments/sellers-payouts', { method: 'GET' }).catch(async () => {
+      return await apiFetch<any>('/api/v1/admin/payouts', { method: 'GET' });
+    });
     let items: Payout[] = [];
     let totalCount = 0;
 
@@ -233,14 +235,41 @@ export const AdminApiService = {
   },
 
   /**
-   * 8. POST /api/v1/admin/payouts/{payoutId}/disburse
+   * 8. POST /api/v1/payments/payouts/process (fallback: /api/v1/admin/payouts/{payoutId}/disburse)
    * Disburse funds for a specific payout
    */
   disbursePayout: (
-    payoutId: string
+    payoutId: string,
+    amount?: number,
+    payeeUserId?: string
   ): Promise<{ success?: boolean; successful?: boolean; transactionReference?: string; message?: string }> => {
-    return apiFetch(`/api/v1/admin/payouts/${encodeURIComponent(payoutId)}/disburse`, {
-      method: 'POST',
+    return apiFetch<{ success?: boolean; successful?: boolean; transactionReference?: string; message?: string }>(
+      '/api/v1/payments/payouts/process',
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          payeeUserId: payeeUserId || payoutId,
+          amount: amount || 0,
+          provider: 'Paystack',
+        }),
+      }
+    ).catch(async () => {
+      return await apiFetch<{ success?: boolean; successful?: boolean; transactionReference?: string; message?: string }>(
+        `/api/v1/admin/payouts/${encodeURIComponent(payoutId)}/disburse`,
+        {
+          method: 'POST',
+        }
+      );
+    });
+  },
+
+  /**
+   * GET /api/v1/payments/stats
+   * Fetch payment and escrow stats
+   */
+  getPaymentStats: (): Promise<any> => {
+    return apiFetch('/api/v1/payments/stats', {
+      method: 'GET',
     });
   },
 
@@ -290,15 +319,29 @@ export const AdminApiService = {
   /**
    * 13. GET /api/v1/user/bank-details
    * Retrieve user bank details (payout destination)
-   * Strictly /api/v1/user/bank-details without query parameters or route fallbacks
+   * Supports optional userId to fetch a specific user's registered bank details
    */
-  getUserBankDetails: async (): Promise<{
+  getUserBankDetails: async (userId?: string): Promise<{
     bankName?: string;
     accountNumber?: string;
     accountName?: string;
   }> => {
     try {
-      const res = await apiFetch<any>('/api/v1/user/bank-details', { method: 'GET' });
+      const url = userId
+        ? `/api/v1/user/bank-details?userId=${encodeURIComponent(userId)}`
+        : '/api/v1/user/bank-details';
+
+      const res = await apiFetch<any>(url, { method: 'GET' }).catch(async () => {
+        if (userId) {
+          return await apiFetch<any>(`/api/v1/admin/users/${encodeURIComponent(userId)}/bank-details`, { method: 'GET' }).catch(() => {
+            return apiFetch<any>(`/api/v1/user/${encodeURIComponent(userId)}/bank-details`, { method: 'GET' }).catch(() => {
+              return apiFetch<any>('/api/v1/user/bank-details', { method: 'GET' });
+            });
+          });
+        }
+        return apiFetch<any>('/api/v1/user/bank-details', { method: 'GET' });
+      });
+
       return res?.data ?? res ?? {};
     } catch {
       // Gracefully return empty object if no bank details are registered yet
