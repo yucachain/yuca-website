@@ -8,7 +8,6 @@ import {
   ShoppingCart,
   Users,
   Package,
-  DollarSign,
   Search,
   SlidersHorizontal,
   ArrowUpRight,
@@ -284,12 +283,12 @@ export default function AdminOverviewSection({
           <div className="flex items-center justify-between text-gray-700">
             <span className="text-xs sm:text-sm font-semibold text-gray-500">Total Revenue</span>
             <div className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-gray-600">
-              <DollarSign size={14} strokeWidth={1.8} />
+              <span className="text-xs font-bold text-gray-700">₦</span>
             </div>
           </div>
           <div className="flex items-baseline gap-2.5 mt-3">
             <span className="text-xl sm:text-2xl font-bold text-gray-900 tracking-tight">
-              ${(kpiData.totalRevenue / 1000).toFixed(2)}
+              ₦{Number(kpiData.totalRevenue || 0).toLocaleString()}
             </span>
           </div>
         </div>

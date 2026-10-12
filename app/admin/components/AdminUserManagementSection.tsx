@@ -219,6 +219,45 @@ export default function AdminUserManagementSection() {
         });
 
         setRemoteUsers(mapped);
+
+        // Asynchronously enrich non-consumer users with live bank details from backend
+        const needsBank = mapped.filter(
+          (u) =>
+            u.role !== "consumer" &&
+            (!u.bankName || u.bankName === "—" || !u.accountNumber || u.accountNumber === "—")
+        );
+
+        if (needsBank.length > 0) {
+          Promise.allSettled(
+            needsBank.map(async (u) => {
+              try {
+                const b = await AdminApiService.getUserBankDetails(u.id);
+                if (b && (b.bankName || b.accountNumber)) {
+                  return {
+                    id: u.id,
+                    bankName: b.bankName || u.bankName,
+                    accountNumber: b.accountNumber || u.accountNumber,
+                    accountName: b.accountName || u.accountName || u.name,
+                  };
+                }
+              } catch {}
+              return null;
+            })
+          ).then((results) => {
+            const updates = results
+              .filter((r): r is PromiseFulfilledResult<any> => r.status === "fulfilled" && Boolean(r.value))
+              .map((r) => r.value);
+
+            if (updates.length > 0) {
+              setRemoteUsers((prev) =>
+                prev.map((u) => {
+                  const match = updates.find((up) => up.id === u.id);
+                  return match ? { ...u, ...match } : u;
+                })
+              );
+            }
+          });
+        }
       }
     } catch (err) {
       console.warn("Failed to fetch users or user types from backend:", err);
@@ -283,10 +322,10 @@ export default function AdminUserManagementSection() {
 
     // 1. If user already has bank details populated, display immediately
     if (user.bankName && user.bankName !== "—" && user.accountNumber && user.accountNumber !== "—") {
-      return;
+      // Still fetch in background if refresh requested
     }
 
-    // 2. Check localStorage / cached keys
+    // 2. Check localStorage / cached keys for instant display
     try {
       const keysToCheck = [
         user.id ? `yuca_bank_details_${user.id}` : null,
@@ -309,38 +348,32 @@ export default function AdminUserManagementSection() {
             setRemoteUsers((prev) =>
               prev.map((u) => (u.id === user.id ? enriched : u))
             );
-            return;
+            break;
           }
         }
       }
     } catch {}
 
-    // 3. If this user is the active session user, try fetching from /api/v1/user/bank-details
-    const isSelf =
-      Boolean(currentUser?.id && user.id && String(currentUser.id) === String(user.id)) ||
-      Boolean(currentUser?.email && user.email && currentUser.email.toLowerCase() === user.email.toLowerCase());
-
-    if (isSelf) {
-      try {
-        setLoadingBankDetails(true);
-        const bankData = await AdminApiService.getUserBankDetails();
-        if (bankData && (bankData.bankName || bankData.accountNumber)) {
-          const enriched: UserRecordForAdmin = {
-            ...user,
-            bankName: bankData.bankName || user.bankName,
-            accountNumber: bankData.accountNumber || user.accountNumber,
-            accountName: bankData.accountName || user.accountName || user.name,
-          };
-          setSelectedUserForModal(enriched);
-          setRemoteUsers((prev) =>
-            prev.map((u) => (u.id === user.id ? enriched : u))
-          );
-        }
-      } catch {
-        // Silently handled
-      } finally {
-        setLoadingBankDetails(false);
+    // 3. Always query live backend endpoint for this specific user's bank details
+    try {
+      setLoadingBankDetails(true);
+      const bankData = await AdminApiService.getUserBankDetails(user.id);
+      if (bankData && (bankData.bankName || bankData.accountNumber)) {
+        const enriched: UserRecordForAdmin = {
+          ...user,
+          bankName: bankData.bankName || user.bankName,
+          accountNumber: bankData.accountNumber || user.accountNumber,
+          accountName: bankData.accountName || user.accountName || user.name,
+        };
+        setSelectedUserForModal(enriched);
+        setRemoteUsers((prev) =>
+          prev.map((u) => (u.id === user.id ? enriched : u))
+        );
       }
+    } catch {
+      // Silently handled
+    } finally {
+      setLoadingBankDetails(false);
     }
   };
 

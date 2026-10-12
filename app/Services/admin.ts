@@ -326,26 +326,68 @@ export const AdminApiService = {
     accountNumber?: string;
     accountName?: string;
   }> => {
-    try {
-      const url = userId
-        ? `/api/v1/user/bank-details?userId=${encodeURIComponent(userId)}`
-        : '/api/v1/user/bank-details';
+    const candidateUrls = userId
+      ? [
+          `/api/v1/admin/users/${encodeURIComponent(userId)}/bank-details`,
+          `/api/v1/user/bank-details?userId=${encodeURIComponent(userId)}`,
+          `/api/v1/users/bank-details?userId=${encodeURIComponent(userId)}`,
+          `/api/v1/user/${encodeURIComponent(userId)}/bank-details`,
+          `/api/v1/users/${encodeURIComponent(userId)}/bank-details`,
+        ]
+      : [
+          '/api/v1/user/bank-details',
+          '/api/v1/users/bank-details',
+        ];
 
-      const res = await apiFetch<any>(url, { method: 'GET' }).catch(async () => {
-        if (userId) {
-          return await apiFetch<any>(`/api/v1/admin/users/${encodeURIComponent(userId)}/bank-details`, { method: 'GET' }).catch(() => {
-            return apiFetch<any>(`/api/v1/user/${encodeURIComponent(userId)}/bank-details`, { method: 'GET' }).catch(() => {
-              return apiFetch<any>('/api/v1/user/bank-details', { method: 'GET' });
-            });
-          });
+    let rawRes: any = null;
+    for (const u of candidateUrls) {
+      try {
+        rawRes = await apiFetch<any>(u, { method: 'GET' });
+        const bankObj = rawRes?.bankDetails || rawRes?.data?.bankDetails || rawRes?.data || rawRes;
+        if (bankObj && (bankObj.bankName || bankObj.BankName || bankObj.accountNumber || bankObj.AccountNumber)) {
+          break;
         }
-        return apiFetch<any>('/api/v1/user/bank-details', { method: 'GET' });
-      });
-
-      return res?.data ?? res ?? {};
-    } catch {
-      // Gracefully return empty object if no bank details are registered yet
-      return {};
+      } catch {
+        // try next endpoint
+      }
     }
+
+    const bankObj = rawRes?.bankDetails || rawRes?.data?.bankDetails || rawRes?.data || rawRes || {};
+    const bankName = String(bankObj.bankName || bankObj.BankName || bankObj.bank_name || '').trim();
+    const accountNumber = String(bankObj.accountNumber || bankObj.AccountNumber || bankObj.account_number || '').trim();
+    const accountName = String(bankObj.accountName || bankObj.AccountName || bankObj.account_name || '').trim();
+
+    if (bankName || accountNumber) {
+      const result = { bankName, accountNumber, accountName };
+      if (typeof window !== 'undefined') {
+        try {
+          if (userId) {
+            localStorage.setItem(`yuca_bank_details_${userId}`, JSON.stringify(result));
+          } else {
+            localStorage.setItem('yuca_user_bank_details', JSON.stringify(result));
+          }
+        } catch {}
+      }
+      return result;
+    }
+
+    // Fallback to local storage caches if offline/pending backend sync
+    if (typeof window !== 'undefined') {
+      try {
+        const keys = [
+          userId ? `yuca_bank_details_${userId}` : null,
+          'yuca_user_bank_details',
+        ].filter(Boolean) as string[];
+        for (const k of keys) {
+          const cached = localStorage.getItem(k);
+          if (cached) {
+            const parsed = JSON.parse(cached);
+            if (parsed.bankName || parsed.accountNumber) return parsed;
+          }
+        }
+      } catch {}
+    }
+
+    return {};
   },
 };

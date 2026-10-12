@@ -16,6 +16,7 @@ import {
   shippingInfoInitialValues,
   ShippingInfoValues,
 } from "@/app/components/validation/schema";
+import { useAuth } from "@/app/Context/AuthContext";
 import { useMarketplaceRole } from "@/app/marketplace/context/MarketplaceRoleContext";
 import { useCart, DeliveryMethodOption } from "@/app/marketplace/context/CartContext";
 import { marketplaceApi } from "@/app/Services/marketplaceService";
@@ -25,40 +26,95 @@ import { toast } from "sonner";
 export default function ShippingInfoPage() {
   const router = useRouter();
   const { activeRole, currentUser } = useMarketplaceRole();
+  const { user: authUser } = useAuth();
   const { deliveryMethod, setDeliveryMethod } = useCart();
+  const [mounted, setMounted] = React.useState(false);
 
-  const [initialValues] = useState<ShippingInfoValues>(() => {
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const initialValues = React.useMemo<ShippingInfoValues>(() => {
     let saved: Partial<ShippingInfoValues> = {};
-    if (typeof window !== "undefined") {
+    if (mounted && typeof window !== "undefined") {
       try {
         const stored = localStorage.getItem("yuca_shipping_info");
         if (stored) saved = JSON.parse(stored);
       } catch {}
     }
 
-    const nameParts = (currentUser.name || "").trim().split(/\s+/);
-    const firstName = saved.firstName || nameParts[0] || "";
-    const lastName = saved.lastName || (nameParts.length > 1 ? nameParts.slice(1).join(" ") : "");
+    // Check if saved firstName is a placeholder/demo
+    const isSavedNameDemo =
+      !saved.firstName ||
+      saved.firstName.toLowerCase() === "marketplace" ||
+      saved.firstName.toLowerCase() === "demo" ||
+      saved.firstName.toLowerCase() === "john";
+
+    // Extract live authenticated user fields
+    const liveFirst = authUser?.firstName || currentUser.firstName || "";
+    const liveLast = authUser?.lastName || currentUser.lastName || "";
+    const liveFullName = (authUser?.name || currentUser.name || "").trim();
+    const liveNameParts =
+      liveFullName && !liveFullName.toLowerCase().includes("marketplace user")
+        ? liveFullName.split(/\s+/)
+        : [];
+
+    const resolvedFirst =
+      liveFirst ||
+      (liveNameParts.length > 0 ? liveNameParts[0] : "") ||
+      (!isSavedNameDemo ? saved.firstName : "") ||
+      "";
+
+    const resolvedLast =
+      liveLast ||
+      (liveNameParts.length > 1 ? liveNameParts.slice(1).join(" ") : "") ||
+      (!isSavedNameDemo ? saved.lastName : "") ||
+      "";
+
+    const liveEmail = authUser?.email || currentUser.email || "";
+    const isSavedEmailDemo =
+      !saved.email ||
+      saved.email.includes("example.com") ||
+      saved.email.includes("demo@");
+
+    const resolvedEmail =
+      liveEmail || (!isSavedEmailDemo ? saved.email : "") || "";
+
+    const livePhone = authUser?.phoneNumber || currentUser.phone || "";
+    const resolvedPhone = livePhone || saved.phone || "";
+
+    const liveAddress =
+      authUser?.deliveryAddress ||
+      authUser?.address ||
+      currentUser.deliveryAddress ||
+      currentUser.address ||
+      authUser?.facilityAddress ||
+      authUser?.businessAddress ||
+      authUser?.farmAddress ||
+      currentUser.facilityAddress ||
+      currentUser.businessAddress ||
+      currentUser.farmAddress ||
+      "";
+    const resolvedAddress = liveAddress || saved.address || "";
+
+    const liveState = authUser?.state || currentUser.state || "";
+    const resolvedState = liveState || saved.state || "Oyo";
+
+    const resolvedCountry = saved.country || "Nigeria";
+    const resolvedPostalCode = saved.postalCode || "";
 
     return {
       ...shippingInfoInitialValues,
-      firstName,
-      lastName,
-      email: saved.email || currentUser.email || "",
-      phone: saved.phone || currentUser.phone || "",
-      address:
-        saved.address ||
-        currentUser.deliveryAddress ||
-        currentUser.facilityAddress ||
-        currentUser.businessAddress ||
-        currentUser.farmAddress ||
-        currentUser.address ||
-        "",
-      state: saved.state || currentUser.state || "Oyo",
-      country: saved.country || "Nigeria",
-      postalCode: saved.postalCode || "",
+      firstName: resolvedFirst,
+      lastName: resolvedLast,
+      email: resolvedEmail,
+      phone: resolvedPhone,
+      address: resolvedAddress,
+      state: resolvedState,
+      country: resolvedCountry,
+      postalCode: resolvedPostalCode,
     };
-  });
+  }, [authUser, currentUser]);
 
   const handleSubmit = async (
     values: ShippingInfoValues,
@@ -72,6 +128,15 @@ export default function ShippingInfoPage() {
       };
       localStorage.setItem("yuca_shipping_info", JSON.stringify(merged));
       localStorage.setItem("yuca_delivery_method", deliveryMethod);
+      if (values.email) {
+        localStorage.setItem("yuca_user_email", values.email);
+      }
+      if (values.firstName || values.lastName) {
+        localStorage.setItem(
+          "yuca_user_name",
+          `${values.firstName} ${values.lastName}`.trim()
+        );
+      }
 
       const quotePayload = {
         deliveryMethod: deliveryMethod === "direct-delivery" ? "Delivery" : "SelfPickup",
@@ -107,7 +172,7 @@ export default function ShippingInfoPage() {
       </p>
 
       {/* Delivery Method Selection Cards */}
-      <div className="mb-8 space-y-3 font-sans">
+      <div className="mb-8 space-y-3 font-sans" suppressHydrationWarning>
         <label className="block text-xs font-bold text-gray-700">
           Select Delivery / Pickup Method
         </label>

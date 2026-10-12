@@ -7,12 +7,16 @@ import Button from "@/app/components/ui/Button";
 import CheckoutShell from "@/app/marketplace/components/CheckoutShell";
 import ReviewSection from "@/app/marketplace/components/ReviewSection";
 import { useCart } from "@/app/marketplace/context/CartContext";
+import { useAuth } from "@/app/Context/AuthContext";
+import { useMarketplaceRole } from "@/app/marketplace/context/MarketplaceRoleContext";
 
 const VAT = 50;
 
 export default function ReviewOrderPage() {
   const router = useRouter();
   const { cartItems, subtotal, logisticsFee, hasLogistics, total, removeFromCart } = useCart();
+  const { user: authUser } = useAuth();
+  const { currentUser } = useMarketplaceRole();
   const [shippingInfo, setShippingInfo] = useState<any>(null);
 
   useEffect(() => {
@@ -33,6 +37,61 @@ export default function ReviewOrderPage() {
   };
 
   const isYucaVault = shippingInfo?.deliveryMethod === "yucavault-pickup";
+
+  // Derive live recipient details ensuring no dummy or demo fallbacks
+  const liveFirst = authUser?.firstName || currentUser.firstName || "";
+  const liveLast = authUser?.lastName || currentUser.lastName || "";
+  const liveFullName = (authUser?.name || currentUser.name || "").trim();
+  const liveParts =
+    liveFullName && !liveFullName.toLowerCase().includes("marketplace user")
+      ? liveFullName.split(/\s+/)
+      : [];
+
+  const recipientFirstName =
+    shippingInfo?.firstName &&
+    shippingInfo.firstName.toLowerCase() !== "marketplace" &&
+    shippingInfo.firstName.toLowerCase() !== "demo" &&
+    shippingInfo.firstName.toLowerCase() !== "john"
+      ? shippingInfo.firstName
+      : liveFirst || (liveParts.length > 0 ? liveParts[0] : "");
+
+  const recipientLastName =
+    shippingInfo?.lastName &&
+    shippingInfo.lastName.toLowerCase() !== "user" &&
+    shippingInfo.lastName.toLowerCase() !== "demo"
+      ? shippingInfo.lastName
+      : liveLast || (liveParts.length > 1 ? liveParts.slice(1).join(" ") : "");
+
+  const recipientEmail =
+    shippingInfo?.email &&
+    !shippingInfo.email.includes("example.com") &&
+    !shippingInfo.email.includes("demo@")
+      ? shippingInfo.email
+      : authUser?.email ||
+        currentUser.email ||
+        (typeof window !== "undefined"
+          ? localStorage.getItem("yuca_user_email") || ""
+          : "");
+
+  const recipientPhone =
+    shippingInfo?.phone ||
+    authUser?.phoneNumber ||
+    currentUser.phone ||
+    "";
+
+  const recipientAddress =
+    shippingInfo?.address ||
+    authUser?.deliveryAddress ||
+    authUser?.address ||
+    currentUser.deliveryAddress ||
+    currentUser.address ||
+    "Provided delivery address";
+
+  const recipientState =
+    shippingInfo?.state ||
+    authUser?.state ||
+    currentUser.state ||
+    "Oyo";
 
   return (
     <CheckoutShell currentStep={2}>
@@ -56,34 +115,35 @@ export default function ReviewOrderPage() {
               <p className="text-gray-500 mt-0.5 leading-relaxed text-xs">
                 {isYucaVault
                   ? "YucaVault mobile weighbridge truck will inspect and verify produce quality at harvest gate before intake."
-                  : `Delivering to: ${shippingInfo?.address || "Provided destination"}, ${shippingInfo?.state || "Oyo"}, Nigeria.`}
+                  : `Delivering to: ${recipientAddress}, ${recipientState}, Nigeria.`}
               </p>
             </div>
           </div>
         </ReviewSection>
 
         {/* Recipient Details */}
-        {shippingInfo && (
-          <ReviewSection title="Recipient &amp; Contact">
-            <div className="flex justify-between items-center text-xs text-gray-700">
-              <div>
-                <p className="font-bold text-gray-900">
-                  {shippingInfo.firstName} {shippingInfo.lastName}
-                </p>
-                <p className="text-gray-500 mt-0.5">
-                  {shippingInfo.phone} • {shippingInfo.email}
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => router.push("/marketplace/shipping")}
-                className="text-xs font-semibold text-[#226049] hover:underline"
-              >
-                Edit Details
-              </button>
+        <ReviewSection title="Recipient &amp; Contact">
+          <div className="flex justify-between items-center text-xs text-gray-700">
+            <div>
+              <p className="font-bold text-gray-900">
+                {recipientFirstName || recipientLastName
+                  ? `${recipientFirstName} ${recipientLastName}`.trim()
+                  : "Customer"}
+              </p>
+              <p className="text-gray-500 mt-0.5">
+                {recipientPhone ? `${recipientPhone} • ` : ""}
+                {recipientEmail || "Email provided at checkout"}
+              </p>
             </div>
-          </ReviewSection>
-        )}
+            <button
+              type="button"
+              onClick={() => router.push("/marketplace/shipping")}
+              className="text-xs font-semibold text-[#226049] hover:underline"
+            >
+              Edit Details
+            </button>
+          </div>
+        </ReviewSection>
 
         {/* Order Items */}
         <ReviewSection title="Order Items">

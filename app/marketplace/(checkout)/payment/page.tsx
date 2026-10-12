@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import CheckoutShell from "@/app/marketplace/components/CheckoutShell";
 import { useCart } from "@/app/marketplace/context/CartContext";
 import { useMarketplaceRole } from "@/app/marketplace/context/MarketplaceRoleContext";
+import { useAuth } from "@/app/Context/AuthContext";
 import { marketplaceApi } from "@/app/Services/marketplaceService";
 import { MarketplacePaymentsApi } from "@/app/Services/marketplacePaymentServices";
 import { getUserBankDetails } from "@/app/Services/userService";
@@ -46,9 +47,10 @@ export default function PaymentPage() {
   const router = useRouter();
   const { cartItems, subtotal, total, replaceCart } = useCart();
   const { placeOrder, currentUser } = useMarketplaceRole();
+  const { user: authUser } = useAuth();
 
-  const [customerName, setCustomerName] = useState(currentUser.name || "");
-  const [customerEmail, setCustomerEmail] = useState(currentUser.email || "");
+  const [customerName, setCustomerName] = useState("");
+  const [customerEmail, setCustomerEmail] = useState("");
   const [orderRef, setOrderRef] = useState("");
   const [availableMethods, setAvailableMethods] = useState<any[]>([]);
   const [availableProviders, setAvailableProviders] = useState<any[]>([]);
@@ -57,19 +59,55 @@ export default function PaymentPage() {
   const [isInitializing, setIsInitializing] = useState(false);
   const [paymentError, setPaymentError] = useState<string | null>(null);
 
+  // Sync customer details from shipping info or live authenticated user
+  useEffect(() => {
+    let savedShipping: any = {};
+    if (typeof window !== "undefined") {
+      try {
+        const stored = localStorage.getItem("yuca_shipping_info");
+        if (stored) savedShipping = JSON.parse(stored);
+      } catch {}
+    }
+
+    const liveName =
+      savedShipping.firstName &&
+      savedShipping.lastName &&
+      savedShipping.firstName.toLowerCase() !== "marketplace" &&
+      savedShipping.firstName.toLowerCase() !== "demo"
+        ? `${savedShipping.firstName} ${savedShipping.lastName}`.trim()
+        : authUser?.name ||
+          (authUser?.firstName && authUser?.lastName
+            ? `${authUser.firstName} ${authUser.lastName}`
+            : "") ||
+          (currentUser.name &&
+          !currentUser.name.toLowerCase().includes("marketplace user")
+            ? currentUser.name
+            : "") ||
+          (typeof window !== "undefined"
+            ? localStorage.getItem("yuca_user_name") || ""
+            : "");
+
+    const liveEmail =
+      savedShipping.email &&
+      !savedShipping.email.includes("example.com") &&
+      !savedShipping.email.includes("demo@")
+        ? savedShipping.email
+        : authUser?.email ||
+          currentUser.email ||
+          (typeof window !== "undefined"
+            ? localStorage.getItem("yuca_user_email") ||
+              localStorage.getItem("email") ||
+              ""
+            : "");
+
+    if (liveName) setCustomerName(liveName);
+    if (liveEmail) setCustomerEmail(liveEmail);
+  }, [authUser, currentUser]);
+
   useEffect(() => {
     // Generate an order identifier if not yet set
     const generated = `YC-ORD-${Math.floor(100000 + Math.random() * 900000)}`;
     setOrderRef(generated);
-
-    // Pre-fill user profile info if available
-    if (!customerEmail && typeof window !== "undefined") {
-      const storedEmail =
-        localStorage.getItem("yuca_user_email") ||
-        localStorage.getItem("email") ||
-        "";
-      if (storedEmail) setCustomerEmail(storedEmail);
-    }
 
     // Fetch dynamic payment methods from live backend: GET /api/v1/Miscellaneous/payment-methods
     MarketplacePaymentsApi.getPaymentMethods()

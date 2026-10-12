@@ -51,6 +51,9 @@ export interface UserProfilePayload {
   farmName?: string;
   businessName?: string;
   companyName?: string;
+  bankName?: string;
+  accountNumber?: string;
+  accountName?: string;
 }
 
 export interface UserBankDetailsPayload {

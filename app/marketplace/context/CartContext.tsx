@@ -89,17 +89,21 @@ const STORAGE_KEY = "yuca_cart_v1";
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [cartItems, dispatch] = useReducer(cartReducer, []);
-  const [deliveryMethod, setDeliveryMethodState] = React.useState<DeliveryMethodOption>(() => {
-    if (typeof window !== "undefined") {
-      try {
-        const stored = localStorage.getItem("yuca_delivery_method");
-        if (stored === "direct-delivery" || stored === "self-pickup" || stored === "yucavault-pickup") {
-          return stored as DeliveryMethodOption;
-        }
-      } catch {}
-    }
-    return "yucavault-pickup";
-  });
+  const [deliveryMethod, setDeliveryMethodState] = React.useState<DeliveryMethodOption>("yucavault-pickup");
+
+  // Sync saved delivery method on client after initial mount to prevent hydration mismatch
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem("yuca_delivery_method");
+      if (
+        stored === "direct-delivery" ||
+        stored === "self-pickup" ||
+        stored === "yucavault-pickup"
+      ) {
+        setDeliveryMethodState(stored as DeliveryMethodOption);
+      }
+    } catch {}
+  }, []);
 
   const setDeliveryMethod = useCallback((method: DeliveryMethodOption) => {
     setDeliveryMethodState(method);

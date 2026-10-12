@@ -124,7 +124,7 @@ interface MarketplaceRoleContextType {
 
 const EMPTY_USER: UserProfile = {
   id: "",
-  name: "Marketplace User",
+  name: "",
   email: "",
   phone: "",
   role: "farmer",
@@ -142,14 +142,22 @@ export function MarketplaceRoleProvider({ children }: { children: React.ReactNod
   const [currentUser, setCurrentUser] = useState<UserProfile>(() => ({
     ...EMPTY_USER,
     id: authUser?.id || "",
-    name: authUser?.name || "Marketplace User",
+    name:
+      authUser?.name ||
+      (authUser?.firstName && authUser?.lastName
+        ? `${authUser.firstName} ${authUser.lastName}`
+        : ""),
+    firstName: authUser?.firstName || "",
+    lastName: authUser?.lastName || "",
     email: authUser?.email || "",
     phone: authUser?.phoneNumber || "",
     role: normalizeRole(authUser?.role),
+    address: authUser?.deliveryAddress || authUser?.address,
     farmAddress: authUser?.farmAddress,
     facilityAddress: authUser?.facilityAddress,
     businessAddress: authUser?.businessAddress,
-    deliveryAddress: authUser?.deliveryAddress,
+    deliveryAddress: authUser?.deliveryAddress || authUser?.address,
+    state: authUser?.state,
     companyName: authUser?.companyName,
     businessName: authUser?.businessName,
   }));
@@ -206,10 +214,14 @@ export function MarketplaceRoleProvider({ children }: { children: React.ReactNod
         ? `${profileData.firstName} ${profileData.lastName}`
         : null) ||
       authUser?.name ||
-      "Marketplace User";
+      (authUser?.firstName && authUser?.lastName
+        ? `${authUser.firstName} ${authUser.lastName}`
+        : null) ||
+      "";
 
     const resolvedPhone =
       profileData?.phoneNumber ||
+      profileData?.phone ||
       authUser?.phoneNumber ||
       "";
 
@@ -230,13 +242,13 @@ export function MarketplaceRoleProvider({ children }: { children: React.ReactNod
       companyName: profileData?.companyName || authUser?.companyName,
       businessName: profileData?.businessName || authUser?.businessName,
       farmName: profileData?.farmName,
-      address: profileData?.address,
+      address: profileData?.address || authUser?.deliveryAddress || authUser?.address,
       farmAddress: profileData?.farmAddress || authUser?.farmAddress,
       facilityAddress: profileData?.facilityAddress || authUser?.facilityAddress,
       businessAddress: profileData?.businessAddress || authUser?.businessAddress,
-      deliveryAddress: profileData?.deliveryAddress || authUser?.deliveryAddress,
-      state: profileData?.state,
-      lga: profileData?.lga,
+      deliveryAddress: profileData?.deliveryAddress || authUser?.deliveryAddress || authUser?.address,
+      state: profileData?.state || authUser?.state,
+      lga: profileData?.lga || authUser?.lga,
       bankName: bankData?.bankName || profileData?.bankName,
       accountNumber: bankData?.accountNumber || profileData?.accountNumber,
       accountName: bankData?.accountName || profileData?.accountName || resolvedName,
@@ -291,6 +303,9 @@ export function MarketplaceRoleProvider({ children }: { children: React.ReactNod
         farmName: updates.farmName ?? currentUser.farmName,
         businessName: updates.businessName ?? currentUser.businessName,
         companyName: updates.companyName ?? currentUser.companyName,
+        bankName: updates.bankName ?? currentUser.bankName,
+        accountNumber: updates.accountNumber ?? currentUser.accountNumber,
+        accountName: updates.accountName ?? currentUser.accountName,
       });
 
       // 3. Persist to PUT /api/v1/user/bank-details if non-consumer and bank info provided

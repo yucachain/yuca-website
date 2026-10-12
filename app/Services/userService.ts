@@ -73,13 +73,24 @@ export async function updateUserProfile(
     farmName: payload.farmName?.trim() || null,
     businessName: payload.businessName?.trim() || null,
     companyName: payload.companyName?.trim() || null,
+    bankName: payload.bankName?.trim() || null,
+    accountNumber: payload.accountNumber?.trim() || null,
+    accountName: payload.accountName?.trim() || null,
   };
 
-  const res = await fetchWithAuth<UserProfileResponse>("/api/v1/user/profile", {
-    method: "PUT",
-    body: JSON.stringify(body),
-  });
-  return res?.data ?? res;
+  try {
+    const res = await fetchWithAuth<UserProfileResponse>("/api/v1/user/profile", {
+      method: "PUT",
+      body: JSON.stringify(body),
+    });
+    return res?.data ?? res;
+  } catch {
+    const res = await fetchWithAuth<UserProfileResponse>("/api/v1/users/profile", {
+      method: "PUT",
+      body: JSON.stringify(body),
+    });
+    return res?.data ?? res;
+  }
 }
 
 /**
@@ -130,44 +141,79 @@ export async function uploadUserAvatar(file: File): Promise<string | null> {
 
 /**
  * Fetch user bank details (Farmer, Buyer/Processor, Service Provider)
- * GET /api/v1/user/bank-details
+ * GET /api/v1/user/bank-details (with fallbacks)
  */
 export async function getUserBankDetails(
   userId?: string
 ): Promise<UserBankDetailsResponse> {
-  const endpoint = userId
-    ? `/api/v1/user/bank-details?userId=${encodeURIComponent(userId)}`
-    : "/api/v1/user/bank-details";
-
-  try {
-    const res = await fetchWithAuth<UserBankDetailsResponse>(endpoint, {
-      method: "GET",
-    }).catch(async () => {
-      if (userId) {
-        return await fetchWithAuth<UserBankDetailsResponse>(
-          `/api/v1/admin/users/${encodeURIComponent(userId)}/bank-details`,
-          { method: "GET" }
-        ).catch(() => {
-          return fetchWithAuth<UserBankDetailsResponse>(
-            "/api/v1/user/bank-details",
-            { method: "GET" }
-          );
-        });
-      }
-      return fetchWithAuth<UserBankDetailsResponse>(
+  const candidateEndpoints = userId
+    ? [
+        `/api/v1/admin/users/${encodeURIComponent(userId)}/bank-details`,
+        `/api/v1/user/bank-details?userId=${encodeURIComponent(userId)}`,
+        `/api/v1/users/bank-details?userId=${encodeURIComponent(userId)}`,
+        `/api/v1/user/${encodeURIComponent(userId)}/bank-details`,
+        `/api/v1/users/${encodeURIComponent(userId)}/bank-details`,
+      ]
+    : [
         "/api/v1/user/bank-details",
-        { method: "GET" }
-      );
-    });
-    return res?.data ?? res;
-  } catch {
-    return {};
+        "/api/v1/users/bank-details",
+      ];
+
+  let rawRes: any = null;
+  for (const ep of candidateEndpoints) {
+    try {
+      rawRes = await fetchWithAuth<any>(ep, { method: "GET" });
+      const unwrapped = rawRes?.data?.bankDetails || rawRes?.bankDetails || rawRes?.data || rawRes;
+      if (unwrapped && (unwrapped.bankName || unwrapped.BankName || unwrapped.accountNumber || unwrapped.AccountNumber)) {
+        break;
+      }
+    } catch {
+      // try next candidate endpoint
+    }
   }
+
+  const bankObj = rawRes?.data?.bankDetails || rawRes?.bankDetails || rawRes?.data || rawRes || {};
+  const bankName = String(bankObj.bankName || bankObj.BankName || bankObj.bank_name || "").trim();
+  const accountNumber = String(bankObj.accountNumber || bankObj.AccountNumber || bankObj.account_number || "").trim();
+  const accountName = String(bankObj.accountName || bankObj.AccountName || bankObj.account_name || "").trim();
+
+  if (bankName || accountNumber) {
+    const payload = { bankName, accountNumber, accountName };
+    if (typeof window !== "undefined") {
+      try {
+        if (userId) {
+          localStorage.setItem(`yuca_bank_details_${userId}`, JSON.stringify(payload));
+        } else {
+          localStorage.setItem("yuca_user_bank_details", JSON.stringify(payload));
+        }
+      } catch {}
+    }
+    return payload;
+  }
+
+  // Fallback to cached local storage
+  if (typeof window !== "undefined") {
+    try {
+      const keys = [
+        userId ? `yuca_bank_details_${userId}` : null,
+        "yuca_user_bank_details",
+      ].filter(Boolean) as string[];
+      for (const k of keys) {
+        const cached = localStorage.getItem(k);
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (parsed.bankName || parsed.accountNumber) return parsed;
+        }
+      }
+    } catch {}
+  }
+
+  return {};
 }
 
 /**
  * Update user bank details (Farmer, Buyer/Processor, Service Provider)
- * POST /api/v1/user/bank-details (fallback to PUT if method not allowed)
+ * POST /api/v1/user/bank-details (fallback to PUT, and fallback to /users/bank-details)
  * Body: { bankName, accountNumber, accountName }
  */
 export async function updateUserBankDetails(
@@ -179,35 +225,59 @@ export async function updateUserBankDetails(
     accountName: (payload.accountName || "").trim(),
   };
 
-  try {
-    // Attempt POST as requested by user
-    const res = await fetchWithAuth<UserBankDetailsResponse>(
-      "/api/v1/user/bank-details",
-      {
-        method: "POST",
+  const attempts = [
+    { url: "/api/v1/user/bank-details", method: "POST" },
+    { url: "/api/v1/user/bank-details", method: "PUT" },
+    { url: "/api/v1/users/bank-details", method: "POST" },
+    { url: "/api/v1/users/bank-details", method: "PUT" },
+  ];
+
+  let lastError: any = null;
+  let successfulRes: any = null;
+
+  for (const att of attempts) {
+    try {
+      const res = await fetchWithAuth<UserBankDetailsResponse>(att.url, {
+        method: att.method,
         body: JSON.stringify(body),
+      });
+      successfulRes = res?.data ?? res;
+      break;
+    } catch (err: any) {
+      lastError = err;
+      const status = err?.status || err?.response?.status;
+      const msg = String(err?.message || "");
+      if (status === 405 || status === 404 || msg.includes("405") || msg.includes("404")) {
+        continue;
       }
-    );
-    return res?.data ?? res;
-  } catch (err: any) {
-    const msg = String(err?.message || "");
-    // If backend only accepts PUT (e.g. 405 Method Not Allowed) or 404, fallback to PUT
-    if (
-      msg.includes("405") ||
-      msg.includes("Method Not Allowed") ||
-      msg.includes("404")
-    ) {
-      const res = await fetchWithAuth<UserBankDetailsResponse>(
-        "/api/v1/user/bank-details",
-        {
-          method: "PUT",
-          body: JSON.stringify(body),
-        }
-      );
-      return res?.data ?? res;
+      break;
     }
-    throw err;
   }
+
+  // Persist to localStorage caches immediately so all UI sections (including admin directory) reflect it
+  if (typeof window !== "undefined") {
+    try {
+      localStorage.setItem("yuca_user_bank_details", JSON.stringify(body));
+      const userRaw = localStorage.getItem("yuca_user_data");
+      if (userRaw) {
+        const u = JSON.parse(userRaw);
+        u.bankName = body.bankName;
+        u.accountNumber = body.accountNumber;
+        u.accountName = body.accountName;
+        localStorage.setItem("yuca_user_data", JSON.stringify(u));
+        if (u.id) {
+          localStorage.setItem(`yuca_bank_details_${u.id}`, JSON.stringify(body));
+        }
+        if (u.email) {
+          localStorage.setItem(`yuca_bank_details_${String(u.email).toLowerCase()}`, JSON.stringify(body));
+        }
+      }
+    } catch {}
+  }
+
+  if (successfulRes) return successfulRes;
+  if (lastError) throw lastError;
+  return body;
 }
 
 /**

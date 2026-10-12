@@ -437,6 +437,17 @@ export async function getCurrentUser(tokenOverride?: string): Promise<User> {
     accountType: merged.accountType,
     isVerified: merged.isVerified,
     avatarUrl: merged.avatarUrl || merged.avatar,
+    address: merged.address || merged.Address || "",
+    deliveryAddress: merged.deliveryAddress || merged.DeliveryAddress || merged.address || merged.Address || "",
+    facilityAddress: merged.facilityAddress || merged.FacilityAddress || "",
+    farmAddress: merged.farmAddress || merged.FarmAddress || "",
+    businessAddress: merged.businessAddress || merged.BusinessAddress || "",
+    state: merged.state || merged.State || "",
+    lga: merged.lga || merged.Lga || "",
+    farmName: merged.farmName || merged.FarmName || "",
+    bankName: merged.bankName || merged.BankName || "",
+    accountNumber: merged.accountNumber || merged.AccountNumber || "",
+    accountName: merged.accountName || merged.AccountName || "",
   };
 
   if (typeof window !== "undefined") {

@@ -329,6 +329,9 @@ export default function RoleProfileSettingsModal({
           farmName: formData.farmName.trim(),
           businessName: formData.businessName.trim(),
           companyName: formData.companyName.trim(),
+          bankName: !isConsumer && formData.bankName ? formData.bankName.trim() : undefined,
+          accountNumber: !isConsumer && formData.accountNumber ? formData.accountNumber.trim() : undefined,
+          accountName: !isConsumer && formData.bankName ? (formData.accountName.trim() || fullName) : undefined,
         });
       } catch (err: any) {
         backendErrorMsg = err?.message || "Failed to update profile";
@@ -352,6 +355,12 @@ export default function RoleProfileSettingsModal({
             localStorage.setItem("yuca_user_bank_details", JSON.stringify(bPayload));
             if (currentUser.id) {
               localStorage.setItem(`yuca_bank_details_${currentUser.id}`, JSON.stringify(bPayload));
+            }
+            if (currentUser.email) {
+              localStorage.setItem(
+                `yuca_bank_details_${currentUser.email.toLowerCase()}`,
+                JSON.stringify(bPayload)
+              );
             }
           } catch {}
         } catch (err: any) {
