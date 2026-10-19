@@ -63,28 +63,28 @@ export default function CreateCassavaBatchModal({
 
   const [formData, setFormData] = useState({
     variety: "Tme419",
-    estimatedWeightKg: "20000",
-    pricePerTonneNgn: "150000",
-    totalPrice: "3000000",
+    estimatedWeightKg: "",
+    pricePerTonneNgn: "",
+    totalPrice: "",
     harvestDate: new Date().toISOString().split("T")[0],
-    harvestLatitude: "7.3775",
-    harvestLongitude: "3.9470",
-    harvestState: currentUser.state || "Oyo",
-    harvestLga: currentUser.lga || "Iseyin",
+    harvestLatitude: "",
+    harvestLongitude: "",
+    harvestState: currentUser.state || "",
+    harvestLga: currentUser.lga || "",
     intendedDestination: "Storage",
     qualityGrade: "A",
-    notes: "Freshly harvested premium cassava roots with high starch extract and low fiber.",
+    notes: "",
   });
 
   const handleWeightChange = (weightVal: string) => {
     const w = Number(weightVal);
     const p = Number(formData.pricePerTonneNgn);
     const tonnes = w > 0 ? w / 1000 : 0;
-    const newTotal = tonnes > 0 && p > 0 ? String(Math.round(tonnes * p)) : formData.totalPrice;
+    const newTotal = tonnes > 0 && p > 0 ? String(Math.round(tonnes * p)) : "";
     setFormData((prev) => ({
       ...prev,
       estimatedWeightKg: weightVal,
-      totalPrice: newTotal,
+      totalPrice: newTotal || (weightVal ? prev.totalPrice : ""),
     }));
   };
 
@@ -96,7 +96,7 @@ export default function CreateCassavaBatchModal({
     setFormData((prev) => ({
       ...prev,
       pricePerTonneNgn: priceVal,
-      totalPrice: newTotal || prev.totalPrice,
+      totalPrice: newTotal || (priceVal ? prev.totalPrice : ""),
     }));
   };
 
@@ -105,11 +105,11 @@ export default function CreateCassavaBatchModal({
     const w = Number(formData.estimatedWeightKg);
     const tonnes = w > 0 ? w / 1000 : 0;
     const newPricePerTonne =
-      tonnes > 0 && tot > 0 ? String(Math.round(tot / tonnes)) : formData.pricePerTonneNgn;
+      tonnes > 0 && tot > 0 ? String(Math.round(tot / tonnes)) : "";
     setFormData((prev) => ({
       ...prev,
       totalPrice: totalVal,
-      pricePerTonneNgn: newPricePerTonne,
+      pricePerTonneNgn: newPricePerTonne || (totalVal ? prev.pricePerTonneNgn : ""),
     }));
   };
 
@@ -441,7 +441,7 @@ export default function CreateCassavaBatchModal({
                 <span className="text-[10px] text-gray-400 mt-0.5 block">
                   {formData.estimatedWeightKg && Number(formData.estimatedWeightKg) > 0
                     ? `≈ ${(Number(formData.estimatedWeightKg) / 1000).toFixed(2)} Tonnes`
-                    : "Weight in Kg"}
+                    : "Enter weight in Kg (e.g. 20000)"}
                 </span>
               </div>
 
@@ -482,7 +482,9 @@ export default function CreateCassavaBatchModal({
                   className="w-full rounded-xl border border-emerald-300 bg-emerald-50/30 px-3 py-2 text-gray-900 focus:border-[#226049] focus:outline-none font-bold text-sm text-[#226049]"
                 />
                 <span className="text-[10px] text-emerald-700 font-medium mt-0.5 block">
-                  Marketplace whole batch price: ₦{Number(formData.totalPrice || 0).toLocaleString()}
+                  {formData.totalPrice && Number(formData.totalPrice) > 0
+                    ? `Marketplace whole batch price: ₦${Number(formData.totalPrice).toLocaleString()}`
+                    : "Calculated automatically from weight & price"}
                 </span>
               </div>
 
@@ -530,7 +532,7 @@ export default function CreateCassavaBatchModal({
                       setFormData({ ...formData, harvestLatitude: e.target.value })
                     }
                     className="w-full rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-gray-900 focus:border-[#226049] focus:outline-none"
-                    placeholder="0 or empty"
+                    placeholder="e.g. 7.3775"
                   />
                 </div>
                 <div>
@@ -545,7 +547,7 @@ export default function CreateCassavaBatchModal({
                       setFormData({ ...formData, harvestLongitude: e.target.value })
                     }
                     className="w-full rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-gray-900 focus:border-[#226049] focus:outline-none"
-                    placeholder="0 or empty"
+                    placeholder="e.g. 3.9470"
                   />
                 </div>
               </div>
@@ -625,7 +627,7 @@ export default function CreateCassavaBatchModal({
                 value={formData.notes}
                 onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                 className="w-full rounded-xl border border-gray-200 p-2.5 text-gray-900 focus:border-[#226049] focus:outline-none"
-                placeholder="Produce remarks..."
+                placeholder="e.g. Freshly harvested cassava roots with high starch content..."
               />
             </div>
 

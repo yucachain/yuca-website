@@ -125,7 +125,7 @@ export const marketplaceRegisterInitialValues: MarketplaceRegisterValues = {
   facilityAddress: "",
   businessAddress: "",
   deliveryAddress: "",
-  state: "Oyo",
+  state: "",
   lga: "",
   farmName: "",
   businessName: "",

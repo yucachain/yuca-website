@@ -13,6 +13,7 @@ export interface CassavaBatch {
   location: string;
   storageLocation?: string;
   seller: string;
+  sellerRole?: string;
   storageTime: string;
   temperatureC: number;
   humidityPercent: number;

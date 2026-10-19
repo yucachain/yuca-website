@@ -1,7 +1,6 @@
 import {
   Users,
   ShoppingBasket,
-  Landmark,
   Handshake,
 } from "lucide-react";
 
@@ -15,8 +14,8 @@ const trustedItems = [
     title: "Processors & Buyers",
   },
   {
-    icon: Landmark,
-    title: "Financial Institutions",
+    icon: Handshake,
+    title: "Agro-Service Providers",
   },
 ];
 

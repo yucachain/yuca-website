@@ -122,44 +122,62 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     [setDeliveryMethod]
   );
 
-  // Hydrate cart from localStorage first, then sync with live server Cart API
+  // Hydrate cart from live server Cart API (or clear if unauthenticated)
   useEffect(() => {
     let cancelled = false;
 
     const hydrateCart = async () => {
-      // 1. Instant local restore
-      try {
-        const saved = localStorage.getItem(STORAGE_KEY);
-        if (saved) {
-          const parsed: CartEntry[] = JSON.parse(saved);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            dispatch({ type: "INIT", items: parsed });
-          }
-        }
-      } catch {}
+      const hasAuth =
+        typeof window !== "undefined" &&
+        Boolean(
+          localStorage.getItem("accessToken") ||
+          localStorage.getItem("yuca_access_token") ||
+          localStorage.getItem("token") ||
+          localStorage.getItem("authToken")
+        );
 
-      // 2. Fetch server cart
+      if (!hasAuth) {
+        // Unauthenticated visitor: cart must always be empty
+        dispatch({ type: "INIT", items: [] });
+        try {
+          localStorage.removeItem(STORAGE_KEY);
+        } catch {}
+        return;
+      }
+
+      // Fetch live server cart from /api/v1/cart endpoint
       try {
         const serverCart = await cartApi.getCart();
         if (cancelled) return;
-        if (serverCart?.items && serverCart.items.length > 0) {
-          const formatted: CartEntry[] = serverCart.items.map((i: any) => ({
-            id: i.id || i.listingId || `cart-${Math.random()}`,
-            batchCode: i.batchCode || `BCH-${i.id?.slice(0, 6) || "2026"}`,
-            title: i.title || i.productName || "Cassava Produce",
-            grade: i.grade || "A",
-            quantity: Number(i.quantity) || 1,
-            pricePerTonne: Number(i.pricePerTonne ?? i.price ?? 0),
-            unit: i.unit || i.unitOfMeasure || "Tonnes",
-            currency: i.currency || "₦",
-            seller: i.seller || i.sellerName || "Verified Seller",
-            location: i.location || "Nigeria",
-            image: (i.image || i.imageUrl || i.photoUrls?.[0] || "").replace(/.*Batch1\.png.*/, ""),
-          }));
-          dispatch({ type: "INIT", items: formatted });
-        }
+        const serverItems = Array.isArray(serverCart?.items) ? serverCart.items : [];
+        const formatted: CartEntry[] = serverItems.map((i: any) => ({
+          id: i.id || i.listingId || `cart-${Math.random()}`,
+          batchCode: i.batchCode || `BCH-${i.id?.slice(0, 6) || "2026"}`,
+          title: i.title || i.productName || "Cassava Produce",
+          grade: i.grade || "A",
+          quantity: Number(i.quantity) || 1,
+          pricePerTonne: Number(i.pricePerTonne ?? i.price ?? 0),
+          unit: i.unit || i.unitOfMeasure || "Tonnes",
+          currency: i.currency || "₦",
+          seller: i.seller || i.sellerName || "Verified Seller",
+          location: i.location || "Nigeria",
+          image: (i.image || i.imageUrl || i.photoUrls?.[0] || "").replace(/.*Batch1\.png.*/, ""),
+        }));
+        dispatch({ type: "INIT", items: formatted });
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(formatted));
+        } catch {}
       } catch {
-        // If unauthenticated or guest, keep local cart without interruption
+        // Fallback to local storage only if offline/network error occurs
+        try {
+          const saved = localStorage.getItem(STORAGE_KEY);
+          if (saved) {
+            const parsed: CartEntry[] = JSON.parse(saved);
+            if (Array.isArray(parsed)) {
+              dispatch({ type: "INIT", items: parsed });
+            }
+          }
+        } catch {}
       }
     };
 

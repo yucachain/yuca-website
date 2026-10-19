@@ -22,10 +22,13 @@ import { useCart } from "./context/CartContext";
 import { useMarketplaceRole } from "./context/MarketplaceRoleContext";
 import { useRouter } from "next/navigation";
 import { marketplaceApi } from "@/app/Services/marketplaceService";
+import { batchService } from "@/app/Services/batchService";
+import { useAuth } from "@/app/Context/AuthContext";
 import CreateCassavaBatchModal from "./components/CreateCassavaBatchModal";
 import ListProcessedProductModal from "./components/ListProcessedProductModal";
 import ListServiceMachineryModal from "./components/ListServiceMachineryModal";
 import UserOrdersAndSalesModal from "./components/UserOrdersAndSalesModal";
+import AuthPromptModal from "./components/AuthPromptModal";
 
 export function normalizeCategory(cat?: string | null): string {
   if (!cat) return "raw-cassava";
@@ -35,7 +38,8 @@ export function normalizeCategory(cat?: string | null): string {
     cleaned.includes("root") ||
     cleaned.includes("stem") ||
     cleaned.includes("seedling") ||
-    cleaned.includes("farmer")
+    cleaned.includes("farmer") ||
+    cleaned.includes("tuber")
   ) {
     return "raw-cassava";
   }
@@ -45,7 +49,9 @@ export function normalizeCategory(cat?: string | null): string {
     cleaned.includes("garri") ||
     cleaned.includes("gari") ||
     cleaned.includes("chip") ||
-    cleaned.includes("process")
+    cleaned.includes("process") ||
+    cleaned.includes("proc") ||
+    cleaned.includes("buyer")
   ) {
     return "process-products";
   }
@@ -63,7 +69,11 @@ export function normalizeCategory(cat?: string | null): string {
     cleaned.includes("lease") ||
     cleaned.includes("tractor") ||
     cleaned.includes("equipment") ||
-    cleaned.includes("tool")
+    cleaned.includes("tool") ||
+    cleaned.includes("service") ||
+    cleaned.includes("logistic") ||
+    cleaned.includes("transport") ||
+    cleaned.includes("haulage")
   ) {
     return "machinery-lease";
   }
@@ -150,6 +160,15 @@ const normalizeListingToBatch = (
     (img: string) => typeof img === "string" && img.trim() !== "" && !img.includes("Batch1.png")
   );
 
+  const sellerRole =
+    listing.sellerRole ||
+    listing.role ||
+    (category === "process-products"
+      ? "processor"
+      : category === "machinery-lease"
+      ? "service-provider"
+      : "farmer");
+
   return {
     id: String(listing.id ?? listing.batchCode ?? `${category}-${Date.now()}-${Math.random()}`),
     batchCode: String(listing.batchCode ?? listing.id ?? "BCH-UNKNOWN"),
@@ -165,6 +184,7 @@ const normalizeListingToBatch = (
     seller: String(
       listing.seller ?? listing.sellerName ?? listing.farmerName ?? "Verified Supplier"
     ),
+    sellerRole,
     storageTime: String(listing.storageTime ?? listing.storageDuration ?? "Fresh"),
     temperatureC: Number(listing.temperatureC ?? listing.temperature ?? 24),
     humidityPercent: Number(listing.humidityPercent ?? listing.humidity ?? 52),
@@ -179,6 +199,7 @@ const normalizeListingToBatch = (
 export default function MarketplacePage() {
   const { addToCart, totalItems } = useCart();
   const { activeRole, currentUser, addListing } = useMarketplaceRole();
+  const { isAuthenticated } = useAuth();
   const router = useRouter();
 
   const [allBatches, setAllBatches] = useState<CassavaBatch[]>([]);
@@ -194,6 +215,7 @@ export default function MarketplacePage() {
   const [showMobileSidebar, setShowMobileSidebar] = useState(false);
   const [showFilterDropdown, setShowFilterDropdown] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
   // Role Action Modals
   const [showFarmerBatchModal, setShowFarmerBatchModal] = useState(false);
@@ -204,25 +226,68 @@ export default function MarketplacePage() {
 
   const panelRef = useRef<HTMLDivElement>(null);
 
+  const hasToken =
+    typeof window !== "undefined" &&
+    Boolean(
+      localStorage.getItem("accessToken") ||
+      localStorage.getItem("yuca_access_token") ||
+      localStorage.getItem("token")
+    );
+
+  const isUserAuthenticated = isAuthenticated || hasToken;
+
   const fetchMarketplaceData = async () => {
     try {
       setLoading(true);
       const categoryParam = activeCategoryId !== "all" ? activeCategoryId : undefined;
+
+      // 1. Fetch from Public Marketplace Products endpoint
       const products = await marketplaceApi.getProducts({
         Category: categoryParam,
         Search: search.trim() || undefined,
-        Page: page,
-        PageSize: itemsPerPage * 4,
+        Page: 1,
+        PageSize: 100,
       }).catch(() => []);
+
       const list = Array.isArray(products) ? products : [];
       const normalizedApi = list.map((item) => normalizeListingToBatch(item, "raw-cassava"));
 
-      // Clean, normalize and deduplicate existing local custom listings
+      // 2. If authenticated, fetch from Batches endpoint for any farmer batches
+      let normalizedBatches: CassavaBatch[] = [];
+      if (hasToken) {
+        try {
+          const rawBatches = await batchService.getBatches().catch(() => []);
+          if (Array.isArray(rawBatches)) {
+            normalizedBatches = rawBatches.map((b: any) => ({
+              id: b.id || b.batchCode,
+              batchCode: b.batchCode || b.code || "BCH-UNKNOWN",
+              title: b.title || `Fresh Cassava Batch (${b.variety || b.batchCode || "TME 419"})`,
+              grade: (String(b.qualityGrade || "A").includes("B") ? "B" : "A") as any,
+              quantity: b.weightKg ? Math.round(b.weightKg / 100) / 10 : b.estWeightKg ? Math.round(b.estWeightKg / 100) / 10 : 20,
+              unit: "Tonnes",
+              pricePerTonne: b.pricePerTonne || b.pricePerTonneNgn || 150000,
+              currency: "₦",
+              category: "raw-cassava",
+              location: b.hubState ? `${b.hubLga ? b.hubLga + ", " : ""}${b.hubState}` : "Nigeria",
+              storageLocation: b.vaultLotId ? `Vault Lot: ${b.vaultLotId}` : "YucaVault Agro Hub",
+              seller: b.farmerName || b.farmer || "Verified Farmer",
+              sellerRole: "farmer",
+              storageTime: b.status || "In Storage",
+              temperatureC: 24,
+              humidityPercent: 54,
+              isNew: true,
+              description: b.notes || `Freshly harvested cassava batch in YucaVault.`,
+              images: [],
+            }));
+          }
+        } catch {}
+      }
+
+      // 3. Clean, normalize and deduplicate existing local custom listings
       let cleanedCustom: CassavaBatch[] = [];
       try {
         const stored = JSON.parse(localStorage.getItem("yuca_custom_listings") || "[]");
         if (Array.isArray(stored) && stored.length > 0) {
-          // Purge demo image from stored listings
           const purgedStored = stored.map((item: any) => {
             const rawImgs = Array.isArray(item.photoUrls) && item.photoUrls.length > 0
               ? item.photoUrls
@@ -241,13 +306,16 @@ export default function MarketplacePage() {
 
           const normalizedCustom = purgedStored.map((item) => normalizeListingToBatch(item, "raw-cassava"));
           cleanedCustom = deduplicateBatches(normalizedCustom);
-          // Persist the deduplicated list back to localStorage to repair any previous multiplying
           localStorage.setItem("yuca_custom_listings", JSON.stringify(cleanedCustom));
         }
       } catch {}
 
-      // Combine custom listings with backend API listings and deduplicate
-      const combined = deduplicateBatches([...cleanedCustom, ...normalizedApi]);
+      // 4. Combine live API listings, live farmer batches, and session postings
+      const combined = deduplicateBatches([
+        ...normalizedApi,
+        ...normalizedBatches,
+        ...cleanedCustom,
+      ]);
       setAllBatches(combined);
     } catch (err: any) {
       console.error("Failed to load marketplace listings:", err);
@@ -341,24 +409,35 @@ export default function MarketplacePage() {
     setTimeout(() => setSelectedBatch(null), 300);
   };
 
-  const handleAddToCart = (batch: CassavaBatch) => {
+  const handleAddToCart = (batch: CassavaBatch): boolean => {
+    if (!isUserAuthenticated) {
+      setShowAuthModal(true);
+      return false;
+    }
     addToCart(batch);
+    return true;
   };
 
-  const handlePlaceOrder = (batch: CassavaBatch) => {
+  const handlePlaceOrder = (batch: CassavaBatch): boolean => {
+    if (!isUserAuthenticated) {
+      setShowAuthModal(true);
+      return false;
+    }
     addToCart(batch);
     router.push("/marketplace/shipping");
+    return true;
   };
 
   const handleAddProductClick = () => {
+    if (!isUserAuthenticated || activeRole === "consumer") {
+      return;
+    }
     if (activeRole === "farmer") {
       setShowFarmerBatchModal(true);
     } else if (activeRole === "processor") {
       setShowProcessorProductModal(true);
     } else if (activeRole === "service-provider") {
       setShowServiceMachineryModal(true);
-    } else {
-      setShowFarmerBatchModal(true);
     }
   };
 
@@ -410,6 +489,10 @@ export default function MarketplacePage() {
               setPage(1);
             }}
             onOpenOrdersModal={() => {
+              if (!isUserAuthenticated) {
+                setShowAuthModal(true);
+                return;
+              }
               setOrdersModalTab("sales");
               setShowOrdersSalesModal(true);
             }}
@@ -436,6 +519,10 @@ export default function MarketplacePage() {
                 onCloseMobileDrawer={() => setShowMobileSidebar(false)}
                 onOpenOrdersModal={() => {
                   setShowMobileSidebar(false);
+                  if (!isUserAuthenticated) {
+                    setShowAuthModal(true);
+                    return;
+                  }
                   setOrdersModalTab("sales");
                   setShowOrdersSalesModal(true);
                 }}
@@ -449,34 +536,57 @@ export default function MarketplacePage() {
           {/* Top Title Bar */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 mb-3 border-b border-gray-150/70">
             <div>
-              <h1 className="text-xl sm:text-2xl font-extrabold text-gray-900 tracking-tight">
-                {activeRole === "farmer" ? "Farmer Marketplace" : "Management Product"}
-              </h1>
-              <p className="text-xs text-gray-400 mt-0.5">
-                {activeRole === "farmer"
-                  ? "Register harvest cassava batches and trade with verified processors and off-takers"
-                  : "Manage, source and trade verified agricultural products and listings"}
-              </p>
+              {isUserAuthenticated ? (
+                <>
+                  <h1 className="text-xl sm:text-2xl font-extrabold text-gray-900 tracking-tight">
+                    {activeRole === "farmer"
+                      ? "Farmer Marketplace"
+                      : activeRole === "processor"
+                      ? "Processor Marketplace"
+                      : activeRole === "service-provider"
+                      ? "Agro-Services Marketplace"
+                      : "Consumer Marketplace"}
+                  </h1>
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    {activeRole === "farmer"
+                      ? "Register harvest cassava batches and trade with verified processors and off-takers"
+                      : activeRole === "processor"
+                      ? "Source raw cassava and supply premium processed food products to commercial off-takers"
+                      : activeRole === "service-provider"
+                      ? "List machinery, logistics and services for farmers and processors"
+                      : "Browse and order verified cassava produce, premium flour, and agro products"}
+                  </p>
+                </>
+              ) : (
+                <>
+                  <h1 className="text-xl sm:text-2xl font-extrabold text-gray-900 tracking-tight">
+                    What are you buying from us today?
+                  </h1>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    Discover verified fresh cassava harvests, premium processed flour, garri, and agro-equipment direct from trusted producers.
+                  </p>
+                </>
+              )}
             </div>
 
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={handleAddProductClick}
-                className="inline-flex items-center gap-2 rounded-xl bg-[#226049] hover:bg-[#1a4336] text-white px-4 py-2.5 text-xs font-bold shadow-xs transition-colors cursor-pointer active:scale-98"
-              >
-                <Plus size={15} strokeWidth={2.5} />
-                <span>
-                  {activeRole === "farmer"
-                    ? "Create Batch"
-                    : activeRole === "processor"
-                    ? "Add Processed Product"
-                    : activeRole === "service-provider"
-                    ? "List Machinery / Service"
-                    : "Add Product"}
-                </span>
-              </button>
-            </div>
+            {isUserAuthenticated && activeRole !== "consumer" && (
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={handleAddProductClick}
+                  className="inline-flex items-center gap-2 rounded-xl bg-[#226049] hover:bg-[#1a4336] text-white px-4 py-2.5 text-xs font-bold shadow-xs transition-colors cursor-pointer active:scale-98"
+                >
+                  <Plus size={15} strokeWidth={2.5} />
+                  <span>
+                    {activeRole === "farmer"
+                      ? "Create Batch"
+                      : activeRole === "processor"
+                      ? "Add Processed Product"
+                      : "List Machinery / Service"}
+                  </span>
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Sub-bar: Horizontal Tabs & Controls */}
@@ -844,6 +954,15 @@ export default function MarketplacePage() {
         isOpen={showOrdersSalesModal}
         onClose={() => setShowOrdersSalesModal(false)}
         initialTab={ordersModalTab}
+      />
+
+      {/* Authentication Prompt Modal */}
+      <AuthPromptModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        title="Sign In to Add to Cart"
+        message="Please sign in or register as a new user to add items to your cart and place marketplace orders."
+        redirectUrl="/marketplace"
       />
     </div>
   );

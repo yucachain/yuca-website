@@ -30,9 +30,9 @@ export default function ProductGrid({
         <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gray-50 text-gray-400 mb-3">
           <PackageOpen size={24} />
         </div>
-        <p className="text-sm font-bold text-gray-900">No products match your current filters</p>
+        <p className="text-sm font-bold text-gray-900">No products available in the marketplace yet</p>
         <p className="mt-1 text-xs text-gray-500 max-w-sm">
-          Try clearing your quality grade or weight filters, or select "All Products" to browse available inventory.
+          Live products, batches, and services posted by farmers, processors, and service providers will appear here in real-time.
         </p>
         {onResetFilters && (
           <button
@@ -40,7 +40,7 @@ export default function ProductGrid({
             onClick={onResetFilters}
             className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-[#226049] px-4 py-2 text-xs font-bold text-white hover:bg-[#1a4336] transition-colors cursor-pointer shadow-2xs"
           >
-            Clear All Filters
+            Refresh &amp; Reset Filters
           </button>
         )}
       </div>

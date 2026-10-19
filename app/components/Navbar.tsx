@@ -29,7 +29,15 @@ export default function Navbar() {
   return (
     <header className="w-full bg-white/95 backdrop-blur-md border-b border-gray-100 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto flex items-center justify-between px-4 sm:px-6 py-3">
-        <Link href="/" className="flex items-center gap-2">
+        <Link
+          href="/"
+          onClick={() => {
+            if (typeof window !== "undefined") {
+              window.scrollTo({ top: 0, behavior: "smooth" });
+            }
+          }}
+          className="flex items-center gap-2"
+        >
           <Image
             src="/images/Logo.png"
             alt="YucaChain Logo"
@@ -68,12 +76,6 @@ export default function Navbar() {
             className="inline-flex items-center px-4 py-2 text-sm font-semibold text-white bg-[#226049] rounded-full hover:bg-[#1a4a38] transition-all duration-200 shadow-sm"
           >
             Register
-          </Link>
-          <Link
-            href="/admin-login"
-            className="hidden md:inline-flex items-center px-4 py-2 text-sm font-medium text-[#226049] border border-[#226049]/40 rounded-full hover:bg-[#226049] hover:text-white transition-all duration-200"
-          >
-            Admin Console
           </Link>
           <button
             type="button"

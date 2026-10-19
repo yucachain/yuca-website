@@ -58,7 +58,7 @@ export default function RoleProfileSettingsModal({
     facilityAddress: currentUser.facilityAddress || "",
     businessAddress: currentUser.businessAddress || "",
     deliveryAddress: currentUser.deliveryAddress || "",
-    state: currentUser.state || "Oyo",
+    state: currentUser.state || "",
     lga: currentUser.lga || "",
     farmName: currentUser.farmName || "",
     businessName: currentUser.businessName || "",

@@ -12,7 +12,10 @@ import {
   Sparkles,
   ChevronRight,
   ShieldCheck,
+  User,
 } from "lucide-react";
+import Link from "next/link";
+import { useAuth } from "@/app/Context/AuthContext";
 import { useMarketplaceRole } from "../context/MarketplaceRoleContext";
 import FilterPanel, { MarketplaceFilters, WeightRange } from "./FilterPanel";
 
@@ -80,8 +83,18 @@ export default function MarketplaceSidebar({
   categoryCounts,
 }: MarketplaceSidebarProps) {
   const { currentUser, activeRole } = useMarketplaceRole();
+  const { isAuthenticated, user: authUser } = useAuth();
   const [activeNav, setActiveNav] = useState("product");
   const [showFilters, setShowFilters] = useState(false);
+
+  const hasToken =
+    typeof window !== "undefined" &&
+    Boolean(
+      localStorage.getItem("accessToken") ||
+      localStorage.getItem("yuca_access_token") ||
+      localStorage.getItem("token")
+    );
+  const isUserAuthenticated = isAuthenticated || hasToken;
 
   const handleCategorySelect = (id: string) => {
     onCategoryChange?.(id);
@@ -95,28 +108,45 @@ export default function MarketplaceSidebar({
         <div className="flex items-center justify-between pb-3 border-b border-gray-100">
           <div className="flex items-center gap-2.5 min-w-0">
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#226049]/10 text-xs font-bold text-[#226049] overflow-hidden border border-[#226049]/20">
-              {currentUser.avatarUrl ? (
+              {isUserAuthenticated && currentUser.avatarUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={currentUser.avatarUrl}
                   alt={currentUser.name}
                   className="h-full w-full object-cover"
                 />
+              ) : isUserAuthenticated && (currentUser.name || authUser?.name) ? (
+                (currentUser.name || authUser?.name || "").substring(0, 2).toUpperCase()
               ) : (
-                currentUser.name.substring(0, 2).toUpperCase()
+                <User size={16} />
               )}
             </div>
             <div className="min-w-0 flex-1">
               <h3 className="text-xs font-bold text-gray-900 truncate">
-                {currentUser.name}
+                {isUserAuthenticated
+                  ? (currentUser.name || authUser?.name || "My Account")
+                  : "Welcome, Guest"}
               </h3>
-              <p className="text-[10px] text-gray-400 truncate">{currentUser.email}</p>
+              <p className="text-[10px] text-gray-400 truncate">
+                {isUserAuthenticated
+                  ? (currentUser.email || authUser?.email || "Active User")
+                  : "Sign in to buy & sell"}
+              </p>
             </div>
           </div>
 
-          <span className="shrink-0 rounded-md bg-amber-50 border border-amber-200 px-1.5 py-0.5 text-[9px] font-bold text-amber-800">
-            PRO
-          </span>
+          {isUserAuthenticated ? (
+            <span className="shrink-0 rounded-md bg-amber-50 border border-amber-200 px-1.5 py-0.5 text-[9px] font-bold text-amber-800">
+              PRO
+            </span>
+          ) : (
+            <Link
+              href="/auth/login"
+              className="shrink-0 rounded-md bg-[#226049] hover:bg-[#1a4336] text-white px-2 py-0.5 text-[9px] font-bold transition-colors cursor-pointer"
+            >
+              Sign In
+            </Link>
+          )}
 
           {onCloseMobileDrawer && (
             <button
@@ -187,17 +217,19 @@ export default function MarketplaceSidebar({
               className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold text-gray-500 hover:text-gray-900 hover:bg-gray-50 transition-all cursor-pointer"
             >
               <ShoppingBag size={15} className="text-gray-400" />
-              <span>Orders &amp; Sales</span>
+              <span>{activeRole === "consumer" ? "My Orders" : "Orders & Sales"}</span>
             </button>
 
-            <button
-              type="button"
-              onClick={() => onOpenOrdersModal?.()}
-              className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold text-gray-500 hover:text-gray-900 hover:bg-gray-50 transition-all cursor-pointer"
-            >
-              <CreditCard size={15} className="text-gray-400" />
-              <span>Escrow Payouts</span>
-            </button>
+            {activeRole !== "consumer" && (
+              <button
+                type="button"
+                onClick={() => onOpenOrdersModal?.()}
+                className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold text-gray-500 hover:text-gray-900 hover:bg-gray-50 transition-all cursor-pointer"
+              >
+                <CreditCard size={15} className="text-gray-400" />
+                <span>Escrow Payouts</span>
+              </button>
+            )}
           </nav>
         </div>
 

@@ -89,18 +89,15 @@ export default function ListServiceMachineryModal({
   const [productName, setProductName] = useState("");
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState<number | string>("");
-  const [unitOfMeasure, setUnitOfMeasure] = useState("Per Day");
-  const [stockAvailable, setStockAvailable] = useState<number | string>(1);
-  const [machinesAvailable, setMachinesAvailable] = useState<number | string>(1);
-  const [minimumOrder, setMinimumOrder] = useState<number | string>(1);
+  const [unitOfMeasure, setUnitOfMeasure] = useState("");
+  const [stockAvailable, setStockAvailable] = useState<number | string>("");
+  const [machinesAvailable, setMachinesAvailable] = useState<number | string>("");
+  const [minimumOrder, setMinimumOrder] = useState<number | string>("");
   const [location, setLocation] = useState(
     currentUser.businessAddress || currentUser.facilityAddress || currentUser.state || ""
   );
   const [photoUrls, setPhotoUrls] = useState<string[]>([]);
-  const [certifications, setCertifications] = useState<string[]>([
-    "Certified Operator",
-    "Safety Inspected",
-  ]);
+  const [certifications, setCertifications] = useState<string[]>([]);
   const [customCertInput, setCustomCertInput] = useState("");
 
   const [loading, setLoading] = useState(false);

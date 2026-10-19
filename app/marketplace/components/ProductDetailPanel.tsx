@@ -22,7 +22,7 @@ import type { CassavaBatch } from "./types";
 export interface ProductDetailPanelProps {
   batch: CassavaBatch;
   onClose: () => void;
-  onAddToCart?: (batch: CassavaBatch) => void;
+  onAddToCart?: (batch: CassavaBatch) => boolean | void;
   onPlaceOrder?: (batch: CassavaBatch) => void;
 }
 
@@ -44,10 +44,26 @@ export default function ProductDetailPanel({
 
   const isGradeA = batch.grade === "A";
 
+  const creatorRoleLabel =
+    batch.sellerRole === "processor" || batch.category === "process-products"
+      ? "Buyer / Processor"
+      : batch.sellerRole === "service-provider" || batch.category === "machinery-lease"
+      ? "Service Provider"
+      : "Farmer";
+
+  const creatorRoleBadge =
+    batch.sellerRole === "processor" || batch.category === "process-products"
+      ? "bg-amber-50 text-amber-900 border-amber-300"
+      : batch.sellerRole === "service-provider" || batch.category === "machinery-lease"
+      ? "bg-emerald-50 text-[#226049] border-emerald-300"
+      : "bg-emerald-50 text-[#226049] border-emerald-300";
+
   const handleAddCart = () => {
-    onAddToCart?.(batch);
-    setAdded(true);
-    setTimeout(() => setAdded(false), 1500);
+    const res = onAddToCart?.(batch);
+    if (res !== false) {
+      setAdded(true);
+      setTimeout(() => setAdded(false), 1500);
+    }
   };
 
   return (
@@ -128,11 +144,14 @@ export default function ProductDetailPanel({
         {/* Title & Seller */}
         <div>
           <h1 className="text-base font-bold text-gray-900 leading-snug">{batch.title}</h1>
-          <div className="mt-2 flex items-center justify-between text-xs text-gray-500">
-            <span className="flex items-center gap-1 font-medium text-gray-700">
+          <div className="mt-2 flex items-center justify-between text-xs text-gray-500 flex-wrap gap-2">
+            <div className="flex items-center gap-1.5 font-medium text-gray-700">
               <Building2 size={13} className="text-gray-400" />
-              {batch.seller}
-            </span>
+              <span>{batch.seller}</span>
+              <span className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-bold border ${creatorRoleBadge}`}>
+                {creatorRoleLabel}
+              </span>
+            </div>
             <span className="flex items-center gap-1 text-[11px] text-[#226049] font-semibold bg-emerald-50 px-2 py-0.5 rounded-md">
               <ShieldCheck size={12} />
               Verified Escrow

@@ -18,7 +18,7 @@ import type { CassavaBatch } from "./types";
 export interface ProductCardProps {
   batch: CassavaBatch;
   selected?: boolean;
-  onAddToCart?: (batch: CassavaBatch) => void;
+  onAddToCart?: (batch: CassavaBatch) => boolean | void;
   onViewDetails?: (batch: CassavaBatch) => void;
   onPlaceOrder?: (batch: CassavaBatch) => void;
 }
@@ -40,14 +40,30 @@ export default function ProductCard({
 
   const handleAdd = (e: React.MouseEvent) => {
     e.stopPropagation();
-    onAddToCart?.(batch);
-    setAddedAnimation(true);
-    setTimeout(() => setAddedAnimation(false), 1200);
+    const result = onAddToCart?.(batch);
+    if (result !== false) {
+      setAddedAnimation(true);
+      setTimeout(() => setAddedAnimation(false), 1200);
+    }
   };
 
   const isGradeA = batch.grade === "A";
   // Rating calculation based on batch for realistic marketplace display
   const rating = isGradeA ? "4.9" : "4.6";
+
+  const creatorRoleLabel =
+    batch.sellerRole === "processor" || batch.category === "process-products"
+      ? "Buyer / Processor"
+      : batch.sellerRole === "service-provider" || batch.category === "machinery-lease"
+      ? "Service Provider"
+      : "Farmer";
+
+  const creatorRoleBadge =
+    batch.sellerRole === "processor" || batch.category === "process-products"
+      ? "bg-amber-50/95 text-amber-900 border-amber-300"
+      : batch.sellerRole === "service-provider" || batch.category === "machinery-lease"
+      ? "bg-emerald-50/95 text-[#226049] border-emerald-300"
+      : "bg-emerald-50/95 text-[#226049] border-emerald-300";
 
   return (
     <div
@@ -91,8 +107,8 @@ export default function ProductCard({
           </div>
         )}
 
-        {/* Floating Grade Pill */}
-        <div className="absolute top-2 left-2 flex items-center gap-1">
+        {/* Floating Grade Pill & Creator Role Badge */}
+        <div className="absolute top-2 left-2 flex items-center gap-1 max-w-[80%] flex-wrap">
           <span
             className={`inline-flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[10px] font-bold shadow-2xs backdrop-blur-xs ${
               isGradeA
@@ -102,6 +118,11 @@ export default function ProductCard({
           >
             <CheckCircle2 size={10} strokeWidth={2.5} />
             Grade {batch.grade}
+          </span>
+          <span
+            className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-[9px] font-extrabold shadow-2xs backdrop-blur-xs border ${creatorRoleBadge}`}
+          >
+            {creatorRoleLabel}
           </span>
         </div>
 

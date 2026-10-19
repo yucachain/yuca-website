@@ -26,13 +26,24 @@ import { toast } from "sonner";
 export default function ShippingInfoPage() {
   const router = useRouter();
   const { activeRole, currentUser } = useMarketplaceRole();
-  const { user: authUser } = useAuth();
+  const { user: authUser, isAuthenticated } = useAuth();
   const { deliveryMethod, setDeliveryMethod } = useCart();
   const [mounted, setMounted] = React.useState(false);
 
+  const hasToken =
+    typeof window !== "undefined" &&
+    Boolean(
+      localStorage.getItem("accessToken") ||
+      localStorage.getItem("yuca_access_token") ||
+      localStorage.getItem("token")
+    );
+
   React.useEffect(() => {
     setMounted(true);
-  }, []);
+    if (!isAuthenticated && !hasToken) {
+      router.push("/marketplace/cart");
+    }
+  }, [isAuthenticated, hasToken, router]);
 
   const initialValues = React.useMemo<ShippingInfoValues>(() => {
     let saved: Partial<ShippingInfoValues> = {};

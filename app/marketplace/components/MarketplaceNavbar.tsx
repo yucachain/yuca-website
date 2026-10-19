@@ -10,6 +10,7 @@ import {
   ChevronDown,
   User,
   UserPlus,
+  LogIn,
   Package,
   LogOut,
   Settings,
@@ -26,9 +27,11 @@ import {
   MarketplaceRole,
 } from "../context/MarketplaceRoleContext";
 import { useCart } from "../context/CartContext";
+import { useAuth } from "@/app/Context/AuthContext";
 import { notificationService } from "@/app/Services/notificationService";
 import UserOrdersAndSalesModal from "./UserOrdersAndSalesModal";
 import RoleProfileSettingsModal from "./RoleProfileSettingsModal";
+import AuthPromptModal from "./AuthPromptModal";
 import { toast } from "sonner";
 
 export interface MarketplaceUser {
@@ -90,12 +93,24 @@ export default function MarketplaceNavbar({
 }: MarketplaceNavbarProps) {
   const router = useRouter();
   const { activeRole, currentUser } = useMarketplaceRole();
+  const { isAuthenticated, user: authUser, logout } = useAuth();
   const { totalItems } = useCart();
-  const effectiveCartCount = cartCount !== undefined ? cartCount : totalItems;
+  const hasToken =
+    typeof window !== "undefined" &&
+    Boolean(
+      localStorage.getItem("accessToken") ||
+      localStorage.getItem("yuca_access_token") ||
+      localStorage.getItem("token") ||
+      localStorage.getItem("authToken")
+    );
+
+  const isUserAuthenticated = isAuthenticated || hasToken;
+  const effectiveCartCount = isUserAuthenticated ? (cartCount !== undefined ? cartCount : totalItems) : 0;
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [showOrdersModal, setShowOrdersModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
   const [liveUnreadCount, setLiveUnreadCount] = useState<number>(0);
 
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -130,6 +145,10 @@ export default function MarketplaceNavbar({
   }, []);
 
   const handleCartTrigger = () => {
+    if (!isUserAuthenticated) {
+      setShowAuthModal(true);
+      return;
+    }
     if (onCartClick) {
       onCartClick();
     } else {
@@ -138,7 +157,23 @@ export default function MarketplaceNavbar({
   };
 
   const currentMeta = ROLE_META[activeRole];
-  const firstName = currentUser.name.split(" ")[0] || "User";
+
+  // Dynamic greeting: "Welcome, User" until user is defined by registration/login
+  const rawName = (authUser?.name || currentUser.name || "").trim();
+  const isNameDefined =
+    isUserAuthenticated &&
+    rawName !== "" &&
+    rawName.toLowerCase() !== "user" &&
+    rawName.toLowerCase() !== "guest" &&
+    rawName.toLowerCase() !== "marketplace user";
+
+  const resolvedFirstName = isNameDefined
+    ? (authUser?.firstName || rawName.split(" ")[0])
+    : "";
+
+  const greeting = isNameDefined
+    ? `Welcome, ${resolvedFirstName}`
+    : "Welcome, User";
 
   return (
     <>
@@ -157,7 +192,7 @@ export default function MarketplaceNavbar({
               </button>
             )}
 
-            <Link href="/marketplace" className="flex items-center gap-2 group">
+            <Link href="/" className="flex items-center gap-2 group" title="Return to Landing Page">
               <Image
                 src="/images/Yucachain_Logo.png"
                 alt="YucaChain Logo"
@@ -168,18 +203,20 @@ export default function MarketplaceNavbar({
               />
             </Link>
 
-            {/* Greeting from inspiration: "Hello [Name]" */}
+            {/* Greeting: "Welcome, [Name]" / "Welcome, User" */}
             <div className="hidden md:flex items-center gap-2 border-l border-gray-100 pl-4">
               <span className="text-sm font-bold text-gray-800">
-                Hello {firstName}
+                {greeting}
               </span>
-              <span className="inline-flex items-center rounded-md bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-800 border border-amber-200">
-                {currentMeta.label}
-              </span>
+              {isUserAuthenticated && (
+                <span className="inline-flex items-center rounded-md bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-800 border border-amber-200">
+                  {currentMeta.label}
+                </span>
+              )}
             </div>
           </div>
 
-          {/* Center: Search input from inspiration */}
+          {/* Center: Search input */}
           {onSearchChange !== undefined && (
             <div className="hidden sm:flex flex-1 max-w-md mx-4">
               <div className="relative w-full">
@@ -200,7 +237,6 @@ export default function MarketplaceNavbar({
 
           {/* Right Action Icons & Role Display */}
           <div className="flex items-center gap-2 sm:gap-3">
-
             {/* Notifications */}
             <button
               type="button"
@@ -237,101 +273,152 @@ export default function MarketplaceNavbar({
                 className="flex items-center gap-2 rounded-xl border border-gray-200/80 bg-white p-1.5 sm:pr-3 transition-all hover:bg-gray-50 hover:border-gray-300 cursor-pointer shadow-2xs"
               >
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#226049]/10 text-xs sm:text-sm font-bold text-[#226049] overflow-hidden">
-                  {currentUser.avatarUrl ? (
+                  {isUserAuthenticated && currentUser.avatarUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={currentUser.avatarUrl}
                       alt={currentUser.name}
                       className="h-full w-full object-cover"
                     />
+                  ) : isUserAuthenticated && isNameDefined ? (
+                    rawName.substring(0, 2).toUpperCase()
                   ) : (
-                    currentUser.name.substring(0, 2).toUpperCase()
+                    <User size={16} />
                   )}
                 </div>
                 <span className="hidden text-left sm:block">
                   <span className="block text-xs sm:text-sm font-bold text-gray-900 leading-tight truncate max-w-[120px]">
-                    {currentUser.name}
+                    {isUserAuthenticated && isNameDefined ? rawName : "Sign In"}
                   </span>
                 </span>
                 <ChevronDown
                   size={14}
                   strokeWidth={2}
-                  className={`text-gray-400 transition-transform duration-200 ${menuOpen ? "rotate-180 text-gray-700" : ""
-                    }`}
+                  className={`text-gray-400 transition-transform duration-200 ${
+                    menuOpen ? "rotate-180 text-gray-700" : ""
+                  }`}
                 />
               </button>
 
               {menuOpen && (
-                <div className="absolute right-0 mt-2 w-56 sm:w-60 rounded-2xl border border-gray-100 bg-white p-2 shadow-xl animate-in fade-in slide-in-from-top-2 z-50">
-                  <div className="px-3 py-2.5 border-b border-gray-100">
-                    <p className="text-xs font-bold text-gray-900 truncate">
-                      {currentUser.name}
-                    </p>
-                    <p className="text-[11px] text-gray-500 truncate">{currentUser.email}</p>
-                    <span className="mt-1 inline-block rounded-md bg-amber-50 border border-amber-200 px-2 py-0.5 text-[10px] font-bold text-amber-800">
-                      {currentMeta.label}
-                    </span>
-                  </div>
+                <div className="absolute right-0 mt-2 w-56 sm:w-60 rounded-2xl border border-gray-100 bg-white p-2.5 shadow-xl animate-in fade-in slide-in-from-top-2 z-50">
+                  {isUserAuthenticated ? (
+                    <>
+                      <div className="px-3 py-2.5 border-b border-gray-100">
+                        <p className="text-xs font-bold text-gray-900 truncate">
+                          {isNameDefined ? rawName : "User"}
+                        </p>
+                        <p className="text-[11px] text-gray-500 truncate">{currentUser.email || authUser?.email}</p>
+                        <span className="mt-1 inline-block rounded-md bg-amber-50 border border-amber-200 px-2 py-0.5 text-[10px] font-bold text-amber-800">
+                          {currentMeta.label}
+                        </span>
+                      </div>
 
-                  <div className="py-1 space-y-0.5">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setMenuOpen(false);
-                        setShowOrdersModal(true);
-                      }}
-                      className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
-                    >
-                      <Package size={15} className="text-gray-500" />
-                      <span>
-                        {activeRole === "consumer"
-                          ? "My Orders Placed"
-                          : "My Sales & Orders"}
-                      </span>
-                    </button>
+                      <div className="py-1 space-y-0.5">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setMenuOpen(false);
+                            setShowOrdersModal(true);
+                          }}
+                          className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
+                        >
+                          <Package size={15} className="text-gray-500" />
+                          <span>
+                            {activeRole === "consumer"
+                              ? "My Orders Placed"
+                              : "My Sales & Orders"}
+                          </span>
+                        </button>
 
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setMenuOpen(false);
-                        setShowSettingsModal(true);
-                      }}
-                      className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
-                    >
-                      <Settings size={15} className="text-gray-500" />
-                      <span>Profile &amp; Bank Settings</span>
-                    </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setMenuOpen(false);
+                            setShowSettingsModal(true);
+                          }}
+                          className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
+                        >
+                          <Settings size={15} className="text-gray-500" />
+                          <span>Profile &amp; Bank Settings</span>
+                        </button>
 
-                    <Link
-                      href="/register"
-                      onClick={() => setMenuOpen(false)}
-                      className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
-                    >
-                      <User size={15} className="text-gray-500" />
-                      <span>Register New Role Account</span>
-                    </Link>
+                        <Link
+                          href="/register"
+                          onClick={() => setMenuOpen(false)}
+                          className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
+                        >
+                          <User size={15} className="text-gray-500" />
+                          <span>Register New Role Account</span>
+                        </Link>
 
-                    <div className="my-1 border-t border-gray-100" />
+                        <div className="my-1 border-t border-gray-100" />
 
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setMenuOpen(false);
-                        toast.success("Signed out successfully");
-                        router.push("/login");
-                      }}
-                      className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
-                    >
-                      <LogOut size={15} />
-                      <span>Sign Out</span>
-                    </button>
-                  </div>
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            setMenuOpen(false);
+                            try {
+                              await logout();
+                            } catch {}
+                            toast.success("Signed out successfully");
+                            router.push("/login");
+                          }}
+                          className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+                        >
+                          <LogOut size={15} />
+                          <span>Sign Out</span>
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    /* Unauthenticated User: Show Sign In & Register instead of Sign Out */
+                    <>
+                      <div className="px-3 py-2.5 border-b border-gray-100 mb-2">
+                        <p className="text-xs font-bold text-gray-900">
+                          Welcome to YucaChain
+                        </p>
+                        <p className="text-[11px] text-gray-500 mt-0.5">
+                          Sign in to manage your orders, listings &amp; cart
+                        </p>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <Link
+                          href="/login?redirect=/marketplace"
+                          onClick={() => setMenuOpen(false)}
+                          className="flex w-full items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-xs font-bold text-white bg-[#226049] hover:bg-[#1a4336] transition-colors cursor-pointer shadow-xs"
+                        >
+                          <LogIn size={15} />
+                          <span>Sign In</span>
+                        </Link>
+
+                        <Link
+                          href="/register?redirect=/marketplace"
+                          onClick={() => setMenuOpen(false)}
+                          className="flex w-full items-center justify-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50 border border-gray-200 transition-colors cursor-pointer"
+                        >
+                          <UserPlus size={15} className="text-gray-500" />
+                          <span>Register as New User</span>
+                        </Link>
+                      </div>
+                    </>
+                  )}
                 </div>
               )}
             </div>
           </div>
         </div>
       </header>
+
+      {/* Auth Prompt Modal */}
+      <AuthPromptModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        title="Sign In to View Cart"
+        message="You need to sign in or register as a new user to view your cart and proceed with checkout."
+        redirectUrl="/marketplace/cart"
+      />
 
       {/* Profile & Orders Modals */}
       <UserOrdersAndSalesModal
