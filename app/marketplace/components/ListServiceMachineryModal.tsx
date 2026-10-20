@@ -207,13 +207,16 @@ export default function ListServiceMachineryModal({
         machinesAvailable: Number(machinesAvailable) || 0,
         minimumOrder: Number(minimumOrder) || 1,
         location: location.trim(),
-        status: "Active",
+        status: "Available",
         photoUrls: photoUrls,
         certifications: certifications,
       };
 
       const result = await marketplaceApi.createServiceListing(apiPayload).catch((err) => {
-        console.warn("Backend API createServiceListing fallback:", err);
+        console.warn("Backend API createServiceListing warning:", err);
+        if (err?.message && !err.message.includes("Failed to fetch")) {
+          throw err;
+        }
         return null;
       });
 
@@ -226,7 +229,7 @@ export default function ListServiceMachineryModal({
         unit: unitOfMeasure,
         pricePerTonne: Number(price),
         currency: "₦",
-        category: "services-machinery",
+        category: "machinery-lease",
         location: location.trim() || "Nigeria",
         storageLocation: "Depot / Service Station",
         seller: currentUser.name || "Verified Service Provider",
@@ -237,7 +240,7 @@ export default function ListServiceMachineryModal({
         isNew: true,
         description: description.trim(),
         images: photoUrls,
-        status: "Active",
+        status: "Available",
         certifications: certifications,
         minimumOrder: Number(minimumOrder) || 1,
         machinesAvailable: Number(machinesAvailable) || 1,

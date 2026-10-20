@@ -230,13 +230,17 @@ export default function ListProcessedProductModal({
         machinesAvailable: Number(machinesAvailable) || 0,
         minimumOrder: Number(minimumOrder) || 1,
         location: location.trim(),
-        status: "Active",
+        status: "Available",
         photoUrls: photoUrls,
         certifications: certifications,
       };
 
       const result = await marketplaceApi.createProcessorProduct(apiPayload).catch((err) => {
-        console.warn("Backend API createProcessorProduct fallback:", err);
+        console.warn("Backend API createProcessorProduct warning:", err);
+        // If the error was not a connection issue, rethrow so user knows
+        if (err?.message && !err.message.includes("Failed to fetch")) {
+          throw err;
+        }
         return null;
       });
 
@@ -260,7 +264,7 @@ export default function ListProcessedProductModal({
         isNew: true,
         description: description.trim(),
         images: photoUrls,
-        status: "Active",
+        status: "Available",
         certifications: certifications,
         minimumOrder: Number(minimumOrder) || 1,
         machinesAvailable: Number(machinesAvailable) || 0,

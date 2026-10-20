@@ -146,38 +146,24 @@ export const marketplaceApi = {
     return [];
   },
 
-  // Alias for backward compatibility
+  // Fetch seller/workspace listings from /marketplace/listings
   getListings: async (params?: Record<string, any>): Promise<MarketplaceListing[]> => {
-    try {
-      // Map legacy lowercase filters to backend PascalCase parameters
-      const mappedParams: GetProductsParams = {
-        Category: params?.category || params?.Category,
-        Grade: params?.grade || params?.Grade,
-        Location: params?.location || params?.Location,
-        MinPrice: params?.minPrice ?? params?.MinPrice,
-        MaxPrice: params?.maxPrice ?? params?.MaxPrice,
-        Search: params?.search || params?.Search,
-        Role: params?.role || params?.Role,
-        Page: params?.page ?? params?.Page ?? 1,
-        PageSize: params?.pageSize ?? params?.PageSize ?? 50,
-      };
-      return await marketplaceApi.getProducts(mappedParams);
-    } catch {
-      // Fallback to legacy endpoint if backend still serves /marketplace/listings
-      const query = new URLSearchParams();
-      if (params) {
-        for (const [key, value] of Object.entries(params)) {
-          if (value !== undefined && value !== null && value !== '' && value !== 'all') {
-            query.append(key, String(value));
-          }
+    const query = new URLSearchParams();
+    if (params) {
+      for (const [key, value] of Object.entries(params)) {
+        if (value !== undefined && value !== null && value !== '' && value !== 'all') {
+          query.append(key, String(value));
         }
       }
-      const queryString = query.toString() ? `?${query.toString()}` : '';
-      const result = await fetcher<any>(`/marketplace/listings${queryString}`, {
-        method: 'GET',
-      });
-      return Array.isArray(result) ? result : Array.isArray(result?.data) ? result.data : [];
     }
+    const queryString = query.toString() ? `?${query.toString()}` : '';
+    const result = await fetcher<any>(`/marketplace/listings${queryString}`, {
+      method: 'GET',
+    });
+    if (Array.isArray(result)) return result;
+    if (Array.isArray(result?.items)) return result.items;
+    if (Array.isArray(result?.data)) return result.data;
+    return [];
   },
 
   // ─────────────────────────────────────────────────────────────

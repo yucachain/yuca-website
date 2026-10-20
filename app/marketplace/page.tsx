@@ -24,6 +24,7 @@ import { useRouter } from "next/navigation";
 import { marketplaceApi } from "@/app/Services/marketplaceService";
 import { batchService } from "@/app/Services/batchService";
 import { useAuth } from "@/app/Context/AuthContext";
+import { getAuthToken } from "@/app/Services/tokenHelper";
 import CreateCassavaBatchModal from "./components/CreateCassavaBatchModal";
 import ListProcessedProductModal from "./components/ListProcessedProductModal";
 import ListServiceMachineryModal from "./components/ListServiceMachineryModal";
@@ -154,11 +155,27 @@ const normalizeListingToBatch = (
       ? listing.photoUrls
       : Array.isArray(listing.images) && listing.images.length > 0
       ? listing.images
+      : listing.primaryPhotoUrl
+      ? [listing.primaryPhotoUrl]
       : [];
 
   const images = rawImages.filter(
     (img: string) => typeof img === "string" && img.trim() !== "" && !img.includes("Batch1.png")
   );
+
+  let sellerName = "Verified Supplier";
+  if (typeof listing.seller === "string" && listing.seller.trim()) {
+    sellerName = listing.seller.trim();
+  } else if (listing.seller && typeof listing.seller === "object") {
+    const fn = listing.seller.firstName || "";
+    const ln = listing.seller.lastName || "";
+    const full = `${fn} ${ln}`.trim();
+    sellerName = full || listing.seller.companyName || listing.seller.businessName || "Verified Supplier";
+  } else if (listing.sellerName) {
+    sellerName = String(listing.sellerName);
+  } else if (listing.farmerName) {
+    sellerName = String(listing.farmerName);
+  }
 
   const sellerRole =
     listing.sellerRole ||
@@ -181,11 +198,9 @@ const normalizeListingToBatch = (
     category,
     location: String(listing.location ?? listing.origin ?? "Nigeria"),
     storageLocation: String(listing.storageLocation ?? listing.location ?? "Central Hub"),
-    seller: String(
-      listing.seller ?? listing.sellerName ?? listing.farmerName ?? "Verified Supplier"
-    ),
+    seller: sellerName,
     sellerRole,
-    storageTime: String(listing.storageTime ?? listing.storageDuration ?? "Fresh"),
+    storageTime: String(listing.storageTime ?? listing.storageDuration ?? "Available"),
     temperatureC: Number(listing.temperatureC ?? listing.temperature ?? 24),
     humidityPercent: Number(listing.humidityPercent ?? listing.humidity ?? 52),
     isNew: Boolean(listing.isNew ?? true),
@@ -226,25 +241,21 @@ export default function MarketplacePage() {
 
   const panelRef = useRef<HTMLDivElement>(null);
 
-  const hasToken =
-    typeof window !== "undefined" &&
-    Boolean(
-      localStorage.getItem("accessToken") ||
-      localStorage.getItem("yuca_access_token") ||
-      localStorage.getItem("token")
-    );
+  const [hasToken, setHasToken] = useState<boolean>(() => Boolean(getAuthToken()));
+
+  useEffect(() => {
+    setHasToken(Boolean(getAuthToken()));
+  }, [isAuthenticated]);
 
   const isUserAuthenticated = isAuthenticated || hasToken;
 
   const fetchMarketplaceData = async () => {
     try {
       setLoading(true);
-      const categoryParam = activeCategoryId !== "all" ? activeCategoryId : undefined;
+      const token = getAuthToken();
 
-      // 1. Fetch from Public Marketplace Products endpoint
+      // 1. Fetch from Public Marketplace Products endpoint (all live products on backend)
       const products = await marketplaceApi.getProducts({
-        Category: categoryParam,
-        Search: search.trim() || undefined,
         Page: 1,
         PageSize: 100,
       }).catch(() => []);
@@ -252,69 +263,83 @@ export default function MarketplacePage() {
       const list = Array.isArray(products) ? products : [];
       const normalizedApi = list.map((item) => normalizeListingToBatch(item, "raw-cassava"));
 
-      // 2. If authenticated, fetch from Batches endpoint for any farmer batches
-      let normalizedBatches: CassavaBatch[] = [];
-      if (hasToken) {
+      // 2. If authenticated, also fetch from /marketplace/listings (seller's own listings / additional items)
+      let normalizedListings: CassavaBatch[] = [];
+      if (token) {
         try {
-          const rawBatches = await batchService.getBatches().catch(() => []);
-          if (Array.isArray(rawBatches)) {
-            normalizedBatches = rawBatches.map((b: any) => ({
-              id: b.id || b.batchCode,
-              batchCode: b.batchCode || b.code || "BCH-UNKNOWN",
-              title: b.title || `Fresh Cassava Batch (${b.variety || b.batchCode || "TME 419"})`,
-              grade: (String(b.qualityGrade || "A").includes("B") ? "B" : "A") as any,
-              quantity: b.weightKg ? Math.round(b.weightKg / 100) / 10 : b.estWeightKg ? Math.round(b.estWeightKg / 100) / 10 : 20,
-              unit: "Tonnes",
-              pricePerTonne: b.pricePerTonne || b.pricePerTonneNgn || 150000,
-              currency: "₦",
-              category: "raw-cassava",
-              location: b.hubState ? `${b.hubLga ? b.hubLga + ", " : ""}${b.hubState}` : "Nigeria",
-              storageLocation: b.vaultLotId ? `Vault Lot: ${b.vaultLotId}` : "YucaVault Agro Hub",
-              seller: b.farmerName || b.farmer || "Verified Farmer",
-              sellerRole: "farmer",
-              storageTime: b.status || "In Storage",
-              temperatureC: 24,
-              humidityPercent: 54,
-              isNew: true,
-              description: b.notes || `Freshly harvested cassava batch in YucaVault.`,
-              images: [],
-            }));
+          const rawListings = await marketplaceApi.getListings().catch(() => []);
+          if (Array.isArray(rawListings)) {
+            normalizedListings = rawListings.map((item) => normalizeListingToBatch(item, "raw-cassava"));
           }
         } catch {}
       }
 
-      // 3. Clean, normalize and deduplicate existing local custom listings
-      let cleanedCustom: CassavaBatch[] = [];
-      try {
-        const stored = JSON.parse(localStorage.getItem("yuca_custom_listings") || "[]");
-        if (Array.isArray(stored) && stored.length > 0) {
-          const purgedStored = stored.map((item: any) => {
-            const rawImgs = Array.isArray(item.photoUrls) && item.photoUrls.length > 0
-              ? item.photoUrls
-              : Array.isArray(item.images) && item.images.length > 0
-              ? item.images
-              : [];
-            const cleanImgs = rawImgs.filter(
-              (img: string) => typeof img === "string" && img.trim() !== "" && !img.includes("Batch1.png")
-            );
-            return {
-              ...item,
-              images: cleanImgs,
-              photoUrls: cleanImgs,
-            };
-          });
+      // 3. If authenticated, fetch from Batches endpoint for any live farmer batches
+      let normalizedBatches: CassavaBatch[] = [];
+      if (token) {
+        try {
+          const rawBatches = await batchService.getBatches().catch(() => []);
+          if (Array.isArray(rawBatches)) {
+            normalizedBatches = rawBatches.map((b: any) => {
+              let farmerDisplayName = "Verified Farmer";
+              if (typeof b.farmerName === "string" && b.farmerName.trim()) {
+                farmerDisplayName = b.farmerName.trim();
+              } else if (b.farmer && typeof b.farmer === "object") {
+                const fn = b.farmer.firstName || "";
+                const ln = b.farmer.lastName || "";
+                farmerDisplayName = `${fn} ${ln}`.trim() || "Verified Farmer";
+              } else if (typeof b.farmer === "string" && b.farmer.trim()) {
+                farmerDisplayName = b.farmer.trim();
+              }
 
-          const normalizedCustom = purgedStored.map((item) => normalizeListingToBatch(item, "raw-cassava"));
-          cleanedCustom = deduplicateBatches(normalizedCustom);
-          localStorage.setItem("yuca_custom_listings", JSON.stringify(cleanedCustom));
-        }
-      } catch {}
+              const batchLocation = b.harvestState
+                ? `${b.harvestLga ? b.harvestLga + ", " : ""}${b.harvestState}`
+                : b.hubState
+                ? `${b.hubLga ? b.hubLga + ", " : ""}${b.hubState}`
+                : "Nigeria";
 
-      // 4. Combine live API listings, live farmer batches, and session postings
+              const weightKg = Number(b.weightKg || b.estimatedWeightKg || b.estWeightKg || 20000);
+              const weightTonnes = Math.round((weightKg / 1000) * 10) / 10;
+
+              const pricePerTonne =
+                Number(b.pricePerTonne) ||
+                Number(b.pricePerTonneNgn) ||
+                (Number(b.pricePerKgNgn) ? Number(b.pricePerKgNgn) * 1000 : 0) ||
+                (Number(b.totalPriceNgn) && weightTonnes > 0
+                  ? Math.round(Number(b.totalPriceNgn) / weightTonnes)
+                  : 150000);
+
+              return {
+                id: String(b.id || b.batchCode),
+                batchCode: String(b.batchCode || b.code || "BCH-UNKNOWN"),
+                title: b.title || `Fresh Cassava Roots (${b.variety || b.batchCode || "TME 419"})`,
+                grade: (String(b.qualityGrade || "A").includes("B") ? "B" : "A") as "A" | "B",
+                quantity: weightTonnes > 0 ? weightTonnes : 20,
+                unit: "Tonnes",
+                pricePerTonne: pricePerTonne > 0 ? pricePerTonne : 150000,
+                currency: "₦",
+                category: "raw-cassava",
+                location: batchLocation,
+                storageLocation: b.vaultLotId ? `Vault Lot: ${b.vaultLotId}` : "YucaVault Agro Hub",
+                seller: farmerDisplayName,
+                sellerRole: "farmer",
+                storageTime: b.status || "Harvested",
+                temperatureC: 24,
+                humidityPercent: 54,
+                isNew: true,
+                description: b.notes || `Freshly harvested cassava batch verified in YucaVault.`,
+                images: Array.isArray(b.photos) && b.photos.length > 0 ? b.photos : [],
+              };
+            });
+          }
+        } catch {}
+      }
+
+      // 4. Combine all live backend items and deduplicate
       const combined = deduplicateBatches([
         ...normalizedApi,
+        ...normalizedListings,
         ...normalizedBatches,
-        ...cleanedCustom,
       ]);
       setAllBatches(combined);
     } catch (err: any) {
