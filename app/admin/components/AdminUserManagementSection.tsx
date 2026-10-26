@@ -17,7 +17,10 @@ import {
   ShieldCheck,
   Loader2,
   RefreshCw,
+  FileSpreadsheet,
+  FileText,
 } from "lucide-react";
+import { generateUsersReportPDF } from "@/app/admin/utils/pdfGenerator";
 import {
   useMarketplaceRole,
   MarketplaceRole,
@@ -383,9 +386,74 @@ export default function AdminUserManagementSection() {
     );
   };
 
+  // Export Users to CSV
+  const handleDownloadUsersCSV = () => {
+    if (filteredUsers.length === 0) {
+      toast.error("No users found to export.");
+      return;
+    }
+
+    const headers = ["#", "Name", "Role", "Location / Address"];
+    const rows = filteredUsers.map((u, idx) => [
+      idx + 1,
+      `"${(u.name || "").replace(/"/g, '""')}"`,
+      `"${u.role || ""}"`,
+      `"${(u.address || "").replace(/"/g, '""')}"`,
+    ]);
+
+    const csvContent =
+      "data:text/csv;charset=utf-8," +
+      [headers.join(","), ...rows.map((e) => e.join(","))].join("\n");
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute(
+      "download",
+      `YucaChain_Users_${new Date().toISOString().split("T")[0]}.csv`
+    );
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success("Users directory exported to CSV successfully!");
+  };
+
+  // Export Users to simple, classic PDF (just their name and roles and location/address)
+  const handleDownloadUsersPDF = () => {
+    if (filteredUsers.length === 0) {
+      toast.error("No users found matching your current filter.");
+      return;
+    }
+
+    const roleMap: Record<string, string> = {
+      all: "All Roles",
+      farmer: "Farmers",
+      processor: "Buyers / Processors",
+      "service-provider": "Service Providers",
+      consumer: "Consumers",
+    };
+
+    try {
+      generateUsersReportPDF({
+        users: filteredUsers.map((u) => ({
+          id: u.id,
+          name: u.name,
+          role: u.role,
+          address: u.address,
+        })),
+        filterRoleLabel: roleMap[selectedRoleFilter] || selectedRoleFilter,
+      });
+
+      toast.success("Users directory PDF downloaded successfully!");
+    } catch (err) {
+      console.error("Failed to generate users PDF:", err);
+      toast.error("Failed to generate PDF. Please try again.");
+    }
+  };
+
   return (
     <div className="space-y-6 font-sans">
-      {/* Header (Clean, no redundant badges) */}
+      {/* Header with Export Actions */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight">
@@ -394,6 +462,29 @@ export default function AdminUserManagementSection() {
           <p className="text-xs text-gray-500 mt-1">
             Manage platform participants across all ecosystem roles and inspect verified settlement accounts.
           </p>
+        </div>
+
+        {/* Export Buttons */}
+        <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">
+          <button
+            type="button"
+            onClick={handleDownloadUsersCSV}
+            className="inline-flex items-center gap-1.5 rounded-2xl border border-gray-200/90 bg-white px-3.5 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50 shadow-2xs transition-all cursor-pointer"
+            title="Download Users CSV file"
+          >
+            <FileSpreadsheet size={15} className="text-emerald-700" />
+            <span>Export CSV</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={handleDownloadUsersPDF}
+            className="inline-flex items-center gap-1.5 rounded-2xl bg-[#226049] px-4 py-2 text-xs font-semibold text-white hover:bg-[#1a4336] shadow-xs transition-all cursor-pointer"
+            title="Download Users Directory PDF"
+          >
+            <FileText size={15} />
+            <span>Download PDF</span>
+          </button>
         </div>
       </div>
 

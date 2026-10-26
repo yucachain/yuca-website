@@ -87,14 +87,7 @@ export default function MarketplaceSidebar({
   const [activeNav, setActiveNav] = useState("product");
   const [showFilters, setShowFilters] = useState(false);
 
-  const hasToken =
-    typeof window !== "undefined" &&
-    Boolean(
-      localStorage.getItem("accessToken") ||
-      localStorage.getItem("yuca_access_token") ||
-      localStorage.getItem("token")
-    );
-  const isUserAuthenticated = isAuthenticated || hasToken;
+  const isUserAuthenticated = Boolean(isAuthenticated && authUser && authUser.id);
 
   const handleCategorySelect = (id: string) => {
     onCategoryChange?.(id);
@@ -141,7 +134,7 @@ export default function MarketplaceSidebar({
             </span>
           ) : (
             <Link
-              href="/auth/login"
+              href="/login?redirect=/marketplace"
               className="shrink-0 rounded-md bg-[#226049] hover:bg-[#1a4336] text-white px-2 py-0.5 text-[9px] font-bold transition-colors cursor-pointer"
             >
               Sign In

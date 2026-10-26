@@ -95,16 +95,8 @@ export default function MarketplaceNavbar({
   const { activeRole, currentUser } = useMarketplaceRole();
   const { isAuthenticated, user: authUser, logout } = useAuth();
   const { totalItems } = useCart();
-  const hasToken =
-    typeof window !== "undefined" &&
-    Boolean(
-      localStorage.getItem("accessToken") ||
-      localStorage.getItem("yuca_access_token") ||
-      localStorage.getItem("token") ||
-      localStorage.getItem("authToken")
-    );
 
-  const isUserAuthenticated = isAuthenticated || hasToken;
+  const isUserAuthenticated = Boolean(isAuthenticated && authUser && authUser.id);
   const effectiveCartCount = isUserAuthenticated ? (cartCount !== undefined ? cartCount : totalItems) : 0;
 
   const [menuOpen, setMenuOpen] = useState(false);
@@ -158,7 +150,7 @@ export default function MarketplaceNavbar({
 
   const currentMeta = ROLE_META[activeRole];
 
-  // Dynamic greeting: "Welcome, User" until user is defined by registration/login
+  // Dynamic greeting: "Welcome, [FirstName]" if authenticated, else "Welcome to Yuca Marketplace"
   const rawName = (authUser?.name || currentUser.name || "").trim();
   const isNameDefined =
     isUserAuthenticated &&
@@ -171,9 +163,9 @@ export default function MarketplaceNavbar({
     ? (authUser?.firstName || rawName.split(" ")[0])
     : "";
 
-  const greeting = isNameDefined
+  const greeting = isUserAuthenticated && isNameDefined
     ? `Welcome, ${resolvedFirstName}`
-    : "Welcome, User";
+    : "Welcome to Yuca Marketplace";
 
   return (
     <>

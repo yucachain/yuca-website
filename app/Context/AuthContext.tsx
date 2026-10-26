@@ -24,8 +24,9 @@ import authService, {
   resolveDisplayName,
   getInitials,
   isPhoneNumber,
+  refreshAccessToken,
 } from "@/app/Services/authService";
-import { clearAuthTokens } from "@/app/Services/tokenHelper";
+import { clearAuthTokens, parseJwtPayload } from "@/app/Services/tokenHelper";
 
 const initialAuthState: AuthState = {
   user: null,
@@ -46,7 +47,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [error, setError] = useState<string | null>(null);
 
   const isAuthenticated = useMemo(() => {
-    return Boolean(token && user);
+    return Boolean(token && user && user.id);
   }, [token, user]);
 
   const persistSession = useCallback((authToken: string, userData: User) => {
@@ -81,6 +82,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       localStorage.removeItem("yuca_user_data");
       localStorage.removeItem("user");
       localStorage.removeItem("userRole");
+      localStorage.removeItem("token");
+      localStorage.removeItem("authToken");
       clearAuthTokens();
     } catch {}
   }, []);
@@ -97,44 +100,66 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const savedToken =
           localStorage.getItem(StorageKey.TOKEN) ||
           localStorage.getItem("accessToken") ||
-          localStorage.getItem("yuca_access_token");
-        const savedUserJson =
-          localStorage.getItem(StorageKey.USER) ||
-          localStorage.getItem("yuca_user_data") ||
-          localStorage.getItem("user");
+          localStorage.getItem("yuca_access_token") ||
+          localStorage.getItem("token") ||
+          localStorage.getItem("authToken");
 
-        if (savedToken) {
-          setToken(savedToken);
-          if (savedUserJson) {
-            try {
-              const parsedUser: User = JSON.parse(savedUserJson);
-              const safeName = resolveDisplayName(parsedUser, "Marketplace User");
-              parsedUser.name = safeName;
-              parsedUser.initials = getInitials(safeName);
-              setUser(parsedUser);
-              setStatus(AuthStatus.AUTHENTICATED);
-            } catch {
-              // will refresh below
-            }
-          }
+        if (!savedToken) {
+          clearSession();
+          setUser(null);
+          setToken(null);
+          setStatus(AuthStatus.UNAUTHENTICATED);
+          return;
+        }
 
-          // Fetch fresh user profile from /api/v1/auth/me and /api/v1/users/profile
+        // Check token expiration if it is a JWT
+        const jwtPayload = parseJwtPayload(savedToken);
+        if (jwtPayload && jwtPayload.exp && jwtPayload.exp * 1000 < Date.now()) {
           try {
-            const freshUser = await authService.getCurrentUser(savedToken);
+            const refreshedToken = await authService.refreshAccessToken();
+            if (refreshedToken) {
+              const freshUser = await authService.getCurrentUser(refreshedToken);
+              if (freshUser && freshUser.id) {
+                setToken(refreshedToken);
+                setUser(freshUser);
+                setStatus(AuthStatus.AUTHENTICATED);
+                persistSession(refreshedToken, freshUser);
+                return;
+              }
+            }
+          } catch {
+            // refresh attempt failed
+          }
+          clearSession();
+          setUser(null);
+          setToken(null);
+          setStatus(AuthStatus.UNAUTHENTICATED);
+          return;
+        }
+
+        // Verify token with backend
+        try {
+          const freshUser = await authService.getCurrentUser(savedToken);
+          if (freshUser && freshUser.id) {
+            setToken(savedToken);
             setUser(freshUser);
             setStatus(AuthStatus.AUTHENTICATED);
             persistSession(savedToken, freshUser);
-          } catch (profileErr) {
-            if (!savedUserJson) {
-              clearSession();
-              setStatus(AuthStatus.UNAUTHENTICATED);
-            }
+          } else {
+            throw new Error("Invalid user identity from backend");
           }
-        } else {
+        } catch {
+          // Token is rejected or session is invalid -> clear completely
+          clearSession();
+          setUser(null);
+          setToken(null);
           setStatus(AuthStatus.UNAUTHENTICATED);
         }
       } catch (err: unknown) {
         console.error("Failed to hydrate auth state:", err);
+        clearSession();
+        setUser(null);
+        setToken(null);
         setStatus(AuthStatus.UNAUTHENTICATED);
       } finally {
         setIsLoading(false);
@@ -145,6 +170,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Listen for unauthorized 401 event dispatched by Axios interceptor
     const handleUnauthorized = () => {
+      clearSession();
       setToken(null);
       setUser(null);
       setStatus(AuthStatus.UNAUTHENTICATED);
@@ -177,10 +203,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
 
         const idVal = (payload.phoneNumber || payload.identifier || payload.email || "").trim();
-        const resolvedName = resolveDisplayName(userData, "Marketplace User");
+        const resolvedName = resolveDisplayName(userData, "User");
+        const resolvedId =
+          userData.id ||
+          (userData as any)._id ||
+          (userData as any).userId ||
+          (payloadData as any).id ||
+          (payloadData as any).userId ||
+          "";
         const formattedUser: User = {
           ...userData,
-          id: userData.id || "",
+          id: resolvedId,
           email: userData.email || (idVal.includes("@") ? idVal : ""),
           phoneNumber: userData.phoneNumber || payload.phoneNumber || (!idVal.includes("@") ? idVal : undefined),
           name: resolvedName,
@@ -270,12 +303,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const fallbackName =
           payload.fullName ||
           `${payload.firstName || ""} ${payload.lastName || ""}`.trim() ||
-          "Marketplace User";
+          "User";
         const resolvedName = resolveDisplayName(userData, fallbackName);
+        const resolvedId =
+          userData.id ||
+          (userData as any)._id ||
+          (userData as any).userId ||
+          (payloadData as any).id ||
+          (payloadData as any).userId ||
+          "";
 
         const formattedUser: User = {
           ...userData,
-          id: userData.id || "",
+          id: resolvedId,
           email:
             userData.email ||
             payload.email ||

@@ -24,7 +24,10 @@ import {
   Wallet,
   ShieldCheck,
 } from "lucide-react";
-import jsPDF from "jspdf";
+import {
+  generateTransactionsReportPDF,
+  generateSingleTransactionReceiptPDF,
+} from "@/app/admin/utils/pdfGenerator";
 import {
   useMarketplaceRole,
   MarketplaceRole,
@@ -381,90 +384,76 @@ export default function OrdersPayoutsReportsSection() {
     toast.success("Financial report exported as CSV successfully!");
   };
 
-  // Export to PDF
+  // Export to PDF (Professional UI/UX Designer-grade statement, includes YucaChain logo, excludes payout status)
   const handleDownloadPDF = () => {
-    const doc = new jsPDF();
-    const pageWidth = doc.internal.pageSize.getWidth();
+    if (filteredList.length === 0) {
+      toast.error("No transactions found matching your current filter criteria.");
+      return;
+    }
 
-    // Top Header Banner
-    doc.setFillColor(34, 96, 73);
-    doc.rect(0, 0, pageWidth, 26, "F");
+    const roleMap: Record<string, string> = {
+      all: "All Roles",
+      farmer: "Farmers",
+      processor: "Buyers / Processors",
+      "service-provider": "Service Providers",
+      consumer: "Consumers",
+    };
 
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(13);
-    doc.setFont("helvetica", "bold");
-    doc.text("YucaChain - Orders & Settlement Financial Report", 14, 16);
+    const tabMap: Record<string, string> = {
+      all: "All Recorded Orders",
+      pending: "Awaiting Payout",
+      paid: "Disbursed & Settled",
+    };
 
-    doc.setFontSize(8);
-    doc.setFont("helvetica", "normal");
-    doc.text(
-      `Generated: ${new Date().toLocaleDateString()} | Admin Console`,
-      pageWidth - 65,
-      16
-    );
+    try {
+      generateTransactionsReportPDF({
+        transactions: filteredList.map((tx) => ({
+          id: tx.id,
+          orderNumber: tx.orderNumber,
+          date: tx.date,
+          productTitle: tx.productTitle,
+          quantity: tx.quantity,
+          unit: tx.unit,
+          totalAmount: tx.totalAmount,
+          sellerName: tx.sellerName,
+          sellerRole: tx.sellerRole,
+          buyerName: tx.buyerName,
+          buyerRole: tx.buyerRole,
+        })),
+        filterRoleLabel: roleMap[selectedRole] || selectedRole,
+        filterTabLabel: tabMap[activeTab] || activeTab,
+        searchQuery: searchQuery,
+        generatedBy: "YucaChain Admin Operations Console",
+      });
 
-    // Summary Box
-    doc.setDrawColor(220, 220, 220);
-    doc.setFillColor(248, 250, 248);
-    doc.roundedRect(14, 32, pageWidth - 28, 20, 2, 2, "FD");
+      toast.success("Executive Transaction & Sales Statement PDF downloaded!");
+    } catch (err) {
+      console.error("PDF generation failed:", err);
+      toast.error("Failed to generate PDF statement. Please try again.");
+    }
+  };
 
-    doc.setTextColor(40, 40, 40);
-    doc.setFontSize(9);
-    doc.setFont("helvetica", "bold");
-    doc.text("Executive Summary", 18, 39);
-
-    doc.setFontSize(8);
-    doc.setFont("helvetica", "normal");
-    doc.text(`Total GMV: NGN ${stats.totalGMV.toLocaleString()}`, 18, 46);
-    doc.text(`Disbursed: NGN ${stats.paidVol.toLocaleString()}`, 82, 46);
-    doc.text(`Pending Escrow: NGN ${stats.pendingVol.toLocaleString()}`, 145, 46);
-
-    // Table Header
-    const startY = 58;
-    doc.setFillColor(240, 244, 241);
-    doc.rect(14, startY, pageWidth - 28, 8, "F");
-
-    doc.setFontSize(8);
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(26, 58, 42);
-    doc.text("Order Ref", 16, startY + 5.5);
-    doc.text("Date", 46, startY + 5.5);
-    doc.text("Seller & Role", 72, startY + 5.5);
-    doc.text("Buyer", 120, startY + 5.5);
-    doc.text("Payout", 152, startY + 5.5);
-    doc.text("Amount (NGN)", pageWidth - 16, startY + 5.5, { align: "right" });
-
-    doc.setFont("helvetica", "normal");
-    doc.setTextColor(50, 50, 50);
-
-    let currentY = startY + 13;
-    filteredList.slice(0, 20).forEach((tx) => {
-      if (currentY > 275) return;
-
-      doc.setFontSize(7.5);
-      doc.text(tx.orderNumber, 16, currentY);
-      doc.text(tx.date, 46, currentY);
-      doc.text(`${tx.sellerName.substring(0, 20)} (${tx.sellerRole})`, 72, currentY);
-      doc.text(tx.buyerName.substring(0, 16), 120, currentY);
-      doc.text(
-        tx.payoutStatus === "Paid / Disbursed" ? "Disbursed" : "Pending",
-        152,
-        currentY
-      );
-      doc.text(
-        tx.totalAmount.toLocaleString(),
-        pageWidth - 16,
-        currentY,
-        { align: "right" }
-      );
-
-      doc.setDrawColor(240, 240, 240);
-      doc.line(14, currentY + 3, pageWidth - 14, currentY + 3);
-      currentY += 8;
-    });
-
-    doc.save(`YucaChain_Financial_Report_${new Date().toISOString().split("T")[0]}.pdf`);
-    toast.success("Financial PDF report generated and downloaded successfully!");
+  // Download individual transaction receipt (Includes YucaChain logo, excludes payout status)
+  const handleDownloadSingleReceipt = (tx: any) => {
+    try {
+      generateSingleTransactionReceiptPDF({
+        id: tx.id,
+        orderNumber: tx.orderNumber,
+        date: tx.date,
+        productTitle: tx.productTitle,
+        quantity: tx.quantity,
+        unit: tx.unit,
+        totalAmount: tx.totalAmount,
+        sellerName: tx.sellerName,
+        sellerRole: tx.sellerRole,
+        buyerName: tx.buyerName,
+        buyerRole: tx.buyerRole,
+      });
+      toast.success(`Official Receipt for ${tx.orderNumber} downloaded!`);
+    } catch (err) {
+      console.error("Single receipt generation failed:", err);
+      toast.error("Failed to download receipt.");
+    }
   };
 
   return (
@@ -822,22 +811,33 @@ export default function OrdersPayoutsReportsSection() {
 
                       {/* Action */}
                       <td className="py-3.5 px-4 text-right">
-                        {isPaid ? (
-                          <div className="text-right">
-                            <span className="text-[11px] text-gray-400 font-medium">
-                              Settled {tx.payoutDate || "Recently"}
-                            </span>
-                          </div>
-                        ) : (
+                        <div className="inline-flex items-center justify-end gap-2">
+                          {/* Single Transaction Receipt Download Button */}
                           <button
                             type="button"
-                            onClick={() => handleOpenDisbursementModal(tx)}
-                            className="inline-flex items-center gap-1.5 rounded-xl bg-[#226049] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#1a4336] shadow-2xs transition-all cursor-pointer active:scale-95"
+                            onClick={() => handleDownloadSingleReceipt(tx)}
+                            className="inline-flex items-center gap-1 rounded-xl border border-gray-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 hover:border-gray-300 shadow-2xs transition-all cursor-pointer"
+                            title={`Download Official Receipt PDF for ${tx.orderNumber}`}
                           >
-                            <Send size={12} />
-                            <span>Disburse ₦{tx.totalAmount.toLocaleString()}</span>
+                            <FileText size={12} className="text-[#226049]" />
+                            <span>PDF</span>
                           </button>
-                        )}
+
+                          {isPaid ? (
+                            <span className="text-[11px] text-gray-400 font-medium whitespace-nowrap">
+                              Settled {tx.payoutDate || "Recently"}
+                            </span>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => handleOpenDisbursementModal(tx)}
+                              className="inline-flex items-center gap-1.5 rounded-xl bg-[#226049] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#1a4336] shadow-2xs transition-all cursor-pointer active:scale-95 whitespace-nowrap"
+                            >
+                              <Send size={12} />
+                              <span>Disburse ₦{tx.totalAmount.toLocaleString()}</span>
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   );

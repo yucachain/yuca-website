@@ -65,7 +65,7 @@ export default function ListProcessedProductModal({
   onClose,
   onSuccess,
 }: ListProcessedProductModalProps) {
-  const { currentUser, addListing } = useMarketplaceRole();
+  const { currentUser } = useMarketplaceRole();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Categories from backend Miscellaneous endpoints
@@ -207,7 +207,7 @@ export default function ListProcessedProductModal({
     }
 
     if (!price || Number(price) <= 0) {
-      toast.error("Please enter a valid price");
+      toast.error("Please enter a valid unit price");
       return;
     }
 
@@ -219,60 +219,41 @@ export default function ListProcessedProductModal({
     setLoading(true);
 
     try {
+      // Endpoint 4.2: POST /marketplace/processor/products
+      const processingFacility = (
+        currentUser.facilityAddress ||
+        location.trim() ||
+        currentUser.companyName ||
+        currentUser.address ||
+        "PrimeStarch Processing Facility"
+      ).trim();
+
       const apiPayload: CreateProcessorProductRequest = {
-        category,
-        processedCategory,
-        productName: productName.trim(),
-        description: description.trim(),
-        price: Number(price) || 0,
-        unitOfMeasure,
-        stockAvailable: Number(stockAvailable) || 0,
-        machinesAvailable: Number(machinesAvailable) || 0,
-        minimumOrder: Number(minimumOrder) || 1,
-        location: location.trim(),
-        status: "Available",
-        photoUrls: photoUrls,
-        certifications: certifications,
-      };
-
-      const result = await marketplaceApi.createProcessorProduct(apiPayload).catch((err) => {
-        console.warn("Backend API createProcessorProduct warning:", err);
-        // If the error was not a connection issue, rethrow so user knows
-        if (err?.message && !err.message.includes("Failed to fetch")) {
-          throw err;
-        }
-        return null;
-      });
-
-      const newListing = {
-        id: result?.id || `proc-${Date.now()}`,
-        batchCode: result?.batchCode || `PROC-${Math.floor(1000 + Math.random() * 9000)}`,
         title: productName.trim(),
-        grade: "A",
-        quantity: Number(stockAvailable),
-        unit: unitOfMeasure,
-        pricePerTonne: Number(price),
-        currency: "₦",
-        category: "process-products",
-        location: location.trim() || "Nigeria",
-        storageLocation: "Processing Warehouse / Mill Facility",
-        seller: currentUser.name || "Verified Processor",
-        sellerRole: "processor",
-        storageTime: "Freshly Processed",
-        temperatureC: 22,
-        humidityPercent: 45,
-        isNew: true,
-        description: description.trim(),
-        images: photoUrls,
-        status: "Available",
-        certifications: certifications,
+        category: "processed-derivatives",
+        processingFacility: processingFacility,
+        unitPrice: Number(price) || 0,
+        unit: unitOfMeasure || "50kg bag",
+        availableQuantity: Number(stockAvailable) || 0,
+        moistureGrade: "11.2%",
+        // Extra complementary fields
+        productName: productName.trim(),
+        price: Number(price) || 0,
+        unitOfMeasure: unitOfMeasure,
+        stockAvailable: Number(stockAvailable) || 0,
+        description: description.trim() || undefined,
+        location: location.trim() || undefined,
+        photoUrls: photoUrls.length > 0 ? photoUrls : undefined,
+        certifications: certifications.length > 0 ? certifications : undefined,
         minimumOrder: Number(minimumOrder) || 1,
         machinesAvailable: Number(machinesAvailable) || 0,
+        status: "Available",
       };
 
-      addListing(newListing);
-      onSuccess?.(newListing);
-      toast.success(`Product "${productName}" created successfully!`);
+      const result = await marketplaceApi.createProcessorProduct(apiPayload);
+
+      toast.success(result?.message || `Processed product published to Marketplace`);
+      onSuccess?.(result);
 
       setLoading(false);
       setSuccess(true);
@@ -282,7 +263,7 @@ export default function ListProcessedProductModal({
       }, 1200);
     } catch (err: any) {
       setLoading(false);
-      toast.error(err.message || "Failed to list processed product");
+      toast.error(err.message || "Failed to publish processed product on backend");
     }
   };
 

@@ -82,6 +82,15 @@ export interface MarketplaceCategory extends ListingCategory {}
 /* ------------------------------------------------------------------ */
 
 export interface GetProductsParams {
+  category?: "cassava-tubers" | "processed-derivatives" | "services-machinery" | string;
+  sellerRole?: "farmer" | "processor" | "service-provider" | string;
+  search?: string;
+  minPrice?: number;
+  maxPrice?: number;
+  location?: string;
+  page?: number;
+  limit?: number;
+  // Backward compatibility aliases
   Category?: string;
   Grade?: string;
   Location?: string;
@@ -94,43 +103,41 @@ export interface GetProductsParams {
 }
 
 export interface CheckoutQuoteRequest {
-  deliveryMethod: "SelfPickup" | "Delivery" | string;
-  deliveryAddress?: string;
-  pickupLocation?: string;
-}
-
-export interface CheckoutQuoteResponse {
-  quoteId?: string;
-  deliveryFee?: number;
-  serviceFee?: number;
-  subtotal?: number;
-  total?: number;
-  estimatedDeliveryDays?: number;
-  deliveryMethod?: string;
+  items?: Array<{ productId: string; quantity: number }>;
+  deliveryMethod: "yucavault-pickup" | "direct-delivery" | string;
   deliveryAddress?: string;
   pickupLocation?: string;
   [key: string]: any;
 }
 
+export interface CheckoutQuoteResponse {
+  quoteId?: string;
+  deliveryFee?: number;
+  escrowFee?: number;
+  subtotal?: number;
+  totalAmount?: number;
+  escrowGuarantee?: string;
+  [key: string]: any;
+}
+
 export interface CreateMarketplaceOrderRequest {
-  type?: string;
-  paymentMethod: "BankTransfer" | "Card" | string;
-  deliveryMethod: "SelfPickup" | "Delivery" | string;
+  items?: Array<{ productId: string; quantity: number; unitPrice?: number }>;
+  deliveryMethod: "yucavault-pickup" | "direct-delivery" | string;
   deliveryAddress?: string;
-  pickupLocation?: string;
-  preferredPickupDate?: string;
-  logisticsNote?: string;
+  paymentMethod: "bank-transfer" | string;
+  notes?: string;
+  type?: string;
   batchId?: string;
   quantityKg?: number;
+  [key: string]: any;
 }
 
 export interface VerifyPaymentResponse {
   reference: string;
   status: string;
-  successful: boolean;
-  amount?: number;
-  provider?: string;
-  message?: string;
+  successful?: boolean;
+  amountPaid?: number;
+  paidAt?: string;
   [key: string]: any;
 }
 
@@ -138,6 +145,7 @@ export interface GetMyOrdersParams {
   status?: string;
   page?: number;
   pageSize?: number;
+  limit?: number;
 }
 
 export interface ConfirmDeliveryResponse {
@@ -146,66 +154,95 @@ export interface ConfirmDeliveryResponse {
   [key: string]: any;
 }
 
+// 4.1 Farmer - Register Cassava Harvest Batch
 export interface CreateFarmerBatchRequest {
-  Variety: string;
-  EstimatedWeightKg: number;
-  HarvestDate: string;
-  HarvestLatitude?: number;
-  HarvestLongitude?: number;
-  HarvestState?: string;
-  HarvestLga?: string;
-  IntendedDestination?: string;
-  Notes?: string;
-  photos?: string[];
+  variety: string;
+  weightKg: number;
+  pricePerKg: number;
+  farmLocation: string;
+  harvestDate: string;
+  storageDestination: string;
+  // Optional extra metadata
+  qualityGrade?: string;
+  pricePerTonne?: number;
+  notes?: string;
+  harvestState?: string;
+  harvestLga?: string;
+  harvestLatitude?: number;
+  harvestLongitude?: number;
+  photoUrls?: string[];
+  [key: string]: any;
 }
 
+// 4.2 Processor - List Finished Cassava Product
 export interface CreateProcessorProductRequest {
-  category: string;
-  processedCategory?: string;
-  productName: string;
+  title: string;
+  category: "processed-derivatives" | string;
+  processingFacility: string;
+  unitPrice: number;
+  unit: string;
+  availableQuantity: number;
+  moistureGrade?: string;
+  // Optional complementary fields
+  productName?: string;
   description?: string;
-  price: number;
-  unitOfMeasure: string;
+  price?: number;
+  unitOfMeasure?: string;
   stockAvailable?: number;
   machinesAvailable?: number;
   minimumOrder?: number;
   location?: string;
-  sourceBatchId?: string;
-  status?: "Draft" | "Active" | string;
+  status?: string;
   photoUrls?: string[];
   certifications?: string[];
+  [key: string]: any;
 }
 
+// 4.3 Service Provider - List Machinery / Tractor Service
 export interface CreateServiceListingRequest {
-  category: string;
-  processedCategory?: string;
-  productName: string;
+  title: string;
+  category: "services-machinery" | string;
+  operationalBase: string;
+  dailyRate: number;
+  operatorIncluded: boolean;
+  coverageRadiusKm: number;
+  // Optional complementary fields
+  productName?: string;
   description?: string;
-  price: number;
-  unitOfMeasure: string;
+  price?: number;
+  unitOfMeasure?: string;
   stockAvailable?: number;
   machinesAvailable?: number;
   minimumOrder?: number;
   location?: string;
-  sourceBatchId?: string;
-  status?: "Draft" | "Active" | string;
+  status?: string;
   photoUrls?: string[];
   certifications?: string[];
+  [key: string]: any;
 }
 
+// 4.4 Seller - Get Sales & Escrow Inflow
 export interface SellerSaleItem {
   id?: string;
   orderNumber: string;
-  productName?: string;
-  productTitle?: string;
-  category?: string;
   buyerName?: string;
+  item?: string;
+  productTitle?: string;
+  productName?: string;
   quantity?: number;
   unit?: string;
-  totalAmount: number;
+  amount?: number;
+  totalAmount?: number;
+  escrowStatus?: string;
   payoutStatus?: string;
   status?: string;
   date?: string;
   createdAt?: string;
+  sellerBankDetails?: {
+    bankName: string;
+    accountNumber: string;
+    accountName: string;
+  };
   [key: string]: any;
 }
+

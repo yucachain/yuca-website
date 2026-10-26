@@ -417,11 +417,16 @@ export async function getCurrentUser(tokenOverride?: string): Promise<User> {
     ...rawProfile,
   };
 
-  const displayName = resolveDisplayName(merged, "Marketplace User");
+  const resolvedUserId = String(merged.id || merged._id || rawMe.id || jwtUser.id || "");
+  if (!resolvedUserId) {
+    throw new Error("No authenticated user profile found.");
+  }
+
+  const displayName = resolveDisplayName(merged, "User");
   const initials = merged.initials || getInitials(displayName);
 
   const user: User = {
-    id: String(merged.id || merged._id || rawMe.id || jwtUser.id || ""),
+    id: resolvedUserId,
     email: merged.email || merged.Email || rawMe.email || jwtUser.email || "",
     phoneNumber: merged.phoneNumber || merged.PhoneNumber || merged.phone || rawMe.phoneNumber || jwtUser.phoneNumber || "",
     name: displayName,
@@ -671,16 +676,15 @@ const authService = {
     try {
       user = await getCurrentUser(token);
     } catch {
-      const fallbackName = resolveDisplayName(
-        (response.data as any)?.user || (response.data as any),
-        "Marketplace User"
-      );
+      const rawUser = (response.data as any)?.user || (response.data as any) || {};
+      const fallbackName = resolveDisplayName(rawUser, "User");
+      const fallbackId = String(rawUser.id || rawUser._id || rawUser.userId || "");
       user = {
-        id: "",
-        email: emailOrIdentifier,
-        phoneNumber: !phoneOrIdentifier.includes("@") ? phoneOrIdentifier : "",
+        id: fallbackId,
+        email: rawUser.email || emailOrIdentifier,
+        phoneNumber: rawUser.phoneNumber || (!phoneOrIdentifier.includes("@") ? phoneOrIdentifier : ""),
         name: fallbackName,
-        role: response.data?.role || "BUYER",
+        role: rawUser.role || response.data?.role || "BUYER",
         initials: getInitials(fallbackName),
       };
     }
@@ -718,16 +722,15 @@ const authService = {
     try {
       user = await getCurrentUser(token);
     } catch {
-      const fallbackName = resolveDisplayName(
-        (response.data as any)?.user || (response.data as any),
-        "Admin"
-      );
+      const rawUser = (response.data as any)?.user || (response.data as any) || {};
+      const fallbackName = resolveDisplayName(rawUser, "Admin");
+      const fallbackId = String(rawUser.id || rawUser._id || rawUser.userId || "");
       user = {
-        id: "",
-        email: emailOrIdentifier,
-        phoneNumber: phoneOrIdentifier,
+        id: fallbackId,
+        email: rawUser.email || emailOrIdentifier,
+        phoneNumber: rawUser.phoneNumber || phoneOrIdentifier,
         name: fallbackName,
-        role: response.data?.role || "ADMIN",
+        role: rawUser.role || response.data?.role || "ADMIN",
         initials: getInitials(fallbackName),
       };
     }
@@ -864,6 +867,10 @@ const authService = {
   async refreshToken(): Promise<{ token: string }> {
     const token = await refreshAccessToken();
     return { token };
+  },
+
+  async refreshAccessToken(): Promise<string> {
+    return refreshAccessToken();
   },
 
   async updateProfile(userData: Partial<User>): Promise<User> {

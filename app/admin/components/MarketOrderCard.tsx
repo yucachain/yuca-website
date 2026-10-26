@@ -1,6 +1,8 @@
 import React from "react";
-import { ShoppingBag, MapPin, CheckCircle, ShieldCheck, Mail, Phone, Calendar, Building } from "lucide-react";
+import { ShoppingBag, MapPin, CheckCircle, ShieldCheck, Mail, Phone, Calendar, Building, FileText } from "lucide-react";
 import type { MarketOrder } from "./types";
+import { generateSingleTransactionReceiptPDF } from "@/app/admin/utils/pdfGenerator";
+import { toast } from "sonner";
 
 const gradeBadgeStyles: Record<string, string> = {
   A: "bg-emerald-50 text-emerald-700 border-emerald-200",
@@ -151,13 +153,46 @@ export default function MarketOrderCard({ order, onConsolidate }: MarketOrderCar
           * Consolidating will allocate verified batches into a single YucaVault storage unit for dispatch.
         </p>
 
-        <button
-          type="button"
-          onClick={() => onConsolidate?.(order)}
-          className="w-full sm:w-auto rounded-xl bg-[#226049] px-6 py-3 text-sm font-semibold text-white transition-all hover:bg-[#1a4b39] shadow-sm cursor-pointer"
-        >
-          Consolidate this Order
-        </button>
+        <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
+          <button
+            type="button"
+            onClick={() => {
+              try {
+                generateSingleTransactionReceiptPDF({
+                  id: order.id,
+                  orderNumber: order.orderNumber,
+                  date: order.acceptedDate || "Recent",
+                  productTitle: order.productName || "Cassava Produce Batch",
+                  quantity: order.neededKg || 1,
+                  unit: "kg",
+                  totalAmount:
+                    order.totalPrice || (order.neededKg || 0) * (order.pricePerKg || 0),
+                  sellerName: order.batches?.[0]?.farmer || "Consolidated Farmers",
+                  sellerRole: "farmer",
+                  buyerName: order.buyer,
+                  buyerRole: "processor",
+                });
+                toast.success(`Order receipt for ${order.orderNumber} downloaded!`);
+              } catch (err) {
+                console.error("PDF generation error:", err);
+                toast.error("Failed to download PDF");
+              }
+            }}
+            className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 shadow-2xs transition-all cursor-pointer w-full sm:w-auto"
+            title="Download Order Statement PDF"
+          >
+            <FileText size={14} className="text-[#226049]" />
+            <span>Download PDF</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => onConsolidate?.(order)}
+            className="w-full sm:w-auto rounded-xl bg-[#226049] px-6 py-2.5 text-xs sm:text-sm font-semibold text-white transition-all hover:bg-[#1a4b39] shadow-sm cursor-pointer"
+          >
+            Consolidate this Order
+          </button>
+        </div>
       </div>
     </div>
   );

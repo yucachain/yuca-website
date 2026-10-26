@@ -97,12 +97,14 @@ export default function UserOrdersAndSalesModal({
     ? remoteSales.map((rs) => ({
       id: rs.id || rs.orderNumber,
       orderNumber: rs.orderNumber,
-      productTitle: rs.productTitle || rs.productName || "Cassava Batch",
+      productTitle: rs.item || rs.productTitle || rs.productName || "Cassava Batch",
       buyerName: rs.buyerName || "Marketplace Buyer",
       buyerRole: "processor" as any,
-      totalAmount: rs.totalAmount || rs.amount || 0,
+      quantity: rs.quantity || 1,
+      unit: rs.unit || "ton",
+      totalAmount: rs.amount || rs.totalAmount || 0,
       date: rs.date || rs.createdAt ? new Date(rs.date || rs.createdAt).toISOString().split("T")[0] : new Date().toISOString().split("T")[0],
-      payoutStatus: rs.payoutStatus || "Paid / Disbursed",
+      payoutStatus: rs.payoutStatus || rs.escrowStatus || "Pending Delivery Confirmation",
       deliveryMethod: rs.deliveryMethod || "yucavault-pickup",
     }))
     : localSales;

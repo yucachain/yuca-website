@@ -16,6 +16,7 @@ import type { DispatchRecord, DispatchStatus } from "@/app/types/batchVaultDispa
 import { dispatchService } from "@/app/Services/dispatchService";
 import CreateDispatchModal from "./CreateDispatchModal";
 import DispatchReceiptModal from "./DispatchReceiptModal";
+import { generateDispatchReceiptPDF } from "@/app/admin/utils/pdfGenerator";
 import { toast } from "sonner";
 
 export type DispatchOrderTab = "all" | "pending" | "dispatched" | "in-transit" | "delivered";
@@ -276,9 +277,28 @@ export default function DispatchOrderSection() {
             trackingNumber: receiptRecord.trackingNumber || receiptRecord.trackingCode,
             weighbridgeTicket: receiptRecord.weighbridgeTicket,
           } as any}
-          onDownloadReceipt={() => {
-            if (typeof window !== "undefined") {
-              window.print();
+          onDownloadReceipt={(order) => {
+            try {
+              generateDispatchReceiptPDF({
+                orderNumber: order.orderNumber,
+                lotCode: order.lotCode,
+                product: order.product,
+                weightKg: order.weightKg,
+                date: order.date,
+                dispatchedTime: "3:45 PM",
+                dispatchedBy: "Penpal",
+                storageLabel: order.storageLabel || "YucaVault Central",
+                pickupHub: order.pickupHub || "Main Logistics Hub",
+                agreedPriceTotal: order.agreedPriceTotal,
+                carrier: (order as any).carrier,
+                trackingNumber: (order as any).trackingNumber,
+              });
+              toast.success("Official Dispatch receipt downloaded successfully!");
+            } catch (err) {
+              console.error("Failed to generate dispatch receipt PDF:", err);
+              if (typeof window !== "undefined") {
+                window.print();
+              }
             }
           }}
         />

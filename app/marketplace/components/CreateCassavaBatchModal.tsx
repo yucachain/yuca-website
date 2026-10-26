@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { useMarketplaceRole } from "../context/MarketplaceRoleContext";
 import { marketplaceApi } from "@/app/Services/marketplaceService";
+import type { CreateFarmerBatchRequest } from "@/app/types/marketplace";
 import {
   NIGERIAN_STATES,
   getLgasForState,
@@ -45,13 +46,13 @@ export default function CreateCassavaBatchModal({
   onClose,
   onSuccess,
 }: CreateCassavaBatchModalProps) {
-  const { currentUser, addListing } = useMarketplaceRole();
+  const { currentUser } = useMarketplaceRole();
 
   const [varieties, setVarieties] = useState<VarietyItem[]>([
-    { id: 1, name: "Tme419", description: "TME 419" },
-    { id: 2, name: "Tms30572", description: "TMS 30572" },
-    { id: 3, name: "OkoIyawo", description: "Oko Iyawo" },
-    { id: 4, name: "Other", description: "Other" },
+    { id: 1, name: "TME 419 (High Yield)", description: "TME 419 (High Yield)" },
+    { id: 2, name: "TMS 30572", description: "TMS 30572" },
+    { id: 3, name: "Oko Iyawo", description: "Oko Iyawo" },
+    { id: 4, name: "Other Variety", description: "Other Variety" },
   ]);
 
   const [qualityGrades, setQualityGrades] = useState<QualityGradeItem[]>([
@@ -62,25 +63,26 @@ export default function CreateCassavaBatchModal({
   ]);
 
   const [formData, setFormData] = useState({
-    variety: "Tme419",
+    variety: "TME 419 (High Yield)",
     estimatedWeightKg: "",
-    pricePerTonneNgn: "",
+    pricePerKg: "185",
+    pricePerTonneNgn: "185000",
     totalPrice: "",
     harvestDate: new Date().toISOString().split("T")[0],
     harvestLatitude: "",
     harvestLongitude: "",
-    harvestState: currentUser.state || "",
-    harvestLga: currentUser.lga || "",
+    harvestState: currentUser.state || "Oyo State",
+    harvestLga: currentUser.lga || "Iseyin",
     intendedDestination: "Storage",
+    storageDestination: "YucaVault-Iseyin-Hub",
     qualityGrade: "A",
     notes: "",
   });
 
   const handleWeightChange = (weightVal: string) => {
     const w = Number(weightVal);
-    const p = Number(formData.pricePerTonneNgn);
-    const tonnes = w > 0 ? w / 1000 : 0;
-    const newTotal = tonnes > 0 && p > 0 ? String(Math.round(tonnes * p)) : "";
+    const pkg = Number(formData.pricePerKg) || 185;
+    const newTotal = w > 0 && pkg > 0 ? String(Math.round(w * pkg)) : "";
     setFormData((prev) => ({
       ...prev,
       estimatedWeightKg: weightVal,
@@ -88,14 +90,29 @@ export default function CreateCassavaBatchModal({
     }));
   };
 
+  const handlePricePerKgChange = (pkgVal: string) => {
+    const pkg = Number(pkgVal);
+    const pTonne = pkg > 0 ? String(pkg * 1000) : "";
+    const w = Number(formData.estimatedWeightKg);
+    const newTotal = w > 0 && pkg > 0 ? String(Math.round(w * pkg)) : "";
+    setFormData((prev) => ({
+      ...prev,
+      pricePerKg: pkgVal,
+      pricePerTonneNgn: pTonne || prev.pricePerTonneNgn,
+      totalPrice: newTotal || prev.totalPrice,
+    }));
+  };
+
   const handlePricePerTonneChange = (priceVal: string) => {
     const p = Number(priceVal);
+    const pkg = p > 0 ? String(Math.round(p / 1000)) : "";
     const w = Number(formData.estimatedWeightKg);
     const tonnes = w > 0 ? w / 1000 : 0;
     const newTotal = tonnes > 0 && p > 0 ? String(Math.round(tonnes * p)) : "";
     setFormData((prev) => ({
       ...prev,
       pricePerTonneNgn: priceVal,
+      pricePerKg: pkg || prev.pricePerKg,
       totalPrice: newTotal || (priceVal ? prev.totalPrice : ""),
     }));
   };
@@ -106,10 +123,13 @@ export default function CreateCassavaBatchModal({
     const tonnes = w > 0 ? w / 1000 : 0;
     const newPricePerTonne =
       tonnes > 0 && tot > 0 ? String(Math.round(tot / tonnes)) : "";
+    const newPricePerKg =
+      w > 0 && tot > 0 ? String(Math.round(tot / w)) : "";
     setFormData((prev) => ({
       ...prev,
       totalPrice: totalVal,
       pricePerTonneNgn: newPricePerTonne || (totalVal ? prev.pricePerTonneNgn : ""),
+      pricePerKg: newPricePerKg || (totalVal ? prev.pricePerKg : ""),
     }));
   };
 
@@ -211,129 +231,68 @@ export default function CreateCassavaBatchModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    const weightKg = Number(formData.estimatedWeightKg);
+    if (!weightKg || weightKg <= 0) {
+      toast.error("Please enter a valid estimated weight in Kg");
+      return;
+    }
+
+    const pricePerKg =
+      Number(formData.pricePerKg) ||
+      (Number(formData.pricePerTonneNgn)
+        ? Math.round(Number(formData.pricePerTonneNgn) / 1000)
+        : Number(formData.totalPrice) && weightKg
+        ? Math.round(Number(formData.totalPrice) / weightKg)
+        : 185);
+
+    const farmLocation = (
+      formData.harvestLga && formData.harvestState
+        ? `${formData.harvestLga}, ${formData.harvestState}`
+        : formData.harvestState || currentUser.farmAddress || currentUser.address || "Iseyin, Oyo State"
+    ).trim();
+
+    const selectedVarietyObj = varieties.find((v) => v.name === formData.variety);
+    const varietyName = selectedVarietyObj?.description || formData.variety;
+
+    const storageDestination =
+      formData.storageDestination ||
+      (formData.intendedDestination === "Storage"
+        ? "YucaVault-Iseyin-Hub"
+        : "YucaVault-Logistics-Hub");
+
     setLoading(true);
 
     try {
-      // Build multipart/form-data payload as defined by the backend
-      const multipart = new FormData();
-      multipart.append("Variety", formData.variety);
-      multipart.append("HarvestDate", formData.harvestDate);
-
-      if (
-        formData.estimatedWeightKg !== "" &&
-        formData.estimatedWeightKg !== undefined &&
-        !isNaN(Number(formData.estimatedWeightKg))
-      ) {
-        multipart.append("EstimatedWeightKg", String(Number(formData.estimatedWeightKg)));
-      }
-
-      if (
-        formData.harvestLatitude !== "" &&
-        formData.harvestLatitude !== undefined &&
-        !isNaN(Number(formData.harvestLatitude))
-      ) {
-        multipart.append("HarvestLatitude", String(Number(formData.harvestLatitude)));
-      }
-
-      if (
-        formData.harvestLongitude !== "" &&
-        formData.harvestLongitude !== undefined &&
-        !isNaN(Number(formData.harvestLongitude))
-      ) {
-        multipart.append("HarvestLongitude", String(Number(formData.harvestLongitude)));
-      }
-
-      if (formData.harvestState && formData.harvestState.trim() !== "") {
-        multipart.append("HarvestState", formData.harvestState.trim());
-      }
-
-      if (formData.harvestLga && formData.harvestLga.trim() !== "") {
-        multipart.append("HarvestLga", formData.harvestLga.trim());
-      }
-
-      if (formData.intendedDestination && formData.intendedDestination.trim() !== "") {
-        multipart.append("IntendedDestination", formData.intendedDestination.trim());
-      }
-
-      if (formData.notes && formData.notes.trim() !== "") {
-        multipart.append("Notes", formData.notes.trim().slice(0, 200));
-      }
-
-      // Add photos items
-      selectedPhotos.forEach((file) => {
-        multipart.append("photos", file);
-      });
-
-      const result = await marketplaceApi.createFarmerBatch(multipart).catch((err) => {
-        console.warn("Backend createFarmerBatch fallback:", err);
-        return null;
-      });
-
-      const batchId = result?.id || result?.batchId;
-      const weightTonnes =
-        formData.estimatedWeightKg && Number(formData.estimatedWeightKg) > 0
-          ? Number(formData.estimatedWeightKg) / 1000
-          : 20;
-
-      const pricePerTonneNgn =
-        Number(formData.pricePerTonneNgn) ||
-        (Number(formData.totalPrice) && weightTonnes > 0
-          ? Math.round(Number(formData.totalPrice) / weightTonnes)
-          : 150000);
-
-      const totalBatchPrice =
-        Number(formData.totalPrice) || Math.round(weightTonnes * pricePerTonneNgn);
-
-      // Attach pricing via POST /api/v1/batches/{id}/pricing
-      if (batchId) {
-        try {
-          await marketplaceApi.setBatchPricing(batchId, {
-            pricePerTonneNgn: pricePerTonneNgn,
-            intendedDestination: formData.intendedDestination || "Storage",
-          });
-        } catch (err: any) {
-          console.warn("Pricing attachment notice:", err);
-        }
-      }
-
-      const gradeShort = formData.qualityGrade?.includes("B") ? "B" : "A";
-      const quantityTonnesFormatted = Math.round(weightTonnes * 10) / 10;
-
-      const newListing = {
-        id: batchId || `batch-${Date.now()}`,
-        batchCode:
-          result?.batchCode ||
-          `YC-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`,
-        title: `Fresh ${formData.variety} Cassava Roots (${quantityTonnesFormatted}T)`,
-        grade: gradeShort,
-        quantity: quantityTonnesFormatted,
-        unit: "Tonnes",
-        pricePerTonne: totalBatchPrice,
-        currency: "₦",
-        category: "raw-cassava",
-        location:
-          formData.harvestState && formData.harvestLga
-            ? `${formData.harvestLga}, ${formData.harvestState}`
-            : formData.harvestState || "Nigeria",
-        storageLocation:
-          formData.intendedDestination === "Storage"
-            ? "YucaVault Agro Hub"
-            : "Farm Gate Direct",
-        seller: currentUser.name || "Verified Farmer",
-        sellerRole: "farmer",
-        storageTime: "Freshly Harvested",
-        temperatureC: 25,
-        humidityPercent: 55,
-        isNew: true,
-        description:
-          formData.notes ||
-          `Freshly harvested ${formData.variety} cassava roots ready for off-take.`,
-        images: photoPreviews.length > 0 ? photoPreviews : [],
+      // Endpoint 4.1: POST /marketplace/farmer/batches
+      const apiPayload: CreateFarmerBatchRequest = {
+        variety: varietyName,
+        weightKg: weightKg,
+        pricePerKg: pricePerKg,
+        farmLocation: farmLocation,
+        harvestDate: formData.harvestDate || new Date().toISOString().split("T")[0],
+        storageDestination: storageDestination,
+        // Complementary fields for backend compatibility
+        qualityGrade: formData.qualityGrade || "A",
+        pricePerTonne: Number(formData.pricePerTonneNgn) || (pricePerKg * 1000),
+        notes: formData.notes?.trim() || undefined,
+        harvestState: formData.harvestState?.trim() || undefined,
+        harvestLga: formData.harvestLga?.trim() || undefined,
+        harvestLatitude:
+          formData.harvestLatitude && !isNaN(Number(formData.harvestLatitude))
+            ? Number(formData.harvestLatitude)
+            : undefined,
+        harvestLongitude:
+          formData.harvestLongitude && !isNaN(Number(formData.harvestLongitude))
+            ? Number(formData.harvestLongitude)
+            : undefined,
+        photoUrls: photoPreviews.length > 0 ? photoPreviews : undefined,
       };
 
-      addListing(newListing);
-      onSuccess?.(newListing);
-      toast.success(`Batch for ${formData.variety} created successfully!`);
+      const result = await marketplaceApi.createFarmerBatch(apiPayload);
+
+      toast.success(result?.message || `Cassava batch registered successfully!`);
+      onSuccess?.(result);
 
       setLoading(false);
       setSuccess(true);
@@ -343,7 +302,7 @@ export default function CreateCassavaBatchModal({
       }, 1200);
     } catch (err: any) {
       setLoading(false);
-      toast.error(err.message || "Failed to create cassava batch");
+      toast.error(err.message || "Failed to create cassava batch on backend");
     }
   };
 
@@ -422,18 +381,18 @@ export default function CreateCassavaBatchModal({
               </div>
             </div>
 
-            {/* Row 2: Weight & Price per Weight */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+            {/* Row 2: Weight & Price per Kg / Tonne */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
                 <label className="block font-bold text-gray-700 mb-1">
                   Estimated Weight (Kg) *
                 </label>
                 <input
                   type="number"
-                  min="0.01"
+                  min="1"
                   step="any"
                   required
-                  placeholder="e.g. 20000"
+                  placeholder="e.g. 15000"
                   value={formData.estimatedWeightKg}
                   onChange={(e) => handleWeightChange(e.target.value)}
                   className="w-full rounded-xl border border-gray-200 px-3 py-2 text-gray-900 focus:border-[#226049] focus:outline-none"
@@ -441,26 +400,44 @@ export default function CreateCassavaBatchModal({
                 <span className="text-[10px] text-gray-400 mt-0.5 block">
                   {formData.estimatedWeightKg && Number(formData.estimatedWeightKg) > 0
                     ? `≈ ${(Number(formData.estimatedWeightKg) / 1000).toFixed(2)} Tonnes`
-                    : "Enter weight in Kg (e.g. 20000)"}
+                    : "Enter weight in Kg"}
                 </span>
               </div>
 
               <div>
                 <label className="block font-bold text-gray-700 mb-1">
-                  Price per Weight (₦) *
+                  Price per Kg (₦) *
                 </label>
                 <input
                   type="number"
                   min="1"
                   step="any"
                   required
-                  placeholder="e.g. 150000"
+                  placeholder="e.g. 185"
+                  value={formData.pricePerKg}
+                  onChange={(e) => handlePricePerKgChange(e.target.value)}
+                  className="w-full rounded-xl border border-gray-200 px-3 py-2 text-gray-900 focus:border-[#226049] focus:outline-none font-semibold text-[#226049]"
+                />
+                <span className="text-[10px] text-gray-400 mt-0.5 block">
+                  e.g. ₦185 per Kg
+                </span>
+              </div>
+
+              <div>
+                <label className="block font-bold text-gray-700 mb-1">
+                  Price per Tonne (₦)
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  step="any"
+                  placeholder="e.g. 185000"
                   value={formData.pricePerTonneNgn}
                   onChange={(e) => handlePricePerTonneChange(e.target.value)}
                   className="w-full rounded-xl border border-gray-200 px-3 py-2 text-gray-900 focus:border-[#226049] focus:outline-none font-semibold text-[#226049]"
                 />
                 <span className="text-[10px] text-gray-400 mt-0.5 block">
-                  Price per Tonne / unit weight
+                  1 Tonne = 1,000 Kg
                 </span>
               </div>
             </div>
@@ -595,23 +572,41 @@ export default function CreateCassavaBatchModal({
               </div>
             </div>
 
-            {/* IntendedDestination */}
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="font-bold text-gray-700">
-                  IntendedDestination
+            {/* Storage Destination & Hub */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              <div>
+                <label className="block font-bold text-gray-700 mb-1">
+                  Intended Destination
                 </label>
+                <select
+                  value={formData.intendedDestination}
+                  onChange={(e) =>
+                    setFormData({ ...formData, intendedDestination: e.target.value })
+                  }
+                  className="w-full rounded-xl border border-gray-200 px-3 py-2 text-gray-900 focus:border-[#226049] focus:outline-none bg-white font-medium"
+                >
+                  <option value="Storage">Storage (YucaVault Hub)</option>
+                  <option value="Marketplace">Marketplace Direct</option>
+                </select>
               </div>
-              <select
-                value={formData.intendedDestination}
-                onChange={(e) =>
-                  setFormData({ ...formData, intendedDestination: e.target.value })
-                }
-                className="w-full rounded-xl border border-gray-200 px-3 py-2 text-gray-900 focus:border-[#226049] focus:outline-none bg-white font-medium"
-              >
-                <option value="Storage">Storage (YucaHub)</option>
-                <option value="Marketplace">Marketplace </option>
-              </select>
+
+              <div>
+                <label className="block font-bold text-gray-700 mb-1">
+                  Storage Destination Hub *
+                </label>
+                <select
+                  value={formData.storageDestination}
+                  onChange={(e) =>
+                    setFormData({ ...formData, storageDestination: e.target.value })
+                  }
+                  className="w-full rounded-xl border border-gray-200 px-3 py-2 text-gray-900 focus:border-[#226049] focus:outline-none bg-white font-medium"
+                >
+                  <option value="YucaVault-Iseyin-Hub">YucaVault-Iseyin-Hub (Oyo State)</option>
+                  <option value="YucaVault-Ibadan-Central-Hub">YucaVault-Ibadan-Central-Hub</option>
+                  <option value="YucaVault-Ogun-Agro-Hub">YucaVault-Ogun-Agro-Hub</option>
+                  <option value="YucaVault-Ondo-Hub">YucaVault-Ondo-Hub</option>
+                </select>
+              </div>
             </div>
 
             {/* Notes */}

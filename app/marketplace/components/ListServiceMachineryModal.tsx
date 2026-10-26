@@ -64,7 +64,7 @@ export default function ListServiceMachineryModal({
   onClose,
   onSuccess,
 }: ListServiceMachineryModalProps) {
-  const { currentUser, addListing } = useMarketplaceRole();
+  const { currentUser } = useMarketplaceRole();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Dynamic category options from backend
@@ -196,59 +196,39 @@ export default function ListServiceMachineryModal({
     setLoading(true);
 
     try {
+      // Endpoint 4.3: POST /marketplace/services
+      const operationalBase = (
+        location.trim() ||
+        currentUser.businessAddress ||
+        currentUser.address ||
+        "Central Mechanization Yard, Iwo Road"
+      ).trim();
+
       const apiPayload: CreateServiceListingRequest = {
-        category,
-        processedCategory,
-        productName: productName.trim(),
-        description: description.trim(),
-        price: Number(price) || 0,
-        unitOfMeasure,
-        stockAvailable: Number(stockAvailable) || 0,
-        machinesAvailable: Number(machinesAvailable) || 0,
-        minimumOrder: Number(minimumOrder) || 1,
-        location: location.trim(),
-        status: "Available",
-        photoUrls: photoUrls,
-        certifications: certifications,
-      };
-
-      const result = await marketplaceApi.createServiceListing(apiPayload).catch((err) => {
-        console.warn("Backend API createServiceListing warning:", err);
-        if (err?.message && !err.message.includes("Failed to fetch")) {
-          throw err;
-        }
-        return null;
-      });
-
-      const newListing = {
-        id: result?.id || `srv-${Date.now()}`,
-        batchCode: result?.batchCode || `SRV-${Math.floor(1000 + Math.random() * 9000)}`,
         title: productName.trim(),
-        grade: "Standard",
-        quantity: Number(stockAvailable) || Number(machinesAvailable) || 1,
-        unit: unitOfMeasure,
-        pricePerTonne: Number(price),
-        currency: "₦",
-        category: "machinery-lease",
-        location: location.trim() || "Nigeria",
-        storageLocation: "Depot / Service Station",
-        seller: currentUser.name || "Verified Service Provider",
-        sellerRole: "service-provider",
-        storageTime: "Available On Demand",
-        temperatureC: 25,
-        humidityPercent: 50,
-        isNew: true,
-        description: description.trim(),
-        images: photoUrls,
-        status: "Available",
-        certifications: certifications,
-        minimumOrder: Number(minimumOrder) || 1,
+        category: "services-machinery",
+        operationalBase: operationalBase,
+        dailyRate: Number(price) || 0,
+        operatorIncluded: true,
+        coverageRadiusKm: 80,
+        // Complementary fields
+        productName: productName.trim(),
+        price: Number(price) || 0,
+        unitOfMeasure: unitOfMeasure || "Day",
+        stockAvailable: Number(stockAvailable) || Number(machinesAvailable) || 1,
         machinesAvailable: Number(machinesAvailable) || 1,
+        minimumOrder: Number(minimumOrder) || 1,
+        description: description.trim() || undefined,
+        location: location.trim() || undefined,
+        photoUrls: photoUrls.length > 0 ? photoUrls : undefined,
+        certifications: certifications.length > 0 ? certifications : undefined,
+        status: "Available",
       };
 
-      addListing(newListing);
-      onSuccess?.(newListing);
-      toast.success(`Service "${productName}" listed successfully!`);
+      const result = await marketplaceApi.createServiceListing(apiPayload);
+
+      toast.success(result?.message || `Service equipment listing active on Marketplace`);
+      onSuccess?.(result);
 
       setLoading(false);
       setSuccess(true);
@@ -258,7 +238,7 @@ export default function ListServiceMachineryModal({
       }, 1200);
     } catch (err: any) {
       setLoading(false);
-      toast.error(err.message || "Failed to list machinery/service");
+      toast.error(err.message || "Failed to list machinery/service on backend");
     }
   };
 

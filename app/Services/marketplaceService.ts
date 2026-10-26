@@ -129,11 +129,29 @@ export const marketplaceApi = {
   getProducts: async (params?: GetProductsParams): Promise<MarketplaceListing[]> => {
     const query = new URLSearchParams();
     if (params) {
-      for (const [key, value] of Object.entries(params)) {
-        if (value !== undefined && value !== null && value !== '' && value !== 'all') {
-          query.append(key, String(value));
-        }
-      }
+      const category = params.category || params.Category;
+      if (category && category !== 'all') query.append('category', String(category));
+
+      const sellerRole = params.sellerRole || params.Role;
+      if (sellerRole && sellerRole !== 'all') query.append('sellerRole', String(sellerRole));
+
+      const search = params.search || params.Search;
+      if (search && search.trim()) query.append('search', search.trim());
+
+      const minPrice = params.minPrice !== undefined ? params.minPrice : params.MinPrice;
+      if (minPrice !== undefined && minPrice !== null && !isNaN(Number(minPrice))) query.append('minPrice', String(minPrice));
+
+      const maxPrice = params.maxPrice !== undefined ? params.maxPrice : params.MaxPrice;
+      if (maxPrice !== undefined && maxPrice !== null && !isNaN(Number(maxPrice))) query.append('maxPrice', String(maxPrice));
+
+      const location = params.location || params.Location;
+      if (location && location.trim() && location !== 'all') query.append('location', location.trim());
+
+      const page = params.page !== undefined ? params.page : params.Page;
+      if (page) query.append('page', String(page));
+
+      const limit = params.limit !== undefined ? params.limit : params.PageSize;
+      if (limit) query.append('limit', String(limit));
     }
     const queryString = query.toString() ? `?${query.toString()}` : '';
     const result = await fetcher<any>(`/marketplace/products${queryString}`, {
@@ -142,6 +160,7 @@ export const marketplaceApi = {
 
     if (Array.isArray(result)) return result;
     if (Array.isArray(result?.items)) return result.items;
+    if (Array.isArray(result?.data?.items)) return result.data.items;
     if (Array.isArray(result?.data)) return result.data;
     return [];
   },
@@ -162,6 +181,7 @@ export const marketplaceApi = {
     });
     if (Array.isArray(result)) return result;
     if (Array.isArray(result?.items)) return result.items;
+    if (Array.isArray(result?.data?.items)) return result.data.items;
     if (Array.isArray(result?.data)) return result.data;
     return [];
   },
@@ -188,7 +208,7 @@ export const marketplaceApi = {
 
   // ─────────────────────────────────────────────────────────────
   // 3. POST /marketplace/checkout/quote (Protected)
-  // Body: { deliveryMethod, deliveryAddress, pickupLocation }
+  // Body: { items, deliveryMethod, deliveryAddress }
   // ─────────────────────────────────────────────────────────────
   getCheckoutQuote: async (data: CheckoutQuoteRequest): Promise<CheckoutQuoteResponse> => {
     return fetcher<CheckoutQuoteResponse>('/marketplace/checkout/quote', {
@@ -199,7 +219,7 @@ export const marketplaceApi = {
 
   // ─────────────────────────────────────────────────────────────
   // 4. POST /marketplace/orders (Protected)
-  // Body: { type, paymentMethod, deliveryMethod, deliveryAddress, pickupLocation, preferredPickupDate, logisticsNote, batchId, quantityKg }
+  // Body: { items, deliveryMethod, deliveryAddress, paymentMethod, notes }
   // ─────────────────────────────────────────────────────────────
   createOrder: async (data: CreateMarketplaceOrderRequest): Promise<any> => {
     try {
@@ -217,7 +237,6 @@ export const marketplaceApi = {
 
   // ─────────────────────────────────────────────────────────────
   // 5. GET /marketplace/payments/verify/{reference} (Protected)
-  // Query: provider
   // ─────────────────────────────────────────────────────────────
   verifyPayment: async (reference: string, provider?: string): Promise<VerifyPaymentResponse> => {
     const query = provider ? `?provider=${encodeURIComponent(provider)}` : '';
@@ -228,13 +247,14 @@ export const marketplaceApi = {
 
   // ─────────────────────────────────────────────────────────────
   // 6. GET /marketplace/orders/my-orders (Protected)
-  // Query: status, page, pageSize
+  // Query: status, page, pageSize, limit
   // ─────────────────────────────────────────────────────────────
   getMyOrders: async (params?: GetMyOrdersParams): Promise<any[]> => {
     const query = new URLSearchParams();
     if (params?.status) query.append('status', params.status);
     if (params?.page) query.append('page', String(params.page));
-    if (params?.pageSize) query.append('pageSize', String(params.pageSize));
+    const limit = params?.limit || params?.pageSize;
+    if (limit) query.append('pageSize', String(limit));
     const queryString = query.toString() ? `?${query.toString()}` : '';
 
     const result = await fetcher<any>(`/marketplace/orders/my-orders${queryString}`, {
@@ -242,6 +262,7 @@ export const marketplaceApi = {
     });
     if (Array.isArray(result)) return result;
     if (Array.isArray(result?.items)) return result.items;
+    if (Array.isArray(result?.data?.items)) return result.data.items;
     if (Array.isArray(result?.data)) return result.data;
     return [];
   },
@@ -257,10 +278,9 @@ export const marketplaceApi = {
 
   // ─────────────────────────────────────────────────────────────
   // 8. POST /marketplace/farmer/batches (Protected - role: "farmer")
-  // Variety, EstimatedWeightKg, HarvestDate, HarvestLatitude, HarvestLongitude,
-  // HarvestState, HarvestLga, IntendedDestination, Notes, photos
+  // Request Body: { variety, weightKg, pricePerKg, farmLocation, harvestDate, storageDestination }
   // ─────────────────────────────────────────────────────────────
-  createFarmerBatch: async (data: CreateFarmerBatchRequest | FormData): Promise<any> => {
+  createFarmerBatch: async (data: CreateFarmerBatchRequest | any): Promise<any> => {
     if (typeof FormData !== 'undefined' && data instanceof FormData) {
       return fetcher<any>('/marketplace/farmer/batches', {
         method: 'POST',
@@ -306,10 +326,9 @@ export const marketplaceApi = {
 
   // ─────────────────────────────────────────────────────────────
   // 9. POST /marketplace/processor/products (Protected - role: "processor")
-  // Body: { category, processedCategory, productName, description, price, unitOfMeasure,
-  //         stockAvailable, machinesAvailable, minimumOrder, location, sourceBatchId, status, photoUrls, certifications }
+  // Request Body: { title, category, processingFacility, unitPrice, unit, availableQuantity, moistureGrade }
   // ─────────────────────────────────────────────────────────────
-  createProcessorProduct: async (data: CreateProcessorProductRequest): Promise<any> => {
+  createProcessorProduct: async (data: CreateProcessorProductRequest | any): Promise<any> => {
     return fetcher<any>('/marketplace/processor/products', {
       method: 'POST',
       body: JSON.stringify(data),
@@ -318,10 +337,9 @@ export const marketplaceApi = {
 
   // ─────────────────────────────────────────────────────────────
   // 10. POST /marketplace/services (Protected - role: "service-provider")
-  // Body: { category, processedCategory, productName, description, price, unitOfMeasure,
-  //         stockAvailable, machinesAvailable, minimumOrder, location, sourceBatchId, status, photoUrls, certifications }
+  // Request Body: { title, category, operationalBase, dailyRate, operatorIncluded, coverageRadiusKm }
   // ─────────────────────────────────────────────────────────────
-  createServiceListing: async (data: CreateServiceListingRequest): Promise<any> => {
+  createServiceListing: async (data: CreateServiceListingRequest | any): Promise<any> => {
     return fetcher<any>('/marketplace/services', {
       method: 'POST',
       body: JSON.stringify(data),
@@ -330,13 +348,17 @@ export const marketplaceApi = {
 
   // ─────────────────────────────────────────────────────────────
   // 11. GET /marketplace/seller/sales (Protected - Farmer, Processor, Service Provider)
+  // Response data: { totalEarnings, pendingEscrow, settledPayouts, salesOrders: [...] }
   // ─────────────────────────────────────────────────────────────
   getSellerSales: async (): Promise<SellerSaleItem[]> => {
     const result = await fetcher<any>('/marketplace/seller/sales', {
       method: 'GET',
     });
     if (Array.isArray(result)) return result;
+    if (Array.isArray(result?.salesOrders)) return result.salesOrders;
     if (Array.isArray(result?.items)) return result.items;
+    if (Array.isArray(result?.data?.salesOrders)) return result.data.salesOrders;
+    if (Array.isArray(result?.data?.items)) return result.data.items;
     if (Array.isArray(result?.data)) return result.data;
     return [];
   },

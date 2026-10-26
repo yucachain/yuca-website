@@ -137,24 +137,36 @@ const normalizeListingToBatch = (
   const category = normalizeCategory(listing.category ?? fallbackCategory);
   const gradeValue = String(listing.grade ?? listing.qualityGrade ?? "A").toUpperCase();
   const grade = gradeValue.includes("B") ? "B" : "A";
-  const quantity = Number(
+  const rawQuantity =
+    listing.availableQuantity ??
     listing.stockAvailable ??
-      listing.quantity ??
-      listing.quantityAvailable ??
-      listing.machinesAvailable ??
-      0
-  );
-  const unit = String(listing.unitOfMeasure ?? listing.unit ?? "Tonnes");
-  const pricePerTonne = Number(listing.price ?? listing.pricePerTonne ?? 0);
+    listing.quantity ??
+    listing.quantityAvailable ??
+    listing.machinesAvailable ??
+    (listing.weightKg ? listing.weightKg / 1000 : null);
+  const quantity = Number(rawQuantity ?? 0);
+
+  const unit = String(listing.unit ?? listing.unitOfMeasure ?? "Tonnes");
+
+  const rawPrice =
+    listing.price ??
+    listing.pricePerTonne ??
+    listing.unitPrice ??
+    (listing.pricePerKg ? listing.pricePerKg * 1000 : null);
+  const price = Number(rawPrice ?? 0);
   const title = String(
-    listing.productName ?? listing.title ?? listing.name ?? "Cassava Product"
+    listing.title ?? listing.productName ?? listing.name ?? "Cassava Product"
   );
 
   const rawImages =
-    Array.isArray(listing.photoUrls) && listing.photoUrls.length > 0
+    listing.imageUrl
+      ? [listing.imageUrl]
+      : Array.isArray(listing.photoUrls) && listing.photoUrls.length > 0
       ? listing.photoUrls
       : Array.isArray(listing.images) && listing.images.length > 0
       ? listing.images
+      : Array.isArray(listing.photos) && listing.photos.length > 0
+      ? listing.photos
       : listing.primaryPhotoUrl
       ? [listing.primaryPhotoUrl]
       : [];
@@ -164,15 +176,15 @@ const normalizeListingToBatch = (
   );
 
   let sellerName = "Verified Supplier";
-  if (typeof listing.seller === "string" && listing.seller.trim()) {
+  if (typeof listing.sellerName === "string" && listing.sellerName.trim()) {
+    sellerName = listing.sellerName.trim();
+  } else if (typeof listing.seller === "string" && listing.seller.trim()) {
     sellerName = listing.seller.trim();
   } else if (listing.seller && typeof listing.seller === "object") {
-    const fn = listing.seller.firstName || "";
+    const fn = listing.seller.firstName || listing.seller.name || "";
     const ln = listing.seller.lastName || "";
     const full = `${fn} ${ln}`.trim();
     sellerName = full || listing.seller.companyName || listing.seller.businessName || "Verified Supplier";
-  } else if (listing.sellerName) {
-    sellerName = String(listing.sellerName);
   } else if (listing.farmerName) {
     sellerName = String(listing.farmerName);
   }
@@ -188,24 +200,24 @@ const normalizeListingToBatch = (
 
   return {
     id: String(listing.id ?? listing.batchCode ?? `${category}-${Date.now()}-${Math.random()}`),
-    batchCode: String(listing.batchCode ?? listing.id ?? "BCH-UNKNOWN"),
+    batchCode: String(listing.batchCode ?? listing.code ?? listing.id ?? "BCH-UNKNOWN"),
     title,
     grade,
     quantity: Number.isFinite(quantity) && quantity > 0 ? quantity : 10,
     unit,
-    pricePerTonne: Number.isFinite(pricePerTonne) && pricePerTonne > 0 ? pricePerTonne : 100000,
+    pricePerTonne: Number.isFinite(price) && price > 0 ? price : 150000,
     currency: String(listing.currency ?? "₦"),
     category,
-    location: String(listing.location ?? listing.origin ?? "Nigeria"),
-    storageLocation: String(listing.storageLocation ?? listing.location ?? "Central Hub"),
+    location: String(listing.location ?? listing.farmLocation ?? listing.origin ?? "Nigeria"),
+    storageLocation: String(listing.badge ?? listing.storageLocation ?? listing.storageDestination ?? listing.location ?? "Central Hub"),
     seller: sellerName,
     sellerRole,
-    storageTime: String(listing.storageTime ?? listing.storageDuration ?? "Available"),
+    storageTime: String(listing.storageTime ?? listing.storageDuration ?? listing.status ?? "Available"),
     temperatureC: Number(listing.temperatureC ?? listing.temperature ?? 24),
     humidityPercent: Number(listing.humidityPercent ?? listing.humidity ?? 52),
     isNew: Boolean(listing.isNew ?? true),
     description: String(
-      listing.description ?? "Freshly harvested and verified produce available on YucaChain."
+      listing.description ?? listing.notes ?? "Freshly harvested and verified produce available on YucaChain."
     ),
     images,
   };
@@ -213,8 +225,8 @@ const normalizeListingToBatch = (
 
 export default function MarketplacePage() {
   const { addToCart, totalItems } = useCart();
-  const { activeRole, currentUser, addListing } = useMarketplaceRole();
-  const { isAuthenticated } = useAuth();
+  const { activeRole, currentUser } = useMarketplaceRole();
+  const { isAuthenticated, user: authUser } = useAuth();
   const router = useRouter();
 
   const [allBatches, setAllBatches] = useState<CassavaBatch[]>([]);
@@ -241,13 +253,7 @@ export default function MarketplacePage() {
 
   const panelRef = useRef<HTMLDivElement>(null);
 
-  const [hasToken, setHasToken] = useState<boolean>(() => Boolean(getAuthToken()));
-
-  useEffect(() => {
-    setHasToken(Boolean(getAuthToken()));
-  }, [isAuthenticated]);
-
-  const isUserAuthenticated = isAuthenticated || hasToken;
+  const isUserAuthenticated = Boolean(isAuthenticated && authUser && authUser.id);
 
   const fetchMarketplaceData = async () => {
     try {
@@ -256,8 +262,8 @@ export default function MarketplacePage() {
 
       // 1. Fetch from Public Marketplace Products endpoint (all live products on backend)
       const products = await marketplaceApi.getProducts({
-        Page: 1,
-        PageSize: 100,
+        page: 1,
+        limit: 100,
       }).catch(() => []);
 
       const list = Array.isArray(products) ? products : [];
@@ -265,7 +271,7 @@ export default function MarketplacePage() {
 
       // 2. If authenticated, also fetch from /marketplace/listings (seller's own listings / additional items)
       let normalizedListings: CassavaBatch[] = [];
-      if (token) {
+      if (isUserAuthenticated && token) {
         try {
           const rawListings = await marketplaceApi.getListings().catch(() => []);
           if (Array.isArray(rawListings)) {
@@ -276,7 +282,7 @@ export default function MarketplacePage() {
 
       // 3. If authenticated, fetch from Batches endpoint for any live farmer batches
       let normalizedBatches: CassavaBatch[] = [];
-      if (token) {
+      if (isUserAuthenticated && token) {
         try {
           const rawBatches = await batchService.getBatches().catch(() => []);
           if (Array.isArray(rawBatches)) {
@@ -454,7 +460,11 @@ export default function MarketplacePage() {
   };
 
   const handleAddProductClick = () => {
-    if (!isUserAuthenticated || activeRole === "consumer") {
+    if (!isUserAuthenticated) {
+      setShowAuthModal(true);
+      return;
+    }
+    if (activeRole === "consumer") {
       return;
     }
     if (activeRole === "farmer") {
@@ -466,10 +476,12 @@ export default function MarketplacePage() {
     }
   };
 
-  const handleNewListingCreated = (item: any) => {
-    const normalized = normalizeListingToBatch(item, "raw-cassava");
-    setAllBatches((prev) => deduplicateBatches([normalized, ...prev]));
-    addListing(normalized);
+  const handleNewListingCreated = async (item: any) => {
+    if (item && typeof item === "object") {
+      const normalized = normalizeListingToBatch(item, "raw-cassava");
+      setAllBatches((prev) => deduplicateBatches([normalized, ...prev]));
+    }
+    await fetchMarketplaceData();
   };
 
   const hasActiveFilters =

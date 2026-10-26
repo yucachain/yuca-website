@@ -26,20 +26,12 @@ export default function CartPage() {
     replaceCart,
   } = useCart();
 
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user: authUser } = useAuth();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [showAuthModal, setShowAuthModal] = useState(false);
 
-  const hasToken =
-    typeof window !== "undefined" &&
-    Boolean(
-      localStorage.getItem("accessToken") ||
-      localStorage.getItem("yuca_access_token") ||
-      localStorage.getItem("token")
-    );
-
-  const isUserAuthenticated = isAuthenticated || hasToken;
+  const isUserAuthenticated = Boolean(isAuthenticated && authUser && authUser.id);
 
   useEffect(() => {
     if (!isUserAuthenticated) {

@@ -30,20 +30,14 @@ export default function ShippingInfoPage() {
   const { deliveryMethod, setDeliveryMethod } = useCart();
   const [mounted, setMounted] = React.useState(false);
 
-  const hasToken =
-    typeof window !== "undefined" &&
-    Boolean(
-      localStorage.getItem("accessToken") ||
-      localStorage.getItem("yuca_access_token") ||
-      localStorage.getItem("token")
-    );
+  const isUserAuthenticated = Boolean(isAuthenticated && authUser && authUser.id);
 
   React.useEffect(() => {
     setMounted(true);
-    if (!isAuthenticated && !hasToken) {
+    if (!isUserAuthenticated) {
       router.push("/marketplace/cart");
     }
-  }, [isAuthenticated, hasToken, router]);
+  }, [isUserAuthenticated, router]);
 
   const initialValues = React.useMemo<ShippingInfoValues>(() => {
     let saved: Partial<ShippingInfoValues> = {};

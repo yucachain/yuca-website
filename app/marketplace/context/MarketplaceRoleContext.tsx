@@ -133,34 +133,39 @@ const EMPTY_USER: UserProfile = {
 const MarketplaceRoleContext = createContext<MarketplaceRoleContextType | undefined>(undefined);
 
 export function MarketplaceRoleProvider({ children }: { children: React.ReactNode }) {
-  const { user: authUser } = useAuth();
+  const { user: authUser, isAuthenticated } = useAuth();
 
   const [activeRole, setActiveRoleState] = useState<MarketplaceRole>(() => {
     return normalizeRole(authUser?.role);
   });
 
-  const [currentUser, setCurrentUser] = useState<UserProfile>(() => ({
-    ...EMPTY_USER,
-    id: authUser?.id || "",
-    name:
-      authUser?.name ||
-      (authUser?.firstName && authUser?.lastName
-        ? `${authUser.firstName} ${authUser.lastName}`
-        : ""),
-    firstName: authUser?.firstName || "",
-    lastName: authUser?.lastName || "",
-    email: authUser?.email || "",
-    phone: authUser?.phoneNumber || "",
-    role: normalizeRole(authUser?.role),
-    address: authUser?.deliveryAddress || authUser?.address,
-    farmAddress: authUser?.farmAddress,
-    facilityAddress: authUser?.facilityAddress,
-    businessAddress: authUser?.businessAddress,
-    deliveryAddress: authUser?.deliveryAddress || authUser?.address,
-    state: authUser?.state,
-    companyName: authUser?.companyName,
-    businessName: authUser?.businessName,
-  }));
+  const [currentUser, setCurrentUser] = useState<UserProfile>(() => {
+    if (!isAuthenticated || !authUser || !authUser.id) {
+      return EMPTY_USER;
+    }
+    return {
+      ...EMPTY_USER,
+      id: authUser.id,
+      name:
+        authUser.name ||
+        (authUser.firstName && authUser.lastName
+          ? `${authUser.firstName} ${authUser.lastName}`
+          : ""),
+      firstName: authUser.firstName || "",
+      lastName: authUser.lastName || "",
+      email: authUser.email || "",
+      phone: authUser.phoneNumber || "",
+      role: normalizeRole(authUser.role),
+      address: authUser.deliveryAddress || authUser.address,
+      farmAddress: authUser.farmAddress,
+      facilityAddress: authUser.facilityAddress,
+      businessAddress: authUser.businessAddress,
+      deliveryAddress: authUser.deliveryAddress || authUser.address,
+      state: authUser.state,
+      companyName: authUser.companyName,
+      businessName: authUser.businessName,
+    };
+  });
 
   const [allUsers, setAllUsers] = useState<UserRecordForAdmin[]>([]);
   const [transactions, setTransactions] = useState<MarketOrderItem[]>(() => {
@@ -175,21 +180,14 @@ export function MarketplaceRoleProvider({ children }: { children: React.ReactNod
 
   // Load profile and bank details automatically from backend
   const loadProfile = useCallback(async () => {
-    const rawRole = authUser?.role;
-    const resolvedRole = normalizeRole(rawRole);
-    setActiveRoleState(resolvedRole);
-
-    const hasToken =
-      typeof window !== "undefined" &&
-      Boolean(
-        localStorage.getItem("accessToken") ||
-        localStorage.getItem("yuca_access_token")
-      );
-
-    // Only query backend if user is authenticated with a token
-    if (!hasToken && !authUser) {
+    if (!isAuthenticated || !authUser || !authUser.id) {
+      setCurrentUser(EMPTY_USER);
       return;
     }
+
+    const rawRole = authUser.role;
+    const resolvedRole = normalizeRole(rawRole);
+    setActiveRoleState(resolvedRole);
 
     let profileData: any = null;
     let bankData: any = null;
@@ -213,8 +211,8 @@ export function MarketplaceRoleProvider({ children }: { children: React.ReactNod
       (profileData?.firstName && profileData?.lastName
         ? `${profileData.firstName} ${profileData.lastName}`
         : null) ||
-      authUser?.name ||
-      (authUser?.firstName && authUser?.lastName
+      authUser.name ||
+      (authUser.firstName && authUser.lastName
         ? `${authUser.firstName} ${authUser.lastName}`
         : null) ||
       "";
@@ -222,40 +220,40 @@ export function MarketplaceRoleProvider({ children }: { children: React.ReactNod
     const resolvedPhone =
       profileData?.phoneNumber ||
       profileData?.phone ||
-      authUser?.phoneNumber ||
+      authUser.phoneNumber ||
       "";
 
     const resolvedEmail =
       profileData?.email ||
-      authUser?.email ||
+      authUser.email ||
       "";
 
     const updatedProfile: UserProfile = {
-      id: profileData?.id || authUser?.id || "user",
+      id: profileData?.id || authUser.id,
       name: resolvedName,
-      firstName: profileData?.firstName || authUser?.firstName || "",
-      lastName: profileData?.lastName || authUser?.lastName || "",
+      firstName: profileData?.firstName || authUser.firstName || "",
+      lastName: profileData?.lastName || authUser.lastName || "",
       email: resolvedEmail,
       phone: resolvedPhone,
       role: resolvedRole,
-      avatarUrl: profileData?.avatarUrl || authUser?.avatarUrl,
-      companyName: profileData?.companyName || authUser?.companyName,
-      businessName: profileData?.businessName || authUser?.businessName,
+      avatarUrl: profileData?.avatarUrl || authUser.avatarUrl,
+      companyName: profileData?.companyName || authUser.companyName,
+      businessName: profileData?.businessName || authUser.businessName,
       farmName: profileData?.farmName,
-      address: profileData?.address || authUser?.deliveryAddress || authUser?.address,
-      farmAddress: profileData?.farmAddress || authUser?.farmAddress,
-      facilityAddress: profileData?.facilityAddress || authUser?.facilityAddress,
-      businessAddress: profileData?.businessAddress || authUser?.businessAddress,
-      deliveryAddress: profileData?.deliveryAddress || authUser?.deliveryAddress || authUser?.address,
-      state: profileData?.state || authUser?.state,
-      lga: profileData?.lga || authUser?.lga,
+      address: profileData?.address || authUser.deliveryAddress || authUser.address,
+      farmAddress: profileData?.farmAddress || authUser.farmAddress,
+      facilityAddress: profileData?.facilityAddress || authUser.facilityAddress,
+      businessAddress: profileData?.businessAddress || authUser.businessAddress,
+      deliveryAddress: profileData?.deliveryAddress || authUser.deliveryAddress || authUser.address,
+      state: profileData?.state || authUser.state,
+      lga: profileData?.lga || authUser.lga,
       bankName: bankData?.bankName || profileData?.bankName,
       accountNumber: bankData?.accountNumber || profileData?.accountNumber,
       accountName: bankData?.accountName || profileData?.accountName || resolvedName,
     };
 
     setCurrentUser(updatedProfile);
-  }, [authUser]);
+  }, [authUser, isAuthenticated]);
 
   useEffect(() => {
     loadProfile();
@@ -328,78 +326,13 @@ export function MarketplaceRoleProvider({ children }: { children: React.ReactNod
     await loadProfile();
   };
 
-  const addListing = (listing: any) => {
-    try {
-      const existing: any[] = JSON.parse(localStorage.getItem("yuca_custom_listings") || "[]");
-      const list = Array.isArray(existing) ? existing : [];
-
-      const newId = listing.id ? String(listing.id).trim().toLowerCase() : "";
-      const newCode =
-        listing.batchCode && listing.batchCode !== "BCH-UNKNOWN"
-          ? String(listing.batchCode).trim().toLowerCase()
-          : "";
-      const newComposite = `${(listing.title || "").trim().toLowerCase()}|${(
-        listing.seller || ""
-      )
-        .trim()
-        .toLowerCase()}|${listing.quantity}|${listing.pricePerTonne}`;
-
-      // Deduplicate current list first to clean any preexisting duplicates
-      const seenIds = new Set<string>();
-      const seenCodes = new Set<string>();
-      const seenComposites = new Set<string>();
-      const cleanedList: any[] = [];
-
-      for (const item of list) {
-        if (!item) continue;
-        const itemId = item.id ? String(item.id).trim().toLowerCase() : "";
-        const itemCode =
-          item.batchCode && item.batchCode !== "BCH-UNKNOWN"
-            ? String(item.batchCode).trim().toLowerCase()
-            : "";
-        const itemComp = `${(item.title || "").trim().toLowerCase()}|${(
-          item.seller || ""
-        )
-          .trim()
-          .toLowerCase()}|${item.quantity}|${item.pricePerTonne}`;
-
-        if (itemId && seenIds.has(itemId)) continue;
-        if (itemCode && seenCodes.has(itemCode)) continue;
-        if (itemComp && seenComposites.has(itemComp)) continue;
-
-        if (itemId) seenIds.add(itemId);
-        if (itemCode) seenCodes.add(itemCode);
-        if (itemComp) seenComposites.add(itemComp);
-
-        cleanedList.push(item);
-      }
-
-      // Check if new listing already exists in cleaned list
-      const isAlreadyPresent = cleanedList.some((item) => {
-        const itemId = item.id ? String(item.id).trim().toLowerCase() : "";
-        const itemCode =
-          item.batchCode && item.batchCode !== "BCH-UNKNOWN"
-            ? String(item.batchCode).trim().toLowerCase()
-            : "";
-        const itemComp = `${(item.title || "").trim().toLowerCase()}|${(
-          item.seller || ""
-        )
-          .trim()
-          .toLowerCase()}|${item.quantity}|${item.pricePerTonne}`;
-
-        return (
-          (newId && itemId === newId) ||
-          (newCode && itemCode === newCode) ||
-          (newComposite && itemComp === newComposite)
-        );
-      });
-
-      if (!isAlreadyPresent) {
-        cleanedList.unshift(listing);
-      }
-
-      localStorage.setItem("yuca_custom_listings", JSON.stringify(cleanedList));
-    } catch {}
+  const addListing = (_listing: any) => {
+    // Purge any legacy local storage custom listings - all items must come directly from the real backend API
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.removeItem("yuca_custom_listings");
+      } catch {}
+    }
   };
 
   const placeOrder = (orderData: Partial<MarketOrderItem>): string => {
