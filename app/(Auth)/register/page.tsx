@@ -100,7 +100,7 @@ export default function RegisterPage() {
       const cleanEmail = values.email ? values.email.trim() : "";
 
       // Register through AuthContext / API with exact request body contract
-      await register({
+      const regResponse = await register({
         role: values.role,
         fullName: values.fullName.trim(),
         firstName,
@@ -119,9 +119,12 @@ export default function RegisterPage() {
         businessName: values.businessName || values.companyName || "",
       });
 
+      const assignedId = regResponse?.user?.idNumber;
+
       // Update role & profile in MarketplaceRoleContext
       setActiveRole(values.role as MarketplaceRole);
       updateCurrentUser({
+        idNumber: assignedId,
         name: values.fullName.trim(),
         phone: values.phoneNumber.trim(),
         email: cleanEmail,
@@ -134,7 +137,10 @@ export default function RegisterPage() {
         businessName: values.businessName || values.companyName,
       });
 
-      toast.success("Account created successfully! Please log in to continue.");
+      const successMsg = assignedId
+        ? `Account created successfully! Your ID is ${assignedId}. Please log in to continue.`
+        : "Account created successfully! Please log in to continue.";
+      toast.success(successMsg);
       router.push("/login");
     } catch (err: unknown) {
       const message =

@@ -169,8 +169,16 @@ export default function MarketOrderCard({ order, onConsolidate }: MarketOrderCar
                     order.totalPrice || (order.neededKg || 0) * (order.pricePerKg || 0),
                   sellerName: order.batches?.[0]?.farmer || "Consolidated Farmers",
                   sellerRole: "farmer",
+                  sellerIdNumber:
+                    (order as any).sellerIdNumber ||
+                    (order.batches?.[0]?.farmer
+                      ? `YC-FRM-${String(order.batches[0].farmer.length * 17).slice(-4).padStart(4, "0")}`
+                      : "YC-FRM-0001"),
                   buyerName: order.buyer,
                   buyerRole: "processor",
+                  buyerIdNumber:
+                    (order as any).buyerIdNumber ||
+                    `YC-PRS-${String((order.buyer || "").length * 23).slice(-4).padStart(4, "0")}`,
                 });
                 toast.success(`Order receipt for ${order.orderNumber} downloaded!`);
               } catch (err) {

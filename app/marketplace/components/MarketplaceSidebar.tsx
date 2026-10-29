@@ -120,9 +120,9 @@ export default function MarketplaceSidebar({
                   ? (currentUser.name || authUser?.name || "My Account")
                   : "Welcome, Guest"}
               </h3>
-              <p className="text-[10px] text-gray-400 truncate">
+              <p className="text-[10px] text-gray-500 font-medium truncate">
                 {isUserAuthenticated
-                  ? (currentUser.email || authUser?.email || "Active User")
+                  ? (currentUser.idNumber ? `${currentUser.idNumber} • ${currentUser.phone || authUser?.phoneNumber || ""}` : (currentUser.email || authUser?.email || "Active User"))
                   : "Sign in to buy & sell"}
               </p>
             </div>
@@ -210,7 +210,13 @@ export default function MarketplaceSidebar({
               className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold text-gray-500 hover:text-gray-900 hover:bg-gray-50 transition-all cursor-pointer"
             >
               <ShoppingBag size={15} className="text-gray-400" />
-              <span>{activeRole === "consumer" ? "My Orders" : "Orders & Sales"}</span>
+              <span>
+                {activeRole === "farmer"
+                  ? "My Cassava Sales"
+                  : activeRole === "processor"
+                  ? "My Purchased Goods"
+                  : "My Orders & Purchases"}
+              </span>
             </button>
 
             {activeRole !== "consumer" && (
@@ -220,7 +226,18 @@ export default function MarketplaceSidebar({
                 className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold text-gray-500 hover:text-gray-900 hover:bg-gray-50 transition-all cursor-pointer"
               >
                 <CreditCard size={15} className="text-gray-400" />
-                <span>Escrow Payouts</span>
+                <span>Escrow Payouts &amp; Bank</span>
+              </button>
+            )}
+
+            {isUserAuthenticated && (
+              <button
+                type="button"
+                onClick={() => onOpenSettingsModal?.()}
+                className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold text-gray-500 hover:text-gray-900 hover:bg-gray-50 transition-all cursor-pointer"
+              >
+                <Settings size={15} className="text-gray-400" />
+                <span>Profile &amp; Bank Details</span>
               </button>
             )}
           </nav>

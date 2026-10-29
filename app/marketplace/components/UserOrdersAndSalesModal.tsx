@@ -29,13 +29,14 @@ interface UserOrdersAndSalesModalProps {
 export default function UserOrdersAndSalesModal({
   isOpen,
   onClose,
-  initialTab = "purchases",
+  initialTab,
 }: UserOrdersAndSalesModalProps) {
   const { activeRole, currentUser, myOrders: localOrders, mySales: localSales } = useMarketplaceRole();
   const isConsumer = activeRole === "consumer";
 
+  const defaultTab = initialTab || (activeRole === "farmer" ? "sales" : "purchases");
   const [activeTab, setActiveTab] = useState<"purchases" | "sales">(
-    isConsumer ? "purchases" : initialTab
+    isConsumer ? "purchases" : defaultTab
   );
   const [remoteOrders, setRemoteOrders] = useState<any[]>([]);
   const [remoteSales, setRemoteSales] = useState<any[]>([]);
@@ -63,51 +64,62 @@ export default function UserOrdersAndSalesModal({
 
   useEffect(() => {
     if (isOpen) {
+      if (initialTab) {
+        setActiveTab(initialTab);
+      } else {
+        setActiveTab(activeRole === "farmer" ? "sales" : "purchases");
+      }
       fetchRemoteData();
     }
-  }, [isOpen, fetchRemoteData]);
+  }, [isOpen, initialTab, activeRole, fetchRemoteData]);
 
   if (!isOpen) return null;
 
-  // Merge remote items with local items
-  const mergedOrders = remoteOrders.length > 0
-    ? remoteOrders.map((ro) => ({
-      id: ro.id || ro.orderId || ro.orderNumber,
-      orderNumber: ro.orderNumber || ro.id,
-      productTitle: ro.productTitle || ro.productName || ro.variety || "Cassava Produce",
-      category: ro.category || "Produce",
-      sellerName: ro.sellerName || ro.seller || "Verified Farmer Hub",
-      sellerRole: (ro.sellerRole || "farmer") as any,
-      buyerName: ro.buyerName || currentUser.name,
-      buyerRole: activeRole,
-      quantity: ro.quantityKg ? ro.quantityKg / 1000 : (ro.quantity || 1),
-      unit: ro.unit || "Tonnes",
-      totalAmount: ro.totalAmount || ro.total || ro.price || 0,
-      date: ro.createdAt ? new Date(ro.createdAt).toISOString().split("T")[0] : new Date().toISOString().split("T")[0],
-      deliveryMethod: ro.deliveryMethod || "yucavault-pickup",
-      paymentMethod: "bank-transfer",
-      paymentStatus: ro.paymentStatus || ro.status || "Paid to YucaChain Escrow",
-      payoutStatus: ro.payoutStatus || "Pending Admin Payout",
-      isDelivered: ro.status === "Delivered" || ro.isDelivered,
-      sellerBankDetails: ro.sellerBankDetails || (currentUser.accountNumber ? { bankName: currentUser.bankName || "Commercial Bank", accountNumber: currentUser.accountNumber, accountName: currentUser.accountName || currentUser.name } : { bankName: "Awaiting Bank Setup", accountNumber: "No account on file", accountName: ro.sellerName || "Seller" }),
-    }))
-    : localOrders;
+  // Merge remote items with local registered items
+  const normalizedRemoteOrders = remoteOrders.map((ro) => ({
+    id: ro.id || ro.orderId || ro.orderNumber,
+    orderNumber: ro.orderNumber || ro.id,
+    productTitle: ro.productTitle || ro.productName || ro.variety || "Cassava Produce",
+    category: ro.category || "Produce",
+    sellerName: ro.sellerName || ro.seller || "Verified Farmer Hub",
+    sellerRole: (ro.sellerRole || "farmer") as any,
+    buyerName: ro.buyerName || currentUser.name,
+    buyerRole: activeRole,
+    quantity: ro.quantityKg ? ro.quantityKg / 1000 : (ro.quantity || 1),
+    unit: ro.unit || "Tonnes",
+    totalAmount: ro.totalAmount || ro.total || ro.price || 0,
+    date: ro.createdAt ? new Date(ro.createdAt).toISOString().split("T")[0] : new Date().toISOString().split("T")[0],
+    deliveryMethod: ro.deliveryMethod || "yucavault-pickup",
+    paymentMethod: "bank-transfer",
+    paymentStatus: ro.paymentStatus || ro.status || "Paid to YucaChain Escrow",
+    payoutStatus: ro.payoutStatus || "Pending Admin Payout",
+    isDelivered: ro.status === "Delivered" || ro.isDelivered,
+    sellerBankDetails: ro.sellerBankDetails || (currentUser.accountNumber ? { bankName: currentUser.bankName || "Commercial Bank", accountNumber: currentUser.accountNumber, accountName: currentUser.accountName || currentUser.name } : { bankName: "Awaiting Bank Setup", accountNumber: "No account on file", accountName: ro.sellerName || "Seller" }),
+  }));
 
-  const mergedSales = remoteSales.length > 0
-    ? remoteSales.map((rs) => ({
-      id: rs.id || rs.orderNumber,
-      orderNumber: rs.orderNumber,
-      productTitle: rs.item || rs.productTitle || rs.productName || "Cassava Batch",
-      buyerName: rs.buyerName || "Marketplace Buyer",
-      buyerRole: "processor" as any,
-      quantity: rs.quantity || 1,
-      unit: rs.unit || "ton",
-      totalAmount: rs.amount || rs.totalAmount || 0,
-      date: rs.date || rs.createdAt ? new Date(rs.date || rs.createdAt).toISOString().split("T")[0] : new Date().toISOString().split("T")[0],
-      payoutStatus: rs.payoutStatus || rs.escrowStatus || "Pending Delivery Confirmation",
-      deliveryMethod: rs.deliveryMethod || "yucavault-pickup",
-    }))
-    : localSales;
+  const mergedOrders = [
+    ...normalizedRemoteOrders,
+    ...localOrders.filter((lo) => !normalizedRemoteOrders.some((ro) => ro.orderNumber === lo.orderNumber)),
+  ];
+
+  const normalizedRemoteSales = remoteSales.map((rs) => ({
+    id: rs.id || rs.orderNumber,
+    orderNumber: rs.orderNumber,
+    productTitle: rs.item || rs.productTitle || rs.productName || "Cassava Batch",
+    buyerName: rs.buyerName || "Marketplace Buyer",
+    buyerRole: "processor" as any,
+    quantity: rs.quantity || 1,
+    unit: rs.unit || "ton",
+    totalAmount: rs.amount || rs.totalAmount || 0,
+    date: rs.date || (rs.createdAt ? new Date(rs.createdAt).toISOString().split("T")[0] : new Date().toISOString().split("T")[0]),
+    payoutStatus: rs.payoutStatus || rs.escrowStatus || "Pending Delivery Confirmation",
+    deliveryMethod: rs.deliveryMethod || "yucavault-pickup",
+  }));
+
+  const mergedSales = [
+    ...normalizedRemoteSales,
+    ...localSales.filter((ls) => !normalizedRemoteSales.some((rs) => rs.orderNumber === ls.orderNumber)),
+  ];
 
   const handleConfirmDelivery = async (orderNumber: string) => {
     try {
@@ -333,8 +345,8 @@ export default function UserOrdersAndSalesModal({
                         <p className="text-base font-extrabold text-[#226049]">
                           ₦{Number(sale.totalAmount).toLocaleString()}
                         </p>
-                        <p className="text-[10px] text-gray-400">
-                          To: {currentUser.bankName?.split(" ")[0] || "Bank"} ****{currentUser.accountNumber?.slice(-4) || "89"}
+                        <p className="text-[11px] text-emerald-800 font-semibold bg-emerald-50 px-2 py-0.5 rounded-md inline-block mt-1">
+                          To: {currentUser.bankName || "Bank"} • {currentUser.accountNumber || "—"} ({currentUser.accountName || currentUser.name})
                         </p>
                       </div>
                     </div>

@@ -300,7 +300,9 @@ export default function MarketplaceNavbar({
                         <p className="text-xs font-bold text-gray-900 truncate">
                           {isNameDefined ? rawName : "User"}
                         </p>
-                        <p className="text-[11px] text-gray-500 truncate">{currentUser.email || authUser?.email}</p>
+                        <p className="text-[11px] text-gray-500 truncate">
+                          {currentUser.idNumber ? `${currentUser.idNumber} • ` : ""}{currentUser.email || authUser?.email}
+                        </p>
                         <span className="mt-1 inline-block rounded-md bg-amber-50 border border-amber-200 px-2 py-0.5 text-[10px] font-bold text-amber-800">
                           {currentMeta.label}
                         </span>
@@ -317,9 +319,11 @@ export default function MarketplaceNavbar({
                         >
                           <Package size={15} className="text-gray-500" />
                           <span>
-                            {activeRole === "consumer"
-                              ? "My Orders Placed"
-                              : "My Sales & Orders"}
+                            {activeRole === "farmer"
+                              ? "My Cassava Sales"
+                              : activeRole === "processor"
+                              ? "My Purchased Goods"
+                              : "My Orders & Purchases"}
                           </span>
                         </button>
 
@@ -416,7 +420,7 @@ export default function MarketplaceNavbar({
       <UserOrdersAndSalesModal
         isOpen={showOrdersModal}
         onClose={() => setShowOrdersModal(false)}
-        initialTab={activeRole === "consumer" ? "purchases" : "sales"}
+        initialTab={activeRole === "farmer" ? "sales" : "purchases"}
       />
 
       <RoleProfileSettingsModal

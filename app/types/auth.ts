@@ -2,6 +2,7 @@ import { AuthStatus, UserRole } from "@/app/enums";
 
 export interface User {
   id: string;
+  idNumber?: string;
   email: string;
   name: string;
   role: UserRole | string;

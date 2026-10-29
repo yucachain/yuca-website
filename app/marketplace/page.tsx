@@ -10,6 +10,12 @@ import {
   List,
   Sparkles,
   SlidersHorizontal,
+  Building,
+  CreditCard,
+  CheckCircle2,
+  ShoppingBag,
+  TrendingUp,
+  ShieldCheck,
 } from "lucide-react";
 import MarketplaceNavbar from "./components/MarketplaceNavbar";
 import MarketplaceSidebar from "./components/MarketplaceSidebar";
@@ -29,6 +35,7 @@ import CreateCassavaBatchModal from "./components/CreateCassavaBatchModal";
 import ListProcessedProductModal from "./components/ListProcessedProductModal";
 import ListServiceMachineryModal from "./components/ListServiceMachineryModal";
 import UserOrdersAndSalesModal from "./components/UserOrdersAndSalesModal";
+import RoleProfileSettingsModal from "./components/RoleProfileSettingsModal";
 import AuthPromptModal from "./components/AuthPromptModal";
 
 export function normalizeCategory(cat?: string | null): string {
@@ -225,7 +232,7 @@ const normalizeListingToBatch = (
 
 export default function MarketplacePage() {
   const { addToCart, totalItems } = useCart();
-  const { activeRole, currentUser } = useMarketplaceRole();
+  const { activeRole, currentUser, myOrders, mySales } = useMarketplaceRole();
   const { isAuthenticated, user: authUser } = useAuth();
   const router = useRouter();
 
@@ -249,6 +256,7 @@ export default function MarketplacePage() {
   const [showProcessorProductModal, setShowProcessorProductModal] = useState(false);
   const [showServiceMachineryModal, setShowServiceMachineryModal] = useState(false);
   const [showOrdersSalesModal, setShowOrdersSalesModal] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [ordersModalTab, setOrdersModalTab] = useState<"purchases" | "sales">("sales");
 
   const panelRef = useRef<HTMLDivElement>(null);
@@ -530,9 +538,10 @@ export default function MarketplacePage() {
                 setShowAuthModal(true);
                 return;
               }
-              setOrdersModalTab("sales");
+              setOrdersModalTab(activeRole === "farmer" ? "sales" : "purchases");
               setShowOrdersSalesModal(true);
             }}
+            onOpenSettingsModal={() => setShowSettingsModal(true)}
           />
         </div>
 
@@ -560,8 +569,12 @@ export default function MarketplacePage() {
                     setShowAuthModal(true);
                     return;
                   }
-                  setOrdersModalTab("sales");
+                  setOrdersModalTab(activeRole === "farmer" ? "sales" : "purchases");
                   setShowOrdersSalesModal(true);
+                }}
+                onOpenSettingsModal={() => {
+                  setShowMobileSidebar(false);
+                  setShowSettingsModal(true);
                 }}
               />
             </div>
@@ -991,6 +1004,11 @@ export default function MarketplacePage() {
         isOpen={showOrdersSalesModal}
         onClose={() => setShowOrdersSalesModal(false)}
         initialTab={ordersModalTab}
+      />
+
+      <RoleProfileSettingsModal
+        isOpen={showSettingsModal}
+        onClose={() => setShowSettingsModal(false)}
       />
 
       {/* Authentication Prompt Modal */}

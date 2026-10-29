@@ -28,6 +28,7 @@ import {
   normalizeRole,
 } from "@/app/marketplace/context/MarketplaceRoleContext";
 import { AdminApiService } from "@/app/Services/admin";
+import { getOrAllocateUserId } from "@/app/utils/userIdGenerator";
 
 const ROLE_BADGES: Record<
   MarketplaceRole,
@@ -203,8 +204,18 @@ export default function AdminUserManagementSection() {
             } catch {}
           }
 
+          const idNumber =
+            u.idNumber ||
+            getOrAllocateUserId(role, {
+              id: u.id,
+              email: u.email,
+              phone: phone !== "—" ? phone : undefined,
+              name: displayName,
+            });
+
           return {
             id: u.id || String(Math.random()),
+            idNumber,
             name: displayName,
             email: u.email || "",
             phone,
@@ -274,8 +285,38 @@ export default function AdminUserManagementSection() {
   }, []);
 
   const effectiveUsers = useMemo(() => {
-    if (remoteUsers.length > 0) return remoteUsers;
-    return allUsers;
+    // Combine remoteUsers with allUsers to guarantee all 54 registered users appear
+    const combined = [...remoteUsers];
+    const seenPhones = new Set<string>();
+    const seenEmails = new Set<string>();
+    const seenNames = new Set<string>();
+
+    combined.forEach((u) => {
+      if (u.phone && u.phone !== "—") seenPhones.add(u.phone.replace(/\D/g, ""));
+      if (u.email) seenEmails.add(u.email.toLowerCase().trim());
+      if (u.name) seenNames.add(u.name.toLowerCase().trim());
+    });
+
+    allUsers.forEach((au) => {
+      const pNorm = au.phone ? au.phone.replace(/\D/g, "") : "";
+      const eNorm = au.email ? au.email.toLowerCase().trim() : "";
+      const nNorm = au.name ? au.name.toLowerCase().trim() : "";
+
+      const alreadyExists =
+        (pNorm && seenPhones.has(pNorm)) ||
+        (eNorm && seenEmails.has(eNorm)) ||
+        (nNorm && seenNames.has(nNorm));
+
+      if (!alreadyExists) {
+        combined.push(au);
+      }
+    });
+
+    const list = combined.length > 0 ? combined : allUsers;
+    return list.map((u) => ({
+      ...u,
+      idNumber: u.idNumber || getOrAllocateUserId(u.role, u),
+    }));
   }, [remoteUsers, allUsers]);
 
   const [selectedRoleFilter, setSelectedRoleFilter] = useState<string>("all");
@@ -291,6 +332,7 @@ export default function AdminUserManagementSection() {
       const q = searchQuery.toLowerCase().trim();
       const matchSearch =
         !q ||
+        u.idNumber.toLowerCase().includes(q) ||
         u.name.toLowerCase().includes(q) ||
         u.email.toLowerCase().includes(q) ||
         u.phone.includes(q) ||
@@ -393,9 +435,10 @@ export default function AdminUserManagementSection() {
       return;
     }
 
-    const headers = ["#", "Name", "Role", "Location / Address"];
+    const headers = ["#", "User ID", "Name", "Role", "Location / Address"];
     const rows = filteredUsers.map((u, idx) => [
       idx + 1,
+      `"${u.idNumber || ""}"`,
       `"${(u.name || "").replace(/"/g, '""')}"`,
       `"${u.role || ""}"`,
       `"${(u.address || "").replace(/"/g, '""')}"`,
@@ -418,7 +461,7 @@ export default function AdminUserManagementSection() {
     toast.success("Users directory exported to CSV successfully!");
   };
 
-  // Export Users to simple, classic PDF (just their name and roles and location/address)
+  // Export Users to simple, classic PDF with ID Number
   const handleDownloadUsersPDF = () => {
     if (filteredUsers.length === 0) {
       toast.error("No users found matching your current filter.");
@@ -437,9 +480,11 @@ export default function AdminUserManagementSection() {
       generateUsersReportPDF({
         users: filteredUsers.map((u) => ({
           id: u.id,
-          name: u.name,
+          idNumber: u.idNumber,
           role: u.role,
           address: u.address,
+          status: u.status,
+          joinedDate: u.joinedDate,
         })),
         filterRoleLabel: roleMap[selectedRoleFilter] || selectedRoleFilter,
       });
@@ -635,6 +680,7 @@ export default function AdminUserManagementSection() {
                     className="rounded border-gray-300 text-[#226049] focus:ring-0 cursor-pointer"
                   />
                 </th>
+                <th className="py-3 px-3">User ID</th>
                 <th className="py-3 px-3">User &amp; Contact</th>
                 <th className="py-3 px-3">Role</th>
                 <th className="py-3 px-3">Location / Address</th>
@@ -646,14 +692,14 @@ export default function AdminUserManagementSection() {
             <tbody className="divide-y divide-gray-50 font-medium">
               {loadingUsers ? (
                 <tr>
-                  <td colSpan={7} className="py-12 text-center text-gray-400">
+                  <td colSpan={8} className="py-12 text-center text-gray-400">
                     <Loader2 size={24} className="mx-auto mb-2 text-[#226049] animate-spin" />
                     <p className="font-semibold text-gray-600">Loading registered platform users...</p>
                   </td>
                 </tr>
               ) : filteredUsers.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-12 text-center text-gray-400">
+                  <td colSpan={8} className="py-12 text-center text-gray-400">
                     <Users size={32} className="mx-auto mb-2 opacity-40 text-gray-400" />
                     <p className="font-semibold text-gray-600">No users match your criteria</p>
                     <p className="text-[11px] text-gray-400 mt-0.5">Try adjusting your role filter or search term</p>
@@ -677,6 +723,13 @@ export default function AdminUserManagementSection() {
                           onChange={() => toggleSelectUser(user.id)}
                           className="rounded border-gray-300 text-[#226049] focus:ring-0 cursor-pointer"
                         />
+                      </td>
+
+                      {/* User ID Number */}
+                      <td className="py-3.5 px-3 whitespace-nowrap">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-mono font-bold bg-emerald-50 text-[#226049] border border-emerald-200 shadow-2xs">
+                          {user.idNumber}
+                        </span>
                       </td>
 
                       {/* User & Contact */}
@@ -786,13 +839,18 @@ export default function AdminUserManagementSection() {
                 <h3 className="text-base font-bold text-gray-900">
                   {selectedUserForModal.name}
                 </h3>
-                <span
-                  className={`inline-flex items-center gap-1 rounded-full px-2 py-0.2 text-[10px] font-bold border mt-0.5 ${ROLE_BADGES[selectedUserForModal.role].color
-                    }`}
-                >
-                  {ROLE_BADGES[selectedUserForModal.role].icon}
-                  <span>{ROLE_BADGES[selectedUserForModal.role].label}</span>
-                </span>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <span className="font-mono text-[11px] font-bold text-[#226049] bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                    {selectedUserForModal.idNumber}
+                  </span>
+                  <span
+                    className={`inline-flex items-center gap-1 rounded-full px-2 py-0.2 text-[10px] font-bold border ${ROLE_BADGES[selectedUserForModal.role].color
+                      }`}
+                  >
+                    {ROLE_BADGES[selectedUserForModal.role].icon}
+                    <span>{ROLE_BADGES[selectedUserForModal.role].label}</span>
+                  </span>
+                </div>
               </div>
             </div>
 

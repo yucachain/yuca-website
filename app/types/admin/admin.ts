@@ -29,6 +29,7 @@ export interface AdminOverviewStats {
 
 export interface User {
   id: string;
+  idNumber?: string;
   name?: string;
   fullName?: string;
   firstName?: string;

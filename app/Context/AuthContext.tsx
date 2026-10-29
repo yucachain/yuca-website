@@ -27,6 +27,7 @@ import authService, {
   refreshAccessToken,
 } from "@/app/Services/authService";
 import { clearAuthTokens, parseJwtPayload } from "@/app/Services/tokenHelper";
+import { allocateNextUserId, getOrAllocateUserId } from "@/app/utils/userIdGenerator";
 
 const initialAuthState: AuthState = {
   user: null,
@@ -211,13 +212,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           (payloadData as any).id ||
           (payloadData as any).userId ||
           "";
+        const userRole = userData.role || UserRole.BUYER;
+        const idNumber =
+          userData.idNumber ||
+          getOrAllocateUserId(String(userRole), {
+            id: resolvedId,
+            name: resolvedName,
+            email: userData.email || (idVal.includes("@") ? idVal : ""),
+            phone: userData.phoneNumber || payload.phoneNumber,
+          });
+
         const formattedUser: User = {
           ...userData,
           id: resolvedId,
+          idNumber,
           email: userData.email || (idVal.includes("@") ? idVal : ""),
           phoneNumber: userData.phoneNumber || payload.phoneNumber || (!idVal.includes("@") ? idVal : undefined),
           name: resolvedName,
-          role: userData.role || UserRole.BUYER,
+          role: userRole,
           initials: getInitials(resolvedName),
         };
 
@@ -258,9 +270,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         const idVal = (payload.identifier || payload.phoneNumber || payload.email || "").trim();
         const resolvedName = resolveDisplayName(userData, "System Administrator");
+        const idNumber =
+          userData.idNumber ||
+          getOrAllocateUserId("admin", {
+            id: userData.id,
+            name: resolvedName,
+            email: userData.email,
+          });
         const formattedUser: User = {
           ...userData,
           id: userData.id || "",
+          idNumber,
           email: userData.email || (idVal.includes("@") ? idVal : ""),
           phoneNumber: userData.phoneNumber || payload.phoneNumber || (!idVal.includes("@") ? idVal : undefined),
           name: resolvedName,
@@ -313,9 +333,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           (payloadData as any).userId ||
           "";
 
+        const userRole = userData.role || payload.role || UserRole.GUEST;
+        const assignedId = allocateNextUserId(
+          String(userRole),
+          resolvedId || payload.email || payload.phoneNumber || resolvedName
+        );
+
         const formattedUser: User = {
           ...userData,
           id: resolvedId,
+          idNumber: assignedId,
           email:
             userData.email ||
             payload.email ||
@@ -323,7 +350,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               ? `${payload.phoneNumber.replace(/[^0-9]/g, "")}@yucachain.com`
               : "user@yucachain.com"),
           name: resolvedName,
-          role: userData.role || payload.role || UserRole.GUEST,
+          role: userRole,
           initials: getInitials(resolvedName),
         };
 
