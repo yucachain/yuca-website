@@ -84,7 +84,7 @@ export const DEFAULT_LIVE_USERS: UserRecordForAdmin[] = [
     bankName: p.bankName,
     accountNumber: p.accountNumber,
     accountName: p.accountHolder || p.name,
-    joinedDate: "Oct 19, 2026",
+    joinedDate: p.joinedDate || (idx >= 25 ? "Nov 9, 2026" : "Oct 19, 2026"),
     status: "Verified" as const,
   }))),
   ...((registeredLiveData?.farmers || []).map((f: any, idx: number) => ({
@@ -98,7 +98,7 @@ export const DEFAULT_LIVE_USERS: UserRecordForAdmin[] = [
     bankName: f.bankName,
     accountNumber: f.accountNumber,
     accountName: f.accountHolder || f.name,
-    joinedDate: f.joinedDate || (idx >= 29 ? "Oct 29, 2026" : "Oct 19, 2026"),
+    joinedDate: f.joinedDate || (idx >= 47 ? "Nov 9, 2026" : idx >= 29 ? "Oct 29, 2026" : "Oct 19, 2026"),
     status: "Verified" as const,
   }))),
 ];
@@ -317,11 +317,11 @@ export function MarketplaceRoleProvider({ children }: { children: React.ReactNod
         const stored = localStorage.getItem("yuca_marketplace_orders");
         if (stored) {
           const parsed = JSON.parse(stored);
-          const requiredCount = registeredLiveData?.orders?.length || 80;
+          const requiredCount = registeredLiveData?.orders?.length || 100;
           if (
             Array.isArray(parsed) &&
             parsed.length >= requiredCount &&
-            parsed.some((o: any) => o.date?.includes("Oct 29")) &&
+            parsed.some((o: any) => o.date?.includes("Nov 9")) &&
             parsed.some((o: any) => o.productTitle?.includes("Super Yield")) &&
             !parsed.some(
               (o: any) =>
@@ -343,7 +343,7 @@ export function MarketplaceRoleProvider({ children }: { children: React.ReactNod
     if (typeof window !== "undefined") {
       try {
         const stored = localStorage.getItem("yuca_marketplace_orders");
-        const requiredCount = registeredLiveData?.orders?.length || 80;
+        const requiredCount = registeredLiveData?.orders?.length || 100;
         let shouldRefresh = !stored;
         if (stored) {
           try {
@@ -351,7 +351,7 @@ export function MarketplaceRoleProvider({ children }: { children: React.ReactNod
             if (
               !Array.isArray(parsed) ||
               parsed.length < requiredCount ||
-              !parsed.some((o: any) => o.date?.includes("Oct 29")) ||
+              !parsed.some((o: any) => o.date?.includes("Nov 9")) ||
               !parsed.some((o: any) => o.productTitle?.includes("Super Yield")) ||
               parsed.some(
                 (o: any) =>

@@ -164,20 +164,25 @@ export default function ProductDetailPanel({
           <div className="flex items-baseline justify-between mb-2">
             <div>
               <p className="text-[10px] font-bold uppercase tracking-wider text-[#226049]">
-                Unit Price
+                Total Batch Price ({batch.quantity} {unit.split(" ")[0]})
               </p>
               <p className="text-xl font-extrabold text-gray-900 mt-0.5">
                 {currency}
-                {batch.pricePerTonne.toLocaleString()}
-                <span className="text-xs font-normal text-gray-500 ml-1">/ {unit.split(" ")[0]}</span>
+                {((batch.pricePerTonne || 120000) * (batch.quantity || 1)).toLocaleString()}
+              </p>
+              <p className="text-[11px] font-medium text-gray-500 mt-0.5">
+                Rate: {currency}{(batch.pricePerTonne || 120000).toLocaleString()} / Tonne
               </p>
             </div>
             <div className="text-right">
               <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
-                Stock Available
+                Batch Weight
               </p>
               <p className="text-sm font-bold text-gray-900 mt-0.5">
                 {batch.quantity.toLocaleString()} {unit}
+              </p>
+              <p className="text-[11px] text-gray-400 font-mono mt-0.5">
+                ({(batch.quantity * 1000).toLocaleString()} kg)
               </p>
             </div>
           </div>

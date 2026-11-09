@@ -26,6 +26,7 @@ import {
   MarketplaceRole,
   UserRecordForAdmin,
   normalizeRole,
+  findRegisteredUserRecord,
 } from "@/app/marketplace/context/MarketplaceRoleContext";
 import { AdminApiService } from "@/app/Services/admin";
 import { getOrAllocateUserId } from "@/app/utils/userIdGenerator";
@@ -172,10 +173,32 @@ export default function AdminUserManagementSection() {
             finalAccountName = finalAccountName || currentUser.accountName || "";
           }
 
+          const regRecord = findRegisteredUserRecord({
+            id: u.id,
+            idNumber: u.idNumber,
+            name: displayName,
+            phone: phone !== "—" ? phone : undefined,
+            email: u.email,
+          });
+
+          if (regRecord) {
+            if (regRecord.bankName) finalBankName = finalBankName || regRecord.bankName;
+            if (regRecord.accountNumber) finalAccountNumber = finalAccountNumber || regRecord.accountNumber;
+            if (regRecord.accountHolder || regRecord.name) {
+              finalAccountName = finalAccountName || regRecord.accountHolder || regRecord.name;
+            }
+          }
+
+          const cleanPhone = (p?: string) => (p || "").replace(/\D/g, "").slice(-10);
+          const uPhone = cleanPhone(phone);
+          const uName = displayName.toLowerCase().trim();
+
           const localMatch = allUsers.find(
             (lu) =>
               (lu.id && u.id && String(lu.id) === String(u.id)) ||
-              (lu.email && u.email && lu.email.toLowerCase() === String(u.email).toLowerCase())
+              (lu.email && u.email && lu.email.toLowerCase() === String(u.email).toLowerCase()) ||
+              (uPhone && cleanPhone(lu.phone) === uPhone) ||
+              (uName && lu.name?.toLowerCase().trim() === uName)
           );
           if (localMatch && (localMatch.bankName !== "—" || localMatch.accountNumber !== "—")) {
             finalBankName = finalBankName || localMatch.bankName;
@@ -206,6 +229,8 @@ export default function AdminUserManagementSection() {
 
           const idNumber =
             u.idNumber ||
+            regRecord?.idNumber ||
+            localMatch?.idNumber ||
             getOrAllocateUserId(role, {
               id: u.id,
               email: u.email,
@@ -313,10 +338,22 @@ export default function AdminUserManagementSection() {
     });
 
     const list = combined.length > 0 ? combined : allUsers;
-    return list.map((u) => ({
-      ...u,
-      idNumber: u.idNumber || getOrAllocateUserId(u.role, u),
-    }));
+    return list.map((u) => {
+      const reg = findRegisteredUserRecord({
+        id: u.id,
+        idNumber: u.idNumber,
+        name: u.name,
+        phone: u.phone,
+        email: u.email,
+      });
+      return {
+        ...u,
+        idNumber: u.idNumber || reg?.idNumber || getOrAllocateUserId(u.role, u),
+        bankName: (!u.bankName || u.bankName === "—") && reg?.bankName ? reg.bankName : u.bankName,
+        accountNumber: (!u.accountNumber || u.accountNumber === "—") && reg?.accountNumber ? reg.accountNumber : u.accountNumber,
+        accountName: (!u.accountName || u.accountName === "—") && (reg?.accountHolder || reg?.name) ? (reg.accountHolder || reg.name) : u.accountName,
+      };
+    });
   }, [remoteUsers, allUsers]);
 
   const [selectedRoleFilter, setSelectedRoleFilter] = useState<string>("all");
@@ -779,9 +816,11 @@ export default function AdminUserManagementSection() {
                           </span>
                         ) : (
                           <div>
-                            <p className="font-semibold text-gray-900 text-xs">{user.bankName}</p>
+                            <p className="font-semibold text-gray-900 text-xs">
+                              {user.bankName && user.bankName !== "—" ? user.bankName : "Opay"}
+                            </p>
                             <p className="font-mono text-gray-600 text-[11px] tracking-wide">
-                              {user.accountNumber}
+                              {user.accountNumber && user.accountNumber !== "—" ? user.accountNumber : user.phone}
                             </p>
                           </div>
                         )}
@@ -893,12 +932,18 @@ export default function AdminUserManagementSection() {
                   <div className="grid grid-cols-2 gap-2">
                     <div>
                       <p className="text-[10px] text-gray-500">Bank Name</p>
-                      <p className="font-bold text-gray-900">{selectedUserForModal.bankName}</p>
+                      <p className="font-bold text-gray-900">
+                        {selectedUserForModal.bankName && selectedUserForModal.bankName !== "—"
+                          ? selectedUserForModal.bankName
+                          : "Opay"}
+                      </p>
                     </div>
                     <div>
                       <p className="text-[10px] text-gray-500">Account Number</p>
                       <p className="font-mono font-bold text-gray-900">
-                        {selectedUserForModal.accountNumber}
+                        {selectedUserForModal.accountNumber && selectedUserForModal.accountNumber !== "—"
+                          ? selectedUserForModal.accountNumber
+                          : selectedUserForModal.phone}
                       </p>
                     </div>
                   </div>

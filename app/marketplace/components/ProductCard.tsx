@@ -164,13 +164,20 @@ export default function ProductCard({
         {/* Price & Action Row (Matches inspiration bottom row) */}
         <div className="mt-3 pt-2.5 border-t border-gray-100 flex items-center justify-between gap-2">
           <div>
-            <span className="text-xs sm:text-sm font-extrabold text-gray-900">
-              {currency}
-              {batch.pricePerTonne.toLocaleString()}
-            </span>
-            <span className="text-[10px] text-gray-400 font-normal ml-0.5">
-              /{unit.split(" ")[0]}
-            </span>
+            <div className="flex items-baseline gap-1">
+              <span className="text-xs sm:text-sm font-extrabold text-gray-900">
+                {currency}
+                {((batch.pricePerTonne || 120000) * (batch.quantity || 1)).toLocaleString()}
+              </span>
+              {batch.quantity > 1 && (
+                <span className="text-[10px] text-gray-500 font-medium">
+                  ({batch.quantity}T)
+                </span>
+              )}
+            </div>
+            <p className="text-[10px] text-gray-400 font-normal leading-tight">
+              {currency}{(batch.pricePerTonne || 120000).toLocaleString()}/Tonne
+            </p>
           </div>
 
           <button

@@ -37,6 +37,7 @@ import ListServiceMachineryModal from "./components/ListServiceMachineryModal";
 import UserOrdersAndSalesModal from "./components/UserOrdersAndSalesModal";
 import RoleProfileSettingsModal from "./components/RoleProfileSettingsModal";
 import AuthPromptModal from "./components/AuthPromptModal";
+import registeredLiveData from "@/app/data/registered_live_data.json";
 
 export function normalizeCategory(cat?: string | null): string {
   if (!cat) return "raw-cassava";
@@ -226,7 +227,7 @@ const normalizeListingToBatch = (
     description: String(
       listing.description ?? listing.notes ?? "Freshly harvested and verified produce available on YucaChain."
     ),
-    images,
+    images: images.length > 0 ? images : category === "raw-cassava" ? ["/images/batches/cassava-harvest-1.jpg"] : [],
   };
 };
 
@@ -349,8 +350,31 @@ export default function MarketplacePage() {
         } catch {}
       }
 
-      // 4. Combine all live backend items and deduplicate
+      // 4. Combine all live backend items, farmer batches and demo items
+      const idoBatches: CassavaBatch[] = ((registeredLiveData as any)?.batches || []).map((b: any) => ({
+        id: b.id,
+        batchCode: b.batchCode,
+        title: b.title,
+        grade: b.grade,
+        quantity: b.quantity,
+        unit: b.unit || "Tonnes",
+        pricePerTonne: b.pricePerTonne,
+        currency: b.currency || "₦",
+        category: "raw-cassava",
+        location: b.location || "Ido, Oyo State",
+        storageLocation: b.storageLocation || "Ido YucaVault Regional Center",
+        seller: b.seller || b.farmerName,
+        sellerRole: "farmer",
+        storageTime: b.storageTime || "Freshly Harvested",
+        temperatureC: b.temperatureC || 24,
+        humidityPercent: b.humidityPercent || 55,
+        isNew: true,
+        description: b.description,
+        images: b.images && b.images.length > 0 ? b.images : ["/images/batches/cassava-harvest-1.jpg"],
+      }));
+
       const combined = deduplicateBatches([
+        ...idoBatches,
         ...normalizedApi,
         ...normalizedListings,
         ...normalizedBatches,

@@ -196,12 +196,13 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   }, [cartItems]);
 
   const addToCart = useCallback((batch: CassavaBatch) => {
+    const batchQty = Number(batch.quantity) > 0 ? Number(batch.quantity) : 1;
     const entry: CartEntry = {
       id: batch.id,
       batchCode: batch.batchCode,
       title: batch.title,
       grade: batch.grade,
-      quantity: 1,
+      quantity: batchQty,
       pricePerTonne: batch.pricePerTonne,
       unit: batch.unit ?? "Tonnes",
       currency: batch.currency ?? "₦",
@@ -218,7 +219,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         id: batch.id,
         listingId: (batch as any).listingId || batch.id,
         batchId: (batch as any).batchId || batch.id,
-        quantity: 1,
+        quantity: batchQty,
         title: batch.title,
         pricePerTonne: batch.pricePerTonne,
       })
