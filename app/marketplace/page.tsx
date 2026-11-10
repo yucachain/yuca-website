@@ -227,7 +227,7 @@ const normalizeListingToBatch = (
     description: String(
       listing.description ?? listing.notes ?? "Freshly harvested and verified produce available on YucaChain."
     ),
-    images: images.length > 0 ? images : category === "raw-cassava" ? ["/images/batches/cassava-harvest-1.jpg"] : [],
+    images: images.length > 0 ? images : category === "raw-cassava" ? ["/images/batches/cassava-fresh-1.jpg"] : [],
   };
 };
 
@@ -370,7 +370,7 @@ export default function MarketplacePage() {
         humidityPercent: b.humidityPercent || 55,
         isNew: true,
         description: b.description,
-        images: b.images && b.images.length > 0 ? b.images : ["/images/batches/cassava-harvest-1.jpg"],
+        images: b.images && b.images.length > 0 ? b.images : ["/images/batches/cassava-fresh-1.jpg"],
       }));
 
       const combined = deduplicateBatches([
